@@ -7,14 +7,14 @@ import Tapable = require('tapable');
 import MultiModule = require('./MultiModule');
 
 class MultiModuleFactory extends Tapable {
-	constructor() {
-		super();
-	}
+    constructor() {
+        super();
+    }
 
-	create(data, callback) {
-		const dependency = data.dependencies[0];
-		callback(null, new MultiModule(data.context, dependency.dependencies, dependency.name));
-	}
+    create(data, callback) {
+        const dependency = data.dependencies[0];
+        callback(null, new MultiModule(data.context, dependency.dependencies, dependency.name));
+    }
 }
 
 export = MultiModuleFactory;

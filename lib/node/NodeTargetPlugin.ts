@@ -5,9 +5,9 @@
 import ExternalsPlugin = require('../ExternalsPlugin');
 
 class NodeTargetPlugin {
-	apply(compiler) {
-		new ExternalsPlugin('commonjs', Object.keys(process.binding('natives'))).apply(compiler);
-	}
+    apply(compiler) {
+        new ExternalsPlugin('commonjs', Object.keys(process.binding('natives'))).apply(compiler);
+    }
 }
 
 export = NodeTargetPlugin;

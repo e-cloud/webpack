@@ -5,12 +5,12 @@
 import ModuleDependency = require('./ModuleDependency');
 
 class ContextElementDependency extends ModuleDependency {
-	constructor(request, userRequest) {
-		super(request);
-		if (userRequest) {
-			this.userRequest = userRequest;
-		}
-	}
+    constructor(request, userRequest) {
+        super(request);
+        if (userRequest) {
+            this.userRequest = userRequest;
+        }
+    }
 }
 
 export = ContextElementDependency;

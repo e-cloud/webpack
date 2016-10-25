@@ -3,16 +3,16 @@
  Author Tobias Koppers @sokra
  */
 class ChunkRenderError extends Error {
-	constructor(chunk, file, error) {
-		super();
-		Error.captureStackTrace(this, ChunkRenderError);
-		this.name = 'ChunkRenderError';
-		this.error = error;
-		this.message = error.message;
-		this.details = error.stack;
-		this.file = file;
-		this.chunk = chunk;
-	}
+    constructor(chunk, file, error) {
+        super();
+        Error.captureStackTrace(this, ChunkRenderError);
+        this.name = 'ChunkRenderError';
+        this.error = error;
+        this.message = error.message;
+        this.details = error.stack;
+        this.file = file;
+        this.chunk = chunk;
+    }
 }
 
 export = ChunkRenderError;

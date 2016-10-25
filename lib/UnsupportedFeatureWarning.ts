@@ -3,13 +3,13 @@
  Author Tobias Koppers @sokra
  */
 class UnsupportedFeatureWarning extends Error {
-	constructor(module, message) {
-		super();
-		Error.captureStackTrace(this, UnsupportedFeatureWarning);
-		this.name = 'UnsupportedFeatureWarning';
-		this.message = message;
-		this.origin = this.module = module;
-	}
+    constructor(module, message) {
+        super();
+        Error.captureStackTrace(this, UnsupportedFeatureWarning);
+        this.name = 'UnsupportedFeatureWarning';
+        this.message = message;
+        this.origin = this.module = module;
+    }
 }
 
 export = UnsupportedFeatureWarning;

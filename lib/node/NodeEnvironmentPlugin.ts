@@ -9,21 +9,21 @@ import NodeJsInputFileSystem = require('enhanced-resolve/lib/NodeJsInputFileSyst
 import CachedInputFileSystem = require('enhanced-resolve/lib/CachedInputFileSystem');
 
 class NodeEnvironmentPlugin {
-	apply(compiler) {
-		compiler.inputFileSystem = new NodeJsInputFileSystem();
-		const inputFileSystem = compiler.inputFileSystem = new CachedInputFileSystem(compiler.inputFileSystem, 60000);
-		compiler.resolvers.normal.fileSystem = compiler.inputFileSystem;
-		compiler.resolvers.context.fileSystem = compiler.inputFileSystem;
-		compiler.resolvers.loader.fileSystem = compiler.inputFileSystem;
-		compiler.outputFileSystem = new NodeOutputFileSystem();
-		compiler.watchFileSystem = new NodeWatchFileSystem(compiler.inputFileSystem);
-		compiler.plugin('before-run', function (compiler, callback) {
-			if (compiler.inputFileSystem === inputFileSystem) {
-				inputFileSystem.purge();
-			}
-			callback();
-		});
-	}
+    apply(compiler) {
+        compiler.inputFileSystem = new NodeJsInputFileSystem();
+        const inputFileSystem = compiler.inputFileSystem = new CachedInputFileSystem(compiler.inputFileSystem, 60000);
+        compiler.resolvers.normal.fileSystem = compiler.inputFileSystem;
+        compiler.resolvers.context.fileSystem = compiler.inputFileSystem;
+        compiler.resolvers.loader.fileSystem = compiler.inputFileSystem;
+        compiler.outputFileSystem = new NodeOutputFileSystem();
+        compiler.watchFileSystem = new NodeWatchFileSystem(compiler.inputFileSystem);
+        compiler.plugin('before-run', function (compiler, callback) {
+            if (compiler.inputFileSystem === inputFileSystem) {
+                inputFileSystem.purge();
+            }
+            callback();
+        });
+    }
 }
 
 export = NodeEnvironmentPlugin;

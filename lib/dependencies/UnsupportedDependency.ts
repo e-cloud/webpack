@@ -7,18 +7,18 @@ import NullDependency = require('./NullDependency');
 import DepBlockHelpers = require('./DepBlockHelpers');
 
 class UnsupportedDependency extends NullDependency {
-	constructor(request, range) {
-		super();
-		this.request = request;
-		this.range = range;
-	}
+    constructor(request, range) {
+        super();
+        this.request = request;
+        this.range = range;
+    }
 
-	static Template() {
-	}
+    static Template() {
+    }
 }
 
 export = UnsupportedDependency;
 
 UnsupportedDependency.Template.prototype.apply = function (dep, source, outputOptions, requestShortener) {
-	source.replace(dep.range[0], dep.range[1], require('./WebpackMissingModule').module(dep.request));
+    source.replace(dep.range[0], dep.range[1], require('./WebpackMissingModule').module(dep.request));
 };

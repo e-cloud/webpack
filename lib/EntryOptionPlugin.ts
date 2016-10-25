@@ -7,28 +7,28 @@ import SingleEntryPlugin = require('./SingleEntryPlugin');
 import MultiEntryPlugin = require('./MultiEntryPlugin');
 
 class EntryOptionPlugin {
-	apply(compiler) {
-		compiler.plugin('entry-option', function (context, entry) {
-			function itemToPlugin(item, name) {
-				if (Array.isArray(item)) {
-					return new MultiEntryPlugin(context, item, name);
-				}
-				else {
-					return new SingleEntryPlugin(context, item, name);
-				}
-			}
+    apply(compiler) {
+        compiler.plugin('entry-option', function (context, entry) {
+            function itemToPlugin(item, name) {
+                if (Array.isArray(item)) {
+                    return new MultiEntryPlugin(context, item, name);
+                }
+                else {
+                    return new SingleEntryPlugin(context, item, name);
+                }
+            }
 
-			if (typeof entry === 'string' || Array.isArray(entry)) {
-				compiler.apply(itemToPlugin(entry, 'main'));
-			}
-			else if (typeof entry === 'object') {
-				Object.keys(entry).forEach(function (name) {
-					compiler.apply(itemToPlugin(entry[name], name));
-				});
-			}
-			return true;
-		});
-	}
+            if (typeof entry === 'string' || Array.isArray(entry)) {
+                compiler.apply(itemToPlugin(entry, 'main'));
+            }
+            else if (typeof entry === 'object') {
+                Object.keys(entry).forEach(function (name) {
+                    compiler.apply(itemToPlugin(entry[name], name));
+                });
+            }
+            return true;
+        });
+    }
 }
 
 export = EntryOptionPlugin;

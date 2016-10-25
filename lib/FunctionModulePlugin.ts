@@ -7,17 +7,17 @@ import FunctionModuleTemplatePlugin = require('./FunctionModuleTemplatePlugin');
 import RequestShortener = require('./RequestShortener');
 
 class FunctionModulePlugin {
-	constructor(options, requestShortener) {
-		this.options = options;
-		this.requestShortener = requestShortener;
-	}
+    constructor(options, requestShortener) {
+        this.options = options;
+        this.requestShortener = requestShortener;
+    }
 
-	apply(compiler) {
-		compiler.plugin('compilation', function (compilation) {
-			compilation.moduleTemplate.requestShortener = this.requestShortener || new RequestShortener(compiler.context);
-			compilation.moduleTemplate.apply(new FunctionModuleTemplatePlugin());
-		}.bind(this));
-	}
+    apply(compiler) {
+        compiler.plugin('compilation', function (compilation) {
+            compilation.moduleTemplate.requestShortener = this.requestShortener || new RequestShortener(compiler.context);
+            compilation.moduleTemplate.apply(new FunctionModuleTemplatePlugin());
+        }.bind(this));
+    }
 }
 
 export = FunctionModulePlugin;

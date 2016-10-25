@@ -5,64 +5,64 @@
 import path = require('path');
 
 class RequestShortener {
-	constructor(directory) {
-		directory = directory.replace(/\\/g, '/');
-		let parentDirectory = path.dirname(directory);
-		if (/[\/\\]$/.test(directory)) {
-			directory = directory.substr(0, directory.length - 1);
-		}
-		if (directory) {
-			var currentDirectoryRegExp = directory.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-			currentDirectoryRegExp = new RegExp(`^${currentDirectoryRegExp}|(!)${currentDirectoryRegExp}`, 'g');
+    constructor(directory) {
+        directory = directory.replace(/\\/g, '/');
+        let parentDirectory = path.dirname(directory);
+        if (/[\/\\]$/.test(directory)) {
+            directory = directory.substr(0, directory.length - 1);
+        }
+        if (directory) {
+            var currentDirectoryRegExp = directory.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+            currentDirectoryRegExp = new RegExp(`^${currentDirectoryRegExp}|(!)${currentDirectoryRegExp}`, 'g');
 
-			this.currentDirectoryRegExp = currentDirectoryRegExp;
-		}
+            this.currentDirectoryRegExp = currentDirectoryRegExp;
+        }
 
-		if (/[\/\\]$/.test(parentDirectory)) {
-			parentDirectory = parentDirectory.substr(0, parentDirectory.length - 1);
-		}
-		if (parentDirectory && parentDirectory !== directory) {
-			let parentDirectoryRegExp = parentDirectory.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-			parentDirectoryRegExp = new RegExp(`^${parentDirectoryRegExp}|(!)${parentDirectoryRegExp}`, 'g');
+        if (/[\/\\]$/.test(parentDirectory)) {
+            parentDirectory = parentDirectory.substr(0, parentDirectory.length - 1);
+        }
+        if (parentDirectory && parentDirectory !== directory) {
+            let parentDirectoryRegExp = parentDirectory.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+            parentDirectoryRegExp = new RegExp(`^${parentDirectoryRegExp}|(!)${parentDirectoryRegExp}`, 'g');
 
-			this.parentDirectoryRegExp = parentDirectoryRegExp;
-		}
+            this.parentDirectoryRegExp = parentDirectoryRegExp;
+        }
 
-		if (__dirname.length >= 2) {
-			const buildins = path.join(__dirname, '..').replace(/\\/g, '/');
-			const buildinsAsModule = currentDirectoryRegExp && currentDirectoryRegExp.test(buildins);
-			let buildinsRegExp = buildins.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-			buildinsRegExp = new RegExp(`^${buildinsRegExp}|(!)${buildinsRegExp}`, 'g');
+        if (__dirname.length >= 2) {
+            const buildins = path.join(__dirname, '..').replace(/\\/g, '/');
+            const buildinsAsModule = currentDirectoryRegExp && currentDirectoryRegExp.test(buildins);
+            let buildinsRegExp = buildins.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+            buildinsRegExp = new RegExp(`^${buildinsRegExp}|(!)${buildinsRegExp}`, 'g');
 
-			this.buildinsAsModule = buildinsAsModule;
-			this.buildinsRegExp = buildinsRegExp;
-		}
+            this.buildinsAsModule = buildinsAsModule;
+            this.buildinsRegExp = buildinsRegExp;
+        }
 
-		this.nodeModulesRegExp = /\/node_modules\//g;
-		this.indexJsRegExp = /\/index.js(!|\?|\(query\))/g;
-	}
+        this.nodeModulesRegExp = /\/node_modules\//g;
+        this.indexJsRegExp = /\/index.js(!|\?|\(query\))/g;
+    }
 
-	shorten(request) {
-		if (!request) {
-			return request;
-		}
-		request = request.replace(/\\/g, '/');
-		if (this.buildinsAsModule && this.buildinsRegExp) {
-			request = request.replace(this.buildinsRegExp, '!(webpack)');
-		}
-		if (this.currentDirectoryRegExp) {
-			request = request.replace(this.currentDirectoryRegExp, '!.');
-		}
-		if (this.parentDirectoryRegExp) {
-			request = request.replace(this.parentDirectoryRegExp, '!..');
-		}
-		if (!this.buildinsAsModule && this.buildinsRegExp) {
-			request = request.replace(this.buildinsRegExp, '!(webpack)');
-		}
-		request = request.replace(this.nodeModulesRegExp, '/~/');
-		request = request.replace(this.indexJsRegExp, '$1');
-		return request.replace(/^!|!$/, '');
-	}
+    shorten(request) {
+        if (!request) {
+            return request;
+        }
+        request = request.replace(/\\/g, '/');
+        if (this.buildinsAsModule && this.buildinsRegExp) {
+            request = request.replace(this.buildinsRegExp, '!(webpack)');
+        }
+        if (this.currentDirectoryRegExp) {
+            request = request.replace(this.currentDirectoryRegExp, '!.');
+        }
+        if (this.parentDirectoryRegExp) {
+            request = request.replace(this.parentDirectoryRegExp, '!..');
+        }
+        if (!this.buildinsAsModule && this.buildinsRegExp) {
+            request = request.replace(this.buildinsRegExp, '!(webpack)');
+        }
+        request = request.replace(this.nodeModulesRegExp, '/~/');
+        request = request.replace(this.indexJsRegExp, '$1');
+        return request.replace(/^!|!$/, '');
+    }
 }
 
 export = RequestShortener;

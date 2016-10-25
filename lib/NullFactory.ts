@@ -3,9 +3,9 @@
  Author Tobias Koppers @sokra
  */
 class NullFactory {
-	create(data, callback) {
-		return callback();
-	}
+    create(data, callback) {
+        return callback();
+    }
 }
 
 export = NullFactory;

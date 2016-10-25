@@ -5,21 +5,21 @@
 import NullDependency = require('./NullDependency');
 
 class HarmonyExportHeaderDependency extends NullDependency {
-	constructor(range, rangeStatement) {
-		super();
-		this.range = range;
-		this.rangeStatement = rangeStatement;
-	}
+    constructor(range, rangeStatement) {
+        super();
+        this.range = range;
+        this.rangeStatement = rangeStatement;
+    }
 
-	static Template() {
-	}
+    static Template() {
+    }
 }
 
 export = HarmonyExportHeaderDependency;
 HarmonyExportHeaderDependency.prototype.type = 'harmony export header';
 
 HarmonyExportHeaderDependency.Template.prototype.apply = function (dep, source) {
-	let content;
-	content = '';
-	source.replace(dep.rangeStatement[0], dep.range ? dep.range[0] - 1 : dep.rangeStatement[1] - 1, content);
+    let content;
+    content = '';
+    source.replace(dep.rangeStatement[0], dep.range ? dep.range[0] - 1 : dep.rangeStatement[1] - 1, content);
 };

@@ -3,12 +3,12 @@
  Author Tobias Koppers @sokra
  */
 class CriticalDependencyWarning extends Error {
-	constructor(message) {
-		super();
-		Error.captureStackTrace(this, CriticalDependencyWarning);
-		this.name = 'CriticalDependencyWarning';
-		this.message = `Critical dependency: ${message}`;
-	}
+    constructor(message) {
+        super();
+        Error.captureStackTrace(this, CriticalDependencyWarning);
+        this.name = 'CriticalDependencyWarning';
+        this.message = `Critical dependency: ${message}`;
+    }
 }
 
 export = CriticalDependencyWarning;

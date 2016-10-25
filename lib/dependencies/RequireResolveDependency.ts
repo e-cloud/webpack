@@ -5,10 +5,10 @@
 import ModuleDependency = require('./ModuleDependency');
 
 class RequireResolveDependency extends ModuleDependency {
-	constructor(request, range) {
-		super(request);
-		this.range = range;
-	}
+    constructor(request, range) {
+        super(request);
+        this.range = range;
+    }
 }
 
 export = RequireResolveDependency;

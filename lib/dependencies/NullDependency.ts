@@ -5,13 +5,13 @@
 import Dependency = require('../Dependency');
 
 class NullDependency extends Dependency {
-	constructor() {
-		super();
-	}
+    constructor() {
+        super();
+    }
 
-	isEqualResource() {
-		return false;
-	}
+    isEqualResource() {
+        return false;
+    }
 }
 
 export = NullDependency;

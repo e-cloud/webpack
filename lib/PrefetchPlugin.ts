@@ -5,26 +5,26 @@
 import PrefetchDependency = require('./dependencies/PrefetchDependency');
 
 class PrefetchPlugin {
-	constructor(context, request) {
-		if (!request) {
-			this.request = context;
-		}
-		else {
-			this.context = context;
-			this.request = request;
-		}
-	}
+    constructor(context, request) {
+        if (!request) {
+            this.request = context;
+        }
+        else {
+            this.context = context;
+            this.request = request;
+        }
+    }
 
-	apply(compiler) {
-		compiler.plugin('compilation', function (compilation, params) {
-			const normalModuleFactory = params.normalModuleFactory;
+    apply(compiler) {
+        compiler.plugin('compilation', function (compilation, params) {
+            const normalModuleFactory = params.normalModuleFactory;
 
-			compilation.dependencyFactories.set(PrefetchDependency, normalModuleFactory);
-		});
-		compiler.plugin('make', function (compilation, callback) {
-			compilation.prefetch(this.context || compiler.context, new PrefetchDependency(this.request), callback);
-		}.bind(this));
-	}
+            compilation.dependencyFactories.set(PrefetchDependency, normalModuleFactory);
+        });
+        compiler.plugin('make', function (compilation, callback) {
+            compilation.prefetch(this.context || compiler.context, new PrefetchDependency(this.request), callback);
+        }.bind(this));
+    }
 }
 
 export = PrefetchPlugin;

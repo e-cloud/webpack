@@ -3,20 +3,20 @@
  Author Tobias Koppers @sokra
  */
 class LocalModule {
-	constructor(module, name, idx) {
-		this.module = module;
-		this.name = name;
-		this.idx = idx;
-		this.used = false;
-	}
+    constructor(module, name, idx) {
+        this.module = module;
+        this.name = name;
+        this.idx = idx;
+        this.used = false;
+    }
 
-	flagUsed() {
-		this.used = true;
-	}
+    flagUsed() {
+        this.used = true;
+    }
 
-	variableName() {
-		return `__WEBPACK_LOCAL_MODULE_${this.idx}__`;
-	}
+    variableName() {
+        return `__WEBPACK_LOCAL_MODULE_${this.idx}__`;
+    }
 }
 
 export = LocalModule;

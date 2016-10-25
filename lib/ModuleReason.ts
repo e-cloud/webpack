@@ -3,7 +3,7 @@
  Author Tobias Koppers @sokra
  */
 function ModuleReason(module, dependency) {
-	this.module = module;
-	this.dependency = dependency;
+    this.module = module;
+    this.dependency = dependency;
 }
 export = ModuleReason;

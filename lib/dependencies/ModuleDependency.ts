@@ -5,18 +5,18 @@
 import Dependency = require('../Dependency');
 
 class ModuleDependency extends Dependency {
-	constructor(request) {
-		super();
-		this.request = request;
-		this.userRequest = request;
-	}
+    constructor(request) {
+        super();
+        this.request = request;
+        this.userRequest = request;
+    }
 
-	isEqualResource(other) {
-		if (!(other instanceof ModuleDependency)) {
-			return false;
-		}
-		return this.request === other.request;
-	}
+    isEqualResource(other) {
+        if (!(other instanceof ModuleDependency)) {
+            return false;
+        }
+        return this.request === other.request;
+    }
 }
 
 export = ModuleDependency;

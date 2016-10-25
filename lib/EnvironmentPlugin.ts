@@ -5,27 +5,27 @@
 import DefinePlugin = require('./DefinePlugin');
 
 class EnvironmentPlugin {
-	constructor(keys) {
-		this.keys = Array.isArray(keys) ? keys : Array.prototype.slice.call(arguments);
-	}
+    constructor(keys) {
+        this.keys = Array.isArray(keys) ? keys : Array.prototype.slice.call(arguments);
+    }
 
-	apply(compiler) {
-		compiler.apply(new DefinePlugin(this.keys.reduce(function (definitions, key) {
-			const value = process.env[key];
+    apply(compiler) {
+        compiler.apply(new DefinePlugin(this.keys.reduce(function (definitions, key) {
+            const value = process.env[key];
 
-			if (value === undefined) {
-				compiler.plugin('this-compilation', function (compilation) {
-					const error = new Error(`${key} environment variable is undefined.`);
-					error.name = 'EnvVariableNotDefinedError';
-					compilation.warnings.push(error);
-				});
-			}
+            if (value === undefined) {
+                compiler.plugin('this-compilation', function (compilation) {
+                    const error = new Error(`${key} environment variable is undefined.`);
+                    error.name = 'EnvVariableNotDefinedError';
+                    compilation.warnings.push(error);
+                });
+            }
 
-			definitions[`process.env.${key}`] = value ? JSON.stringify(value) : 'undefined';
+            definitions[`process.env.${key}`] = value ? JSON.stringify(value) : 'undefined';
 
-			return definitions;
-		}, {})));
-	}
+            return definitions;
+        }, {})));
+    }
 }
 
 export = EnvironmentPlugin;

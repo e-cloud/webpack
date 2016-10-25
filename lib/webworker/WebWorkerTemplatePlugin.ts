@@ -8,13 +8,13 @@ import WebWorkerChunkTemplatePlugin = require('./WebWorkerChunkTemplatePlugin');
 import WebWorkerHotUpdateChunkTemplatePlugin = require('./WebWorkerHotUpdateChunkTemplatePlugin');
 
 class WebWorkerTemplatePlugin {
-	apply(compiler) {
-		compiler.plugin('this-compilation', function (compilation) {
-			compilation.mainTemplate.apply(new WebWorkerMainTemplatePlugin());
-			compilation.chunkTemplate.apply(new WebWorkerChunkTemplatePlugin());
-			compilation.hotUpdateChunkTemplate.apply(new WebWorkerHotUpdateChunkTemplatePlugin());
-		});
-	}
+    apply(compiler) {
+        compiler.plugin('this-compilation', function (compilation) {
+            compilation.mainTemplate.apply(new WebWorkerMainTemplatePlugin());
+            compilation.chunkTemplate.apply(new WebWorkerChunkTemplatePlugin());
+            compilation.hotUpdateChunkTemplate.apply(new WebWorkerHotUpdateChunkTemplatePlugin());
+        });
+    }
 }
 
 export = WebWorkerTemplatePlugin;

@@ -5,12 +5,12 @@
 import Dependency = require('../Dependency');
 
 class DllEntryDependency extends Dependency {
-	constructor(dependencies, name, type) {
-		super();
-		this.dependencies = dependencies;
-		this.name = name;
-		this.type = type;
-	}
+    constructor(dependencies, name, type) {
+        super();
+        this.dependencies = dependencies;
+        this.name = name;
+        this.type = type;
+    }
 }
 
 export = DllEntryDependency;

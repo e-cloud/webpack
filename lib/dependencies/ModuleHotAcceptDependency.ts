@@ -5,11 +5,11 @@
 import ModuleDependency = require('./ModuleDependency');
 
 class ModuleHotAcceptDependency extends ModuleDependency {
-	constructor(request, range) {
-		super(request);
-		this.range = range;
-		this.weak = true;
-	}
+    constructor(request, range) {
+        super(request);
+        this.range = range;
+        this.weak = true;
+    }
 }
 
 export = ModuleHotAcceptDependency;

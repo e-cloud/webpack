@@ -8,17 +8,17 @@ import NodeChunkTemplatePlugin = require('./NodeChunkTemplatePlugin');
 import NodeHotUpdateChunkTemplatePlugin = require('./NodeHotUpdateChunkTemplatePlugin');
 
 class NodeTemplatePlugin {
-	constructor(options = {}) {
-		this.asyncChunkLoading = options.asyncChunkLoading;
-	}
+    constructor(options = {}) {
+        this.asyncChunkLoading = options.asyncChunkLoading;
+    }
 
-	apply(compiler) {
-		compiler.plugin('this-compilation', function (compilation) {
-			compilation.mainTemplate.apply(new NodeMainTemplatePlugin(this.asyncChunkLoading));
-			compilation.chunkTemplate.apply(new NodeChunkTemplatePlugin());
-			compilation.hotUpdateChunkTemplate.apply(new NodeHotUpdateChunkTemplatePlugin());
-		}.bind(this));
-	}
+    apply(compiler) {
+        compiler.plugin('this-compilation', function (compilation) {
+            compilation.mainTemplate.apply(new NodeMainTemplatePlugin(this.asyncChunkLoading));
+            compilation.chunkTemplate.apply(new NodeChunkTemplatePlugin());
+            compilation.hotUpdateChunkTemplate.apply(new NodeHotUpdateChunkTemplatePlugin());
+        }.bind(this));
+    }
 }
 
 export = NodeTemplatePlugin;

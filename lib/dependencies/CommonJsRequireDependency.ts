@@ -5,10 +5,10 @@
 import ModuleDependency = require('./ModuleDependency');
 
 class CommonJsRequireDependency extends ModuleDependency {
-	constructor(request, range) {
-		super(request);
-		this.range = range;
-	}
+    constructor(request, range) {
+        super(request);
+        this.range = range;
+    }
 }
 
 export = CommonJsRequireDependency;

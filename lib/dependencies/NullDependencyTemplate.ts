@@ -3,8 +3,8 @@
  Author Tobias Koppers @sokra
  */
 class NullDependencyTemplate {
-	apply() {
-	}
+    apply() {
+    }
 }
 
 export = NullDependencyTemplate;

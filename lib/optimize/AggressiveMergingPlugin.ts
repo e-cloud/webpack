@@ -3,128 +3,128 @@
  Author Tobias Koppers @sokra
  */
 class AggressiveMergingPlugin {
-	constructor(options) {
-		if (options !== undefined && typeof options !== 'object' || Array.isArray(options)) {
-			throw new Error('Argument should be an options object. To use defaults, pass in nothing.\nFor more info on options, see https://webpack.github.io/docs/list-of-plugins.html');
-		}
-		this.options = options || {};
-	}
+    constructor(options) {
+        if (options !== undefined && typeof options !== 'object' || Array.isArray(options)) {
+            throw new Error('Argument should be an options object. To use defaults, pass in nothing.\nFor more info on options, see https://webpack.github.io/docs/list-of-plugins.html');
+        }
+        this.options = options || {};
+    }
 
-	apply(compiler) {
-		const options = this.options;
-		const minSizeReduce = options.minSizeReduce || 1.5;
+    apply(compiler) {
+        const options = this.options;
+        const minSizeReduce = options.minSizeReduce || 1.5;
 
-		function getParentsWeight(chunk) {
-			return chunk.parents.map(function (p) {
-				return p.isInitial() ? options.entryChunkMultiplicator || 10 : 1;
-			}).reduce(function (a, b) {
-				return a + b;
-			}, 0);
-		}
+        function getParentsWeight(chunk) {
+            return chunk.parents.map(function (p) {
+                return p.isInitial() ? options.entryChunkMultiplicator || 10 : 1;
+            }).reduce(function (a, b) {
+                return a + b;
+            }, 0);
+        }
 
-		compiler.plugin('compilation', function (compilation) {
-			compilation.plugin('optimize-chunks-advanced', function (chunks) {
-				let combinations = [];
-				chunks.forEach(function (a, idx) {
-					if (a.isInitial()) {
-						return;
-					}
-					for (let i = 0; i < idx; i++) {
-						const b = chunks[i];
-						if (b.isInitial()) {
-							continue;
-						}
-						combinations.push([b, a]);
-					}
-				});
+        compiler.plugin('compilation', function (compilation) {
+            compilation.plugin('optimize-chunks-advanced', function (chunks) {
+                let combinations = [];
+                chunks.forEach(function (a, idx) {
+                    if (a.isInitial()) {
+                        return;
+                    }
+                    for (let i = 0; i < idx; i++) {
+                        const b = chunks[i];
+                        if (b.isInitial()) {
+                            continue;
+                        }
+                        combinations.push([b, a]);
+                    }
+                });
 
-				combinations.forEach(function (pair) {
-					const a = pair[0].size({
-						chunkOverhead: 0
-					});
-					const b = pair[1].size({
-						chunkOverhead: 0
-					});
-					const ab = pair[0].integratedSize(pair[1], {
-						chunkOverhead: 0
-					});
-					pair.push({
-						a,
-						b,
-						ab
-					});
-					let newSize;
-					if (ab === false) {
-						pair.unshift(false);
-					}
-					else if (options.moveToParents) {
-						const aOnly = ab - b;
-						const bOnly = ab - a;
-						const common = a + b - ab;
-						newSize = common + getParentsWeight(pair[0]) * aOnly + getParentsWeight(pair[1]) * bOnly;
-						pair.push({
-							aOnly,
-							bOnly,
-							common,
-							newSize
-						});
-					}
-					else {
-						newSize = ab;
-					}
+                combinations.forEach(function (pair) {
+                    const a = pair[0].size({
+                        chunkOverhead: 0
+                    });
+                    const b = pair[1].size({
+                        chunkOverhead: 0
+                    });
+                    const ab = pair[0].integratedSize(pair[1], {
+                        chunkOverhead: 0
+                    });
+                    pair.push({
+                        a,
+                        b,
+                        ab
+                    });
+                    let newSize;
+                    if (ab === false) {
+                        pair.unshift(false);
+                    }
+                    else if (options.moveToParents) {
+                        const aOnly = ab - b;
+                        const bOnly = ab - a;
+                        const common = a + b - ab;
+                        newSize = common + getParentsWeight(pair[0]) * aOnly + getParentsWeight(pair[1]) * bOnly;
+                        pair.push({
+                            aOnly,
+                            bOnly,
+                            common,
+                            newSize
+                        });
+                    }
+                    else {
+                        newSize = ab;
+                    }
 
-					pair.unshift((a + b) / newSize);
-				});
-				combinations = combinations.filter(function (pair) {
-					return pair[0] !== false;
-				});
-				combinations.sort(function (a, b) {
-					return b[0] - a[0];
-				});
+                    pair.unshift((a + b) / newSize);
+                });
+                combinations = combinations.filter(function (pair) {
+                    return pair[0] !== false;
+                });
+                combinations.sort(function (a, b) {
+                    return b[0] - a[0];
+                });
 
-				const pair = combinations[0];
+                const pair = combinations[0];
 
-				if (!pair) {
-					return;
-				}
-				if (pair[0] < minSizeReduce) {
-					return;
-				}
+                if (!pair) {
+                    return;
+                }
+                if (pair[0] < minSizeReduce) {
+                    return;
+                }
 
-				if (options.moveToParents) {
-					const commonModules = pair[1].modules.filter(function (m) {
-						return pair[2].modules.includes(m);
-					});
-					const aOnlyModules = pair[1].modules.filter(function (m) {
-						return !commonModules.includes(m);
-					});
-					const bOnlyModules = pair[2].modules.filter(function (m) {
-						return !commonModules.includes(m);
-					});
-					aOnlyModules.forEach(function (m) {
-						pair[1].removeModule(m);
-						m.removeChunk(pair[1]);
-						pair[1].parents.forEach(function (c) {
-							c.addModule(m);
-							m.addChunk(c);
-						});
-					});
-					bOnlyModules.forEach(function (m) {
-						pair[2].removeModule(m);
-						m.removeChunk(pair[2]);
-						pair[2].parents.forEach(function (c) {
-							c.addModule(m);
-							m.addChunk(c);
-						});
-					});
-				}
-				if (pair[1].integrate(pair[2], 'aggressive-merge')) {
-					chunks.splice(chunks.indexOf(pair[2]), 1);
-					return true;
-				}
-			});
-		});
-	}
+                if (options.moveToParents) {
+                    const commonModules = pair[1].modules.filter(function (m) {
+                        return pair[2].modules.includes(m);
+                    });
+                    const aOnlyModules = pair[1].modules.filter(function (m) {
+                        return !commonModules.includes(m);
+                    });
+                    const bOnlyModules = pair[2].modules.filter(function (m) {
+                        return !commonModules.includes(m);
+                    });
+                    aOnlyModules.forEach(function (m) {
+                        pair[1].removeModule(m);
+                        m.removeChunk(pair[1]);
+                        pair[1].parents.forEach(function (c) {
+                            c.addModule(m);
+                            m.addChunk(c);
+                        });
+                    });
+                    bOnlyModules.forEach(function (m) {
+                        pair[2].removeModule(m);
+                        m.removeChunk(pair[2]);
+                        pair[2].parents.forEach(function (c) {
+                            c.addModule(m);
+                            m.addChunk(c);
+                        });
+                    });
+                }
+                if (pair[1].integrate(pair[2], 'aggressive-merge')) {
+                    chunks.splice(chunks.indexOf(pair[2]), 1);
+                    return true;
+                }
+            });
+        });
+    }
 }
 
 export = AggressiveMergingPlugin;

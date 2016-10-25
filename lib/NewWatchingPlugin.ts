@@ -3,11 +3,11 @@
  Author Tobias Koppers @sokra
  */
 class NewWatchingPlugin {
-	apply(compiler) {
-		compiler.plugin('compilation', function (compilation) {
-			compilation.warnings.push(new Error('The \'NewWatchingPlugin\' is no longer necessary (now default)'));
-		});
-	}
+    apply(compiler) {
+        compiler.plugin('compilation', function (compilation) {
+            compilation.warnings.push(new Error('The \'NewWatchingPlugin\' is no longer necessary (now default)'));
+        });
+    }
 }
 
 export = NewWatchingPlugin;

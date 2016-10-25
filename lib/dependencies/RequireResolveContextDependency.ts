@@ -7,17 +7,17 @@ import ContextDependency = require('./ContextDependency');
 import CriticalDependencyWarning = require('./CriticalDependencyWarning');
 
 class RequireResolveContextDependency extends ContextDependency {
-	constructor(request, recursive, regExp, range, valueRange) {
-		super(request, recursive, regExp);
-		this.range = range;
-		this.valueRange = valueRange;
-	}
+    constructor(request, recursive, regExp, range, valueRange) {
+        super(request, recursive, regExp);
+        this.range = range;
+        this.valueRange = valueRange;
+    }
 
-	getWarnings() {
-		if (this.critical) {
-			return [new CriticalDependencyWarning(this.critical)];
-		}
-	}
+    getWarnings() {
+        if (this.critical) {
+            return [new CriticalDependencyWarning(this.critical)];
+        }
+    }
 }
 
 export = RequireResolveContextDependency;

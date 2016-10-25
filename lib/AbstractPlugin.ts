@@ -3,25 +3,25 @@
  Author Tobias Koppers @sokra
  */
 class AbstractPlugin {
-	constructor(plugins) {
-		this._plugins = plugins || {};
-	}
+    constructor(plugins) {
+        this._plugins = plugins || {};
+    }
 
-	static create(plugins) {
-		class Plugin extends AbstractPlugin {
-			constructor() {
-				super(plugins);
-			}
-		}
+    static create(plugins) {
+        class Plugin extends AbstractPlugin {
+            constructor() {
+                super(plugins);
+            }
+        }
 
-		return Plugin;
-	}
+        return Plugin;
+    }
 
-	apply(object) {
-		for (const name in this._plugins) {
-			object.plugin(name, this._plugins[name]);
-		}
-	}
+    apply(object) {
+        for (const name in this._plugins) {
+            object.plugin(name, this._plugins[name]);
+        }
+    }
 }
 
 export = AbstractPlugin;

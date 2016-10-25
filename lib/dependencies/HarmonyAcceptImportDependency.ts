@@ -5,12 +5,12 @@
 import HarmonyImportDependency = require('./HarmonyImportDependency');
 
 class HarmonyAcceptImportDependency extends HarmonyImportDependency {
-	constructor(request, importedVar, range) {
-		super(request, importedVar, range);
-	}
+    constructor(request, importedVar, range) {
+        super(request, importedVar, range);
+    }
 
-	static Template() {
-	}
+    static Template() {
+    }
 }
 
 export = HarmonyAcceptImportDependency;

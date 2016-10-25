@@ -8,43 +8,43 @@ import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import NullFactory = require('./NullFactory');
 
 class ExtendedAPIPlugin {
-	apply(compiler) {
-		compiler.plugin('compilation', function (compilation, params) {
-			compilation.dependencyFactories.set(ConstDependency, new NullFactory());
-			compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
-			compilation.mainTemplate.plugin('require-extensions', function (source, chunk, hash) {
-				const buf = [source];
-				buf.push('');
-				buf.push('// __webpack_hash__');
-				buf.push(`${this.requireFn}.h = ${JSON.stringify(hash)};`);
-				return this.asString(buf);
-			});
-			compilation.mainTemplate.plugin('global-hash', function () {
-				return true;
-			});
+    apply(compiler) {
+        compiler.plugin('compilation', function (compilation, params) {
+            compilation.dependencyFactories.set(ConstDependency, new NullFactory());
+            compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
+            compilation.mainTemplate.plugin('require-extensions', function (source, chunk, hash) {
+                const buf = [source];
+                buf.push('');
+                buf.push('// __webpack_hash__');
+                buf.push(`${this.requireFn}.h = ${JSON.stringify(hash)};`);
+                return this.asString(buf);
+            });
+            compilation.mainTemplate.plugin('global-hash', function () {
+                return true;
+            });
 
-			params.normalModuleFactory.plugin('parser', function (parser, parserOptions) {
-				Object.keys(REPLACEMENTS).forEach(function (key) {
-					parser.plugin(`expression ${key}`, function (expr) {
-						const dep = new ConstDependency(REPLACEMENTS[key], expr.range);
-						dep.loc = expr.loc;
-						this.state.current.addDependency(dep);
-						return true;
-					});
-					parser.plugin(`evaluate typeof ${key}`, function (expr) {
-						return new BasicEvaluatedExpression().setString(REPLACEMENT_TYPES[key]).setRange(expr.range);
-					});
-				});
-			});
-		});
-	}
+            params.normalModuleFactory.plugin('parser', function (parser, parserOptions) {
+                Object.keys(REPLACEMENTS).forEach(function (key) {
+                    parser.plugin(`expression ${key}`, function (expr) {
+                        const dep = new ConstDependency(REPLACEMENTS[key], expr.range);
+                        dep.loc = expr.loc;
+                        this.state.current.addDependency(dep);
+                        return true;
+                    });
+                    parser.plugin(`evaluate typeof ${key}`, function (expr) {
+                        return new BasicEvaluatedExpression().setString(REPLACEMENT_TYPES[key]).setRange(expr.range);
+                    });
+                });
+            });
+        });
+    }
 }
 
 export = ExtendedAPIPlugin;
 
 const REPLACEMENTS = {
-	__webpack_hash__: '__webpack_require__.h' // eslint-disable-line camelcase
+    __webpack_hash__: '__webpack_require__.h' // eslint-disable-line camelcase
 };
 const REPLACEMENT_TYPES = {
-	__webpack_hash__: 'string' // eslint-disable-line camelcase
+    __webpack_hash__: 'string' // eslint-disable-line camelcase
 };

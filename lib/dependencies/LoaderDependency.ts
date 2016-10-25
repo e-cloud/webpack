@@ -5,9 +5,9 @@
 import ModuleDependency = require('./ModuleDependency');
 
 class LoaderDependency extends ModuleDependency {
-	constructor(request) {
-		super(request);
-	}
+    constructor(request) {
+        super(request);
+    }
 }
 
 export = LoaderDependency;
