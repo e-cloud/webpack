@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import Compiler = require('./Compiler');
-
 import WebEnvironmentPlugin = require('./web/WebEnvironmentPlugin');
 import WebpackOptionsApply = require('./WebpackOptionsApply');
 import WebpackOptionsDefaulter = require('./WebpackOptionsDefaulter');

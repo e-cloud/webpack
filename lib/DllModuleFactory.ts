@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import Tapable = require('tapable');
-
 import DllModule = require('./DllModule');
 
 class DllModuleFactory extends Tapable {

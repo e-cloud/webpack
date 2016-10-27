@@ -3,12 +3,12 @@
  Author Tobias Koppers @sokra
  */
 import fs = require('fs');
-
 import path = require('path');
 import mkdirp = require('mkdirp');
 
-function NodeOutputFileSystem() {
+class NodeOutputFileSystem {
 }
+
 export = NodeOutputFileSystem;
 
 NodeOutputFileSystem.prototype.mkdirp = mkdirp;

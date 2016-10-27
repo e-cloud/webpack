@@ -3,13 +3,12 @@
  Author Tobias Koppers @sokra
  */
 import SingleEntryPlugin = require('./SingleEntryPlugin');
-
 import MultiEntryPlugin = require('./MultiEntryPlugin');
 
 class EntryOptionPlugin {
     apply(compiler) {
-        compiler.plugin('entry-option', function (context, entry) {
-            function itemToPlugin(item, name) {
+        compiler.plugin('entry-option', (context, entry) => {
+            function itemToPlugin(item, name): {} {
                 if (Array.isArray(item)) {
                     return new MultiEntryPlugin(context, item, name);
                 }
@@ -22,7 +21,7 @@ class EntryOptionPlugin {
                 compiler.apply(itemToPlugin(entry, 'main'));
             }
             else if (typeof entry === 'object') {
-                Object.keys(entry).forEach(function (name) {
+                Object.keys(entry).forEach(name => {
                     compiler.apply(itemToPlugin(entry[name], name));
                 });
             }

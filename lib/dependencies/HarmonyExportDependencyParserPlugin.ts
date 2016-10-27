@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import AbstractPlugin = require('../AbstractPlugin');
-
 import HarmonyExportExpressionDependency = require('./HarmonyExportExpressionDependency');
 import HarmonyExportHeaderDependency = require('./HarmonyExportHeaderDependency');
 import HarmonyExportSpecifierDependency = require('./HarmonyExportSpecifierDependency');

@@ -14,5 +14,6 @@ class NullDependency extends Dependency {
     }
 }
 
-export = NullDependency;
 NullDependency.prototype.type = 'null';
+
+export = NullDependency;

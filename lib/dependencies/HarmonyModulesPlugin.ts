@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import HarmonyImportDependency = require('./HarmonyImportDependency');
-
 import HarmonyImportSpecifierDependency = require('./HarmonyImportSpecifierDependency');
 import HarmonyExportHeaderDependency = require('./HarmonyExportHeaderDependency');
 import HarmonyExportExpressionDependency = require('./HarmonyExportExpressionDependency');
@@ -44,7 +43,7 @@ class HarmonyModulesPlugin {
             compilation.dependencyFactories.set(HarmonyAcceptImportDependency, normalModuleFactory);
             compilation.dependencyTemplates.set(HarmonyAcceptImportDependency, new HarmonyAcceptImportDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', function (parser, parserOptions) {
+            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
 
                 if (typeof parserOptions.harmony !== 'undefined' && !parserOptions.harmony) {
                     return;

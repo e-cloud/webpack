@@ -4,15 +4,13 @@
  */
 class FlagDependencyExportsPlugin {
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation) {
-            compilation.plugin('finish-modules', function (modules) {
+        compiler.plugin('compilation', compilation => {
+            compilation.plugin('finish-modules', modules => {
                 const dependencies = {};
 
                 let module;
                 let moduleWithExports;
-                const queue = modules.filter(function (m) {
-                    return !m.providedExports;
-                });
+                const queue = modules.filter(m => !m.providedExports);
                 for (let i = 0; i < queue.length; i++) {
                     module = queue[i];
 
@@ -27,20 +25,20 @@ class FlagDependencyExportsPlugin {
                 }
 
                 function processDependenciesBlock(depBlock) {
-                    depBlock.dependencies.forEach(function (dep) {
+                    depBlock.dependencies.forEach(dep => {
                         processDependency(dep);
                     });
-                    depBlock.variables.forEach(function (variable) {
-                        variable.dependencies.forEach(function (dep) {
+                    depBlock.variables.forEach(variable => {
+                        variable.dependencies.forEach(dep => {
                             processDependency(dep);
                         });
                     });
-                    depBlock.blocks.forEach(function (block) {
+                    depBlock.blocks.forEach(block => {
                         processDependenciesBlock(block);
                     });
                 }
 
-                function processDependency(dep, usedExports) {
+                function processDependency(dep) {
                     const exportDesc = dep.getExports && dep.getExports();
                     if (!exportDesc) {
                         return;
@@ -49,7 +47,7 @@ class FlagDependencyExportsPlugin {
                     const exports = exportDesc.exports;
                     const exportDeps = exportDesc.dependencies;
                     if (exportDeps) {
-                        exportDeps.forEach(function (dep) {
+                        exportDeps.forEach(dep => {
                             const depIdent = dep.identifier();
                             let array = dependencies[`$${depIdent}`];
                             if (!array) {
@@ -85,7 +83,7 @@ class FlagDependencyExportsPlugin {
                 function notifyDependencies() {
                     const deps = dependencies[`$${module.identifier()}`];
                     if (deps) {
-                        deps.forEach(function (dep) {
+                        deps.forEach(dep => {
                             queue.push(dep);
                         });
                     }
@@ -94,7 +92,7 @@ class FlagDependencyExportsPlugin {
 
             function addToSet(a, b) {
                 let changed = false;
-                b.forEach(function (item) {
+                b.forEach(item => {
                     if (!a.includes(item)) {
                         a.push(item);
                         changed = true;

@@ -14,9 +14,7 @@ class WebWorkerMainTemplatePlugin {
                     '// object to store loaded chunks',
                     '// "1" means "already loaded"',
                     'var installedChunks = {',
-                    this.indent(chunk.ids.map(function (id) {
-                        return `${id}: 1`;
-                    }).join(',\n')),
+                    this.indent(chunk.ids.map(id => `${id}: 1`).join(',\n')),
                     '};'
                 ]);
             }
@@ -26,17 +24,22 @@ class WebWorkerMainTemplatePlugin {
             const filename = this.outputOptions.filename;
             const chunkFilename = this.outputOptions.chunkFilename;
             return this.asString([
-                '// "1" is the signal for "already loaded"', 'if(!installedChunks[chunkId]) {', this.indent([
-                    `importScripts(${this.applyPluginsWaterfall('asset-path', JSON.stringify(chunkFilename), {
-                        hash: '" + ' + this.renderCurrentHashCode(hash) + ' + "',
-                        hashWithLength: function (length) {
-                            return '" + ' + this.renderCurrentHashCode(hash, length) + ' + "';
-                        }.bind(this),
-                        chunk: {
-                            id: '" + chunkId + "'
-                        }
-                    })});`
-                ]), '}', 'return Promise.resolve();'
+                '// "1" is the signal for "already loaded"',
+                'if(!installedChunks[chunkId]) {',
+                this.indent([
+                    `importScripts(${this.applyPluginsWaterfall(
+                        'asset-path',
+                        JSON.stringify(chunkFilename),
+                        {
+                            hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
+                            hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
+                            chunk: {
+                                id: '" + chunkId + "'
+                            }
+                        })});`
+                ]),
+                '}',
+                'return Promise.resolve();'
             ]);
         });
         mainTemplate.plugin('bootstrap', function (source, chunk, hash) {
@@ -63,18 +66,14 @@ class WebWorkerMainTemplatePlugin {
             const hotUpdateFunction = this.outputOptions.hotUpdateFunction || Template.toIdentifier(`webpackHotUpdate${this.outputOptions.library || ''}`);
             const currentHotUpdateChunkFilename = this.applyPluginsWaterfall('asset-path', JSON.stringify(hotUpdateChunkFilename), {
                 hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
-                hashWithLength: function (length) {
-                    return `" + ${this.renderCurrentHashCode(hash, length)} + "`;
-                }.bind(this),
+                hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
                 chunk: {
                     id: '" + chunkId + "'
                 }
             });
             const currentHotUpdateMainFilename = this.applyPluginsWaterfall('asset-path', JSON.stringify(hotUpdateMainFilename), {
                 hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
-                hashWithLength: function (length) {
-                    return `" + ${this.renderCurrentHashCode(hash, length)} + "`;
-                }.bind(this)
+                hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`
             });
 
             return `${source}\nvar parentHotUpdateCallback = this[${JSON.stringify(hotUpdateFunction)}];\nthis[${JSON.stringify(hotUpdateFunction)}] = ${Template.getFunctionContent(require('./WebWorkerMainTemplate.runtime.js'))
@@ -97,5 +96,3 @@ class WebWorkerMainTemplatePlugin {
 }
 
 export = WebWorkerMainTemplatePlugin;
-
-WebWorkerMainTemplatePlugin.prototype.constructor = WebWorkerMainTemplatePlugin;

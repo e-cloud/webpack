@@ -12,16 +12,16 @@ class SingleEntryPlugin {
     }
 
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation, params) {
+        compiler.plugin('compilation', (compilation, params) => {
             const normalModuleFactory = params.normalModuleFactory;
 
             compilation.dependencyFactories.set(SingleEntryDependency, normalModuleFactory);
         });
-        compiler.plugin('make', function (compilation, callback) {
+        compiler.plugin('make', (compilation, callback) => {
             const dep = new SingleEntryDependency(this.entry);
             dep.loc = this.name;
             compilation.addEntry(this.context, dep, this.name, callback);
-        }.bind(this));
+        });
     }
 }
 

@@ -2,10 +2,9 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import path = require('path');
-
-import RequestShortener = require('./RequestShortener');
 import { ConcatSource, RawSource } from 'webpack-sources'
+import path = require('path');
+import RequestShortener = require('./RequestShortener');
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
 import SourceMapDevToolModuleOptionsPlugin = require('./SourceMapDevToolModuleOptionsPlugin');
 
@@ -39,7 +38,7 @@ class SourceMapDevToolPlugin {
         const requestShortener = new RequestShortener(compiler.context);
         const options = this.options;
         options.test = options.test || /\.(js|css)($|\?)/i;
-        compiler.plugin('compilation', function (compilation) {
+        compiler.plugin('compilation', compilation => {
             new SourceMapDevToolModuleOptionsPlugin(options).apply(compilation);
             compilation.plugin('after-optimize-chunk-assets', function (chunks) {
                 let allModules = [];
@@ -78,43 +77,38 @@ class SourceMapDevToolPlugin {
                                 sourceMap
                             };
                         }
-                    }, this).filter(Boolean).map(function (task) {
-                        const modules = task.sourceMap.sources.map(function (source) {
+                    }, this).filter(Boolean).map(task => {
+                        const modules = task.sourceMap.sources.map(source => {
                             const module = compilation.findModule(source);
                             return module || source;
                         });
-                        const moduleFilenames = modules.map(function (module) {
-                            return ModuleFilenameHelpers.createFilename(module, moduleFilenameTemplate, requestShortener);
-                        });
+                        const moduleFilenames = modules.map(
+                            module => ModuleFilenameHelpers.createFilename(module, moduleFilenameTemplate, requestShortener));
                         task.modules = modules;
                         task.moduleFilenames = moduleFilenames;
                         return task;
-                    }, this).forEach(function (task) {
+                    }, this).forEach(task => {
                         allModules = allModules.concat(task.modules);
                         allModuleFilenames = allModuleFilenames.concat(task.moduleFilenames);
                         tasks.push(task);
                     }, this);
                 }, this);
-                allModuleFilenames = ModuleFilenameHelpers.replaceDuplicates(allModuleFilenames, function (
-                    filename,
-                    i
-                ) {
-                    return ModuleFilenameHelpers.createFilename(allModules[i], fallbackModuleFilenameTemplate, requestShortener);
-                }, function (ai, bi) {
-                    let a = allModules[ai];
-                    let b = allModules[bi];
-                    a = !a ? '' : typeof a === 'string' ? a : a.identifier();
-                    b = !b ? '' : typeof b === 'string' ? b : b.identifier();
-                    return a.length - b.length;
-                });
-                allModuleFilenames = ModuleFilenameHelpers.replaceDuplicates(allModuleFilenames, function (
-                    filename, i,
-                    n
-                ) {
+                allModuleFilenames = ModuleFilenameHelpers.replaceDuplicates(
+                    allModuleFilenames,
+                    (filename, i) =>
+                        ModuleFilenameHelpers.createFilename(allModules[i], fallbackModuleFilenameTemplate, requestShortener),
+                    (ai, bi) => {
+                        let a = allModules[ai];
+                        let b = allModules[bi];
+                        a = !a ? '' : typeof a === 'string' ? a : a.identifier();
+                        b = !b ? '' : typeof b === 'string' ? b : b.identifier();
+                        return a.length - b.length;
+                    });
+                allModuleFilenames = ModuleFilenameHelpers.replaceDuplicates(allModuleFilenames, (filename, i, n) => {
                     for (let j = 0; j < n; j++) filename += '*';
                     return filename;
                 });
-                tasks.forEach(function (task) {
+                tasks.forEach(task => {
                     task.moduleFilenames = allModuleFilenames.slice(0, task.moduleFilenames.length);
                     allModuleFilenames = allModuleFilenames.slice(task.moduleFilenames.length);
                 }, this);
@@ -128,9 +122,10 @@ class SourceMapDevToolPlugin {
                     const modules = task.modules;
                     sourceMap.sources = moduleFilenames;
                     if (sourceMap.sourcesContent && !options.noSources) {
-                        sourceMap.sourcesContent = sourceMap.sourcesContent.map(function (content, i) {
-                            return `${content}\n\n\n${ModuleFilenameHelpers.createFooter(modules[i], requestShortener)}`;
-                        });
+                        sourceMap.sourcesContent = sourceMap.sourcesContent.map((
+                            content,
+                            i
+                        ) => `${content}\n\n\n${ModuleFilenameHelpers.createFooter(modules[i], requestShortener)}`);
                     }
                     else {
                         sourceMap.sourcesContent = undefined;
@@ -164,11 +159,8 @@ class SourceMapDevToolPlugin {
                         chunk.files.push(sourceMapFile);
                     }
                     else {
-                        asset.__SourceMapDevToolData[file] = this.assets[file] = new ConcatSource(new RawSource(source), currentSourceMappingURLComment.replace(/\[map\]/g, function () {
-                            return JSON.stringify(sourceMap);
-                        }).replace(/\[url\]/g, function () {
-                            return `data:application/json;charset=utf-8;base64,${new Buffer(JSON.stringify(sourceMap)).toString('base64')}`;
-                        }));
+                        asset.__SourceMapDevToolData[file] = this.assets[file] = new ConcatSource(new RawSource(source), currentSourceMappingURLComment.replace(/\[map\]/g, () => JSON.stringify(sourceMap))
+                            .replace(/\[url\]/g, () => `data:application/json;charset=utf-8;base64,${new Buffer(JSON.stringify(sourceMap)).toString('base64')}`));
                     }
                 }, this);
             });

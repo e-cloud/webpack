@@ -2,6 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import compareLocations = require('./compareLocations')
 class Dependency {
     constructor() {
         this.module = null;
@@ -42,8 +43,9 @@ class Dependency {
     static compare(a, b) {
         return Dependency.compareLocations(a.loc, b.loc);
     }
+
+    static compareLocations = compareLocations
 }
 
 export = Dependency;
 
-Dependency.compareLocations = require('./compareLocations');

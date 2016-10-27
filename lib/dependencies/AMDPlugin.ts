@@ -27,7 +27,7 @@ class AMDPlugin {
     apply(compiler) {
         const options = this.options;
         const amdOptions = this.amdOptions;
-        compiler.plugin('compilation', function (compilation, params) {
+        compiler.plugin('compilation', (compilation, params) => {
             const normalModuleFactory = params.normalModuleFactory;
             const contextModuleFactory = params.contextModuleFactory;
 
@@ -52,16 +52,15 @@ class AMDPlugin {
             compilation.dependencyFactories.set(LocalModuleDependency, new NullFactory());
             compilation.dependencyTemplates.set(LocalModuleDependency, new LocalModuleDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', function (parser, parserOptions) {
+            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
 
                 if (typeof parserOptions.amd !== 'undefined' && !parserOptions.amd) {
                     return;
                 }
 
                 function setTypeof(expr, value) {
-                    parser.plugin(`evaluate typeof ${expr}`, function (expr) {
-                        return new BasicEvaluatedExpression().setString(value).setRange(expr.range);
-                    });
+                    parser.plugin(`evaluate typeof ${expr}`,
+                        expr => new BasicEvaluatedExpression().setString(value).setRange(expr.range));
                     parser.plugin(`typeof ${expr}`, function (expr) {
                         const dep = new ConstDependency(JSON.stringify(value), expr.range);
                         dep.loc = expr.loc;
@@ -87,22 +86,16 @@ class AMDPlugin {
                 parser.plugin('expression __webpack_amd_options__', function () {
                     return this.state.current.addVariable('__webpack_amd_options__', JSON.stringify(amdOptions));
                 });
-                parser.plugin('evaluate typeof define.amd', function (expr) {
-                    return new BasicEvaluatedExpression().setString(typeof amdOptions).setRange(expr.range);
-                });
-                parser.plugin('evaluate typeof require.amd', function (expr) {
-                    return new BasicEvaluatedExpression().setString(typeof amdOptions).setRange(expr.range);
-                });
-                parser.plugin('evaluate Identifier define.amd', function (expr) {
-                    return new BasicEvaluatedExpression().setBoolean(true).setRange(expr.range);
-                });
-                parser.plugin('evaluate Identifier require.amd', function (expr) {
-                    return new BasicEvaluatedExpression().setBoolean(true).setRange(expr.range);
-                });
+                parser.plugin('evaluate typeof define.amd',
+                    expr => new BasicEvaluatedExpression().setString(typeof amdOptions).setRange(expr.range));
+                parser.plugin('evaluate typeof require.amd',
+                    expr => new BasicEvaluatedExpression().setString(typeof amdOptions).setRange(expr.range));
+                parser.plugin('evaluate Identifier define.amd',
+                    expr => new BasicEvaluatedExpression().setBoolean(true).setRange(expr.range));
+                parser.plugin('evaluate Identifier require.amd',
+                    expr => new BasicEvaluatedExpression().setBoolean(true).setRange(expr.range));
                 setTypeof('define', 'function');
-                parser.plugin('can-rename define', function () {
-                    return true;
-                });
+                parser.plugin('can-rename define', () => true);
                 parser.plugin('rename define', function (expr) {
                     const dep = new AMDRequireItemDependency('!!webpack amd define', expr.range);
                     dep.userRequest = 'define';

@@ -4,18 +4,16 @@
  */
 import LocalModule = require('./LocalModule');
 
-const LocalModulesHelpers = exports;
-
-LocalModulesHelpers.addLocalModule = function (state, name) {
+export function addLocalModule(state, name) {
     if (!state.localModules) {
         state.localModules = [];
     }
     const m = new LocalModule(state.module, name, state.localModules.length);
     state.localModules.push(m);
     return m;
-};
+}
 
-LocalModulesHelpers.getLocalModule = function (state, name, namedModule) {
+export function getLocalModule(state, name, namedModule) {
     if (!state.localModules) {
         return null;
     }
@@ -29,7 +27,7 @@ LocalModulesHelpers.getLocalModule = function (state, name, namedModule) {
         }
     }
     return null;
-};
+}
 
 function lookup(parent, mod) {
     if (mod.charAt(0) !== '.') {

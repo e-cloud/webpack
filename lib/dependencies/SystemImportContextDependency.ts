@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import ContextDependency = require('./ContextDependency');
-
 import CriticalDependencyWarning = require('./CriticalDependencyWarning');
 
 class SystemImportContextDependency extends ContextDependency {
@@ -21,7 +20,8 @@ class SystemImportContextDependency extends ContextDependency {
     }
 }
 
-export = SystemImportContextDependency;
 SystemImportContextDependency.prototype.type = 'System.import context';
+
+export = SystemImportContextDependency;
 
 SystemImportContextDependency.Template = require('./ContextDependencyTemplateAsRequireCall');

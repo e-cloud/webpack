@@ -17,11 +17,11 @@ class OptionsDefaulter {
                     }
                     break;
                 case 'call':
-                    setProperty(options, name, this.defaults[name].call(this, getProperty(options, name), options), options);
+                    setProperty(options, name, this.defaults[name].call(this, getProperty(options, name), options));
                     break;
                 case 'make':
                     if (getProperty(options, name) === undefined) {
-                        setProperty(options, name, this.defaults[name].call(this, options), options);
+                        setProperty(options, name, this.defaults[name].call(this, options));
                     }
                     break;
                 case 'append':
@@ -29,7 +29,7 @@ class OptionsDefaulter {
                     if (!Array.isArray(oldValue)) {
                         oldValue = [];
                     }
-                    this.defaults[name].forEach(function (item) {
+                    this.defaults[name].forEach(item => {
                         oldValue.push(item);
                     });
                     setProperty(options, name, oldValue);

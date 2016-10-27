@@ -2,9 +2,6 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import path = require('path');
-
-import Module = require('./Module');
 import {
     SourceMapSource,
     OriginalSource,
@@ -14,12 +11,15 @@ import {
     LineToLineMappedSource
 } from 'webpack-sources'
 import { runLoaders, getContext } from 'loader-runner'
+import crypto = require('crypto')
+import path = require('path');
 import ModuleParseError = require('./ModuleParseError');
 import TemplateArgumentDependency = require('./dependencies/TemplateArgumentDependency');
 import AsyncDependenciesBlock = require('./AsyncDependenciesBlock');
 import ModuleBuildError = require('./ModuleBuildError');
 import ModuleError = require('./ModuleError');
 import ModuleWarning = require('./ModuleWarning');
+import Module = require('./Module');
 
 function asString(buf) {
     if (Buffer.isBuffer(buf)) {
@@ -98,7 +98,7 @@ class NormalModule extends Module {
         };
         loaderContext.webpack = true;
         loaderContext.sourceMap = !!this.useSourceMap;
-        loaderContext.emitFile = function (name, content, sourceMap) {
+        loaderContext.emitFile = (name, content, sourceMap) => {
             if (typeof sourceMap === 'string') {
                 this.assets[name] = new OriginalSource(content, sourceMap);
             }
@@ -108,7 +108,7 @@ class NormalModule extends Module {
             else {
                 this.assets[name] = new RawSource(content);
             }
-        }.bind(this);
+        };
         loaderContext._module = this;
         loaderContext._compilation = compilation;
         loaderContext._compiler = compilation.compiler;
@@ -123,7 +123,7 @@ class NormalModule extends Module {
             loaders: this.loaders,
             context: loaderContext,
             readResource: fs.readFile.bind(fs)
-        }, function (err, result) {
+        }, (err, result) => {
             if (result) {
                 module.cacheable = result.cacheable;
                 module.fileDependencies = result.fileDependencies;
@@ -168,7 +168,7 @@ class NormalModule extends Module {
         _this.built = true;
         _this._source = null;
         _this.error = null;
-        return _this.doBuild(options, compilation, resolver, fs, function (err) {
+        return _this.doBuild(options, compilation, resolver, fs, err => {
             _this.dependencies.length = 0;
             _this.variables.length = 0;
             _this.blocks.length = 0;
@@ -220,7 +220,7 @@ class NormalModule extends Module {
     }
 
     source(dependencyTemplates, outputOptions, requestShortener) {
-        let hash = require('crypto').createHash('md5');
+        let hash = crypto.createHash('md5');
         this.updateHash(hash);
         hash = hash.digest('hex');
         if (this._cachedSource && this._cachedSource.hash === hash) {
@@ -281,15 +281,13 @@ class NormalModule extends Module {
                     // exports === this in the topLevelBlock, but exports do compress better...
                     varEndCode = `${(topLevelBlock === block
                         ? '}.call(exports, '
-                        : '}.call(this, ') + varExpressions.map(function (e) {
-                        return e.source();
-                    }).join(', ')}))${varEndCode}`;
+                        : '}.call(this, ') + varExpressions.map(e => e.source()).join(', ')}))${varEndCode}`;
 
                     varNames.length = 0;
                     varExpressions.length = 0;
                 }
 
-                vars.forEach(function (v) {
+                vars.forEach(v => {
                     if (varNames.includes(v.name)) {
                         emitFunction();
                     }
@@ -315,7 +313,7 @@ class NormalModule extends Module {
 
     needRebuild(fileTimestamps, contextTimestamps) {
         let timestamp = 0;
-        this.fileDependencies.forEach(function (file) {
+        this.fileDependencies.forEach(file => {
             const ts = fileTimestamps[file];
             if (!ts) {
                 timestamp = Infinity;
@@ -324,7 +322,7 @@ class NormalModule extends Module {
                 timestamp = ts;
             }
         });
-        this.contextDependencies.forEach(function (context) {
+        this.contextDependencies.forEach(context => {
             const ts = contextTimestamps[context];
             if (!ts) {
                 timestamp = Infinity;
@@ -357,7 +355,7 @@ class NormalModule extends Module {
         if (!this._source) {
             return '';
         }
-        const hash = require('crypto').createHash('md5');
+        const hash = crypto.createHash('md5');
         hash.update(this._source.source());
         return hash.digest('hex');
     }
@@ -386,7 +384,7 @@ class NormalModule extends Module {
     }
 
     createTemplate(keepModules, roots) {
-        roots.sort(function (a, b) {
+        roots.sort((a, b) => {
             const ia = a.identifier();
             const ib = b.identifier();
             if (ia < ib) {
@@ -403,21 +401,17 @@ class NormalModule extends Module {
         template.templateModules = keepModules;
         template._templateOrigin = this;
         template.readableIdentifier = function () {
-            return `template of ${this._templateOrigin.id} referencing ${keepModules.map(function (m) {
-                return m.id;
-            }).join(', ')}`;
+            return `template of ${this._templateOrigin.id} referencing ${keepModules.map(m => m.id).join(', ')}`;
         };
-        template.identifier = function () {
-            const array = roots.map(function (m) {
-                return m.identifier();
-            });
+        template.identifier = () => {
+            const array = roots.map(m => m.identifier());
             array.sort();
             return array.join('|');
         };
-        const args = template.arguments = [];
+        var args = template.arguments = [];
 
         function doDeps(deps) {
-            return deps.map(function (dep) {
+            return deps.map(dep => {
                 if (dep.module && !keepModules.includes(dep.module)) {
                     const argName = `__webpack_module_template_argument_${args.length}__`;
                     args.push(argName);
@@ -430,12 +424,12 @@ class NormalModule extends Module {
         }
 
         function doBlock(block, newBlock) {
-            block.variables.forEach(function (variable) {
+            block.variables.forEach(variable => {
                 const newDependencies = doDeps(variable.dependencies);
                 newBlock.addVariable(variable.name, variable.expression, newDependencies);
             });
             newBlock.dependencies = doDeps(block.dependencies);
-            block.blocks.forEach(function (childBlock) {
+            block.blocks.forEach(childBlock => {
                 const newChildBlock = new AsyncDependenciesBlock(childBlock.name, childBlock.module, childBlock.loc);
                 newBlock.addBlock(newChildBlock);
                 doBlock(childBlock, newChildBlock);
@@ -473,7 +467,7 @@ class NormalModule extends Module {
 export = NormalModule;
 
 function contextify(options, request) {
-    return request.split('!').map(function (r) {
+    return request.split('!').map(r => {
         let rp = path.relative(options.context, r);
         if (path.sep === '\\') {
             rp = rp.replace(/\\/g, '/');

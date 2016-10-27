@@ -80,9 +80,7 @@ class RuleSet {
 
     static normalizeRules(rules) {
         if (Array.isArray(rules)) {
-            return rules.map(function (rule) {
-                return RuleSet.normalizeRule(rule);
-            });
+            return rules.map(rule => RuleSet.normalizeRule(rule));
         }
         else if (rules) {
             return [RuleSet.normalizeRule(rules)];
@@ -169,13 +167,15 @@ class RuleSet {
             newRule.oneOf = RuleSet.normalizeRules(rule.oneOf);
         }
 
-        const keys = Object.keys(rule).filter(function (key) {
-            return ![
-                'resource', 'test', 'include', 'exclude', 'issuer', 'loader', 'options', 'query', 'loaders', 'use',
-                'rules', 'oneOf'
-            ].includes(key);
-        });
-        keys.forEach(function (key) {
+        const keys = Object.keys(rule)
+            .filter(key =>
+                ![
+                    'resource', 'test', 'include', 'exclude', 'issuer', 'loader',
+                    'options', 'query', 'loaders', 'use', 'rules', 'oneOf'
+                ].includes(key)
+            );
+
+        keys.forEach(key => {
             newRule[key] = rule[key];
         });
 
@@ -198,9 +198,7 @@ class RuleSet {
 
     static normalizeUse(use) {
         if (Array.isArray(use)) {
-            return use.map(RuleSet.normalizeUse).reduce(function (arr, items) {
-                return arr.concat(items);
-            }, []);
+            return use.map(RuleSet.normalizeUse).reduce((arr, items) => arr.concat(items), []);
         }
         return [RuleSet.normalizeUseItem(use)];
     }
@@ -235,11 +233,9 @@ class RuleSet {
 
         newItem.options = item.options || item.query;
 
-        const keys = Object.keys(item).filter(function (key) {
-            return !['options', 'query'].includes(key);
-        });
+        const keys = Object.keys(item).filter(key => !['options', 'query'].includes(key));
 
-        keys.forEach(function (key) {
+        keys.forEach(key => {
             newItem[key] = item[key];
         });
 
@@ -251,9 +247,7 @@ class RuleSet {
             throw new Error('Expected condition but got falsy value');
         }
         if (typeof condition === 'string') {
-            return function (str) {
-                return str.indexOf(condition) === 0;
-            };
+            return str => str.indexOf(condition) === 0;
         }
         if (typeof condition === 'function') {
             return condition;
@@ -262,46 +256,43 @@ class RuleSet {
             return condition.test.bind(condition);
         }
         if (Array.isArray(condition)) {
-            const items = condition.map(function (c) {
-                return RuleSet.normalizeCondition(c);
-            });
+            const items = condition.map(c => RuleSet.normalizeCondition(c));
             return orMatcher(items);
         }
         if (typeof condition !== 'object') {
             throw Error(`Unexcepted ${typeof condition} when condition was expected (${condition})`);
         }
         const matchers = [];
-        Object.keys(condition).forEach(function (key) {
-            const value = condition[key];
-            switch (key) {
-                case 'or':
-                case 'include':
-                case 'test':
-                    if (value) {
-                        matchers.push(RuleSet.normalizeCondition(value));
-                    }
-                    break;
-                case 'and':
-                    if (value) {
-                        const items = value.map(function (c) {
-                            return RuleSet.normalizeCondition(c);
-                        });
-                        matchers.push(andMatcher(items));
-                    }
-                    break;
-                case 'not':
-                case 'exclude':
-                    if (value) {
-                        const matcher = RuleSet.normalizeCondition(value);
-                        matchers.push(notMatcher(matcher));
-                    }
-                    break;
-                default:
-                    throw new Error(`Unexcepted property ${key} in condition`);
-            }
-        });
+        Object.keys(condition)
+            .forEach(key => {
+                const value = condition[key];
+                switch (key) {
+                    case 'or':
+                    case 'include':
+                    case 'test':
+                        if (value) {
+                            matchers.push(RuleSet.normalizeCondition(value));
+                        }
+                        break;
+                    case 'and':
+                        if (value) {
+                            const items = value.map(c => RuleSet.normalizeCondition(c));
+                            matchers.push(andMatcher(items));
+                        }
+                        break;
+                    case 'not':
+                    case 'exclude':
+                        if (value) {
+                            const matcher = RuleSet.normalizeCondition(value);
+                            matchers.push(notMatcher(matcher));
+                        }
+                        break;
+                    default:
+                        throw new Error(`Unexcepted property ${key} in condition`);
+                }
+            });
         if (matchers.length === 0) {
-            throw new Error(`Excepted condition but got ${condition}`);
+            throw new Error(`Unexcepted condition but got ${condition}`);
         }
         if (matchers.length === 1) {
             return matchers[0];
@@ -333,10 +324,10 @@ class RuleSet {
         }
 
         // apply
-        const keys = Object.keys(rule).filter(function (key) {
-            return !['resource', 'issuer', 'rules', 'oneOf', 'use', 'enforce'].includes(key);
-        });
-        keys.forEach(function (key) {
+        const keys = Object.keys(rule)
+            .filter(key => !['resource', 'issuer', 'rules', 'oneOf', 'use', 'enforce'].includes(key));
+
+        keys.forEach(key => {
             result.push({
                 type: key,
                 value: rule[key]
@@ -344,7 +335,7 @@ class RuleSet {
         });
 
         if (rule.use) {
-            rule.use.forEach(function (use) {
+            rule.use.forEach(use => {
                 result.push({
                     type: 'use',
                     value: typeof use === 'function' ? use(data) : use,
@@ -353,17 +344,15 @@ class RuleSet {
             });
         }
 
-        let i;
-
         if (rule.rules) {
-            for (i = 0; i < rule.rules.length; i++) {
-                this._run(data, rule.rules[i], result);
+            for (let item of rule.rules) {
+                this._run(data, item, result)
             }
         }
 
         if (rule.oneOf) {
-            for (i = 0; i < rule.oneOf.length; i++) {
-                if (this._run(data, rule.oneOf[i], result)) {
+            for (let item of rule.oneOf) {
+                if (this._run(data, item, result)) {
                     break;
                 }
             }
@@ -376,15 +365,13 @@ class RuleSet {
 export = RuleSet;
 
 function notMatcher(matcher) {
-    return function (str) {
-        return !matcher(str);
-    };
+    return (str) => !matcher(str);
 }
 
 function orMatcher(items) {
-    return function (str) {
-        for (let i = 0; i < items.length; i++) {
-            if (items[i](str)) {
+    return (str) => {
+        for (let item of items) {
+            if (item(str)) {
                 return true;
             }
         }
@@ -393,9 +380,9 @@ function orMatcher(items) {
 }
 
 function andMatcher(items) {
-    return function (str) {
-        for (let i = 0; i < items.length; i++) {
-            if (!items[i](str)) {
+    return (str) => {
+        for (let item of items) {
+            if (!item(str)) {
                 return false;
             }
         }

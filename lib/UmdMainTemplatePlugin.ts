@@ -5,14 +5,12 @@
 import { ConcatSource, OriginalSource } from 'webpack-sources'
 
 function accessorToObjectAccess(accessor) {
-    return accessor.map(function (a) {
-        return `[${JSON.stringify(a)}]`;
-    }).join('');
+    return accessor.map(a => `[${JSON.stringify(a)}]`).join('');
 }
 
 function accessorAccess(base, accessor) {
     accessor = [].concat(accessor);
-    return accessor.map(function (a, idx) {
+    return accessor.map((a, idx) => {
         a = base + accessorToObjectAccess(accessor.slice(0, idx + 1));
         if (idx === accessor.length - 1) {
             return a;
@@ -31,14 +29,12 @@ class UmdMainTemplatePlugin {
 
     apply(compilation) {
         const mainTemplate = compilation.mainTemplate;
-        compilation.templatesPlugin('render-with-entry', function (source, chunk, hash) {
-            let externals = chunk.modules.filter(function (m) {
-                return m.external;
-            });
+        compilation.templatesPlugin('render-with-entry', (source, chunk, hash) => {
+            let externals = chunk.modules.filter(m => m.external);
             const optionalExternals = [];
             let requiredExternals = [];
             if (this.optionalAmdExternalAsGlobal) {
-                externals.forEach(function (m) {
+                externals.forEach(m => {
                     if (m.optional) {
                         optionalExternals.push(m);
                     }
@@ -60,13 +56,14 @@ class UmdMainTemplatePlugin {
             }
 
             function externalsDepsArray(modules) {
-                return `[${replaceKeys(modules.map(function (m) {
-                    return JSON.stringify(typeof m.request === 'object' ? m.request.amd : m.request);
-                }).join(', '))}]`;
+                return `[${replaceKeys(
+                    modules.map(m => JSON.stringify(typeof m.request === 'object' ? m.request.amd : m.request))
+                        .join(', ')
+                )}]`;
             }
 
             function externalsRootArray(modules) {
-                return replaceKeys(modules.map(function (m) {
+                return replaceKeys(modules.map(m => {
                     let request = m.request;
                     if (typeof request === 'object') {
                         request = request.root;
@@ -76,7 +73,7 @@ class UmdMainTemplatePlugin {
             }
 
             function externalsRequireArray(type) {
-                return replaceKeys(externals.map(function (m) {
+                return replaceKeys(externals.map(m => {
                     let expr;
                     let request = m.request;
                     if (typeof request === 'object') {
@@ -96,9 +93,7 @@ class UmdMainTemplatePlugin {
             }
 
             function externalsArguments(modules) {
-                return modules.map(function (m) {
-                    return `__WEBPACK_EXTERNAL_MODULE_${m.id}__`;
-                }).join(', ');
+                return modules.map(m => `__WEBPACK_EXTERNAL_MODULE_${m.id}__`).join(', ');
             }
 
             function libraryName(library) {
@@ -148,11 +143,11 @@ class UmdMainTemplatePlugin {
                 paths = paths.concat(this.name);
             }
             return paths;
-        }.bind(this));
-        mainTemplate.plugin('hash', function (hash) {
+        });
+        mainTemplate.plugin('hash', hash => {
             hash.update('umd');
             hash.update(`${this.name}`);
-        }.bind(this));
+        });
     }
 }
 

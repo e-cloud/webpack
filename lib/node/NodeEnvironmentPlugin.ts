@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import NodeWatchFileSystem = require('./NodeWatchFileSystem');
-
 import NodeOutputFileSystem = require('./NodeOutputFileSystem');
 import NodeJsInputFileSystem = require('enhanced-resolve/lib/NodeJsInputFileSystem');
 import CachedInputFileSystem = require('enhanced-resolve/lib/CachedInputFileSystem');

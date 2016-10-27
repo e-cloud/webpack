@@ -10,5 +10,6 @@ class LoaderDependency extends ModuleDependency {
     }
 }
 
-export = LoaderDependency;
 LoaderDependency.prototype.type = 'loader';
+
+export = LoaderDependency;

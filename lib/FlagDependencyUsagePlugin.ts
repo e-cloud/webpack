@@ -4,14 +4,14 @@
  */
 class FlagDependencyUsagePlugin {
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation) {
-            compilation.plugin('optimize-modules-advanced', function (modules) {
+        compiler.plugin('compilation', compilation => {
+            compilation.plugin('optimize-modules-advanced', modules => {
 
-                modules.forEach(function (module) {
+                modules.forEach(module => {
                     module.used = false;
                 });
 
-                compilation.chunks.forEach(function (chunk) {
+                compilation.chunks.forEach(chunk => {
                     if (chunk.entryModule) {
                         processModule(chunk.entryModule, true);
                     }
@@ -37,15 +37,15 @@ class FlagDependencyUsagePlugin {
             }
 
             function processDependenciesBlock(depBlock, usedExports) {
-                depBlock.dependencies.forEach(function (dep) {
+                depBlock.dependencies.forEach(dep => {
                     processDependency(dep, usedExports);
                 });
-                depBlock.variables.forEach(function (variable) {
-                    variable.dependencies.forEach(function (dep) {
+                depBlock.variables.forEach(variable => {
+                    variable.dependencies.forEach(dep => {
                         processDependency(dep, usedExports);
                     });
                 });
-                depBlock.blocks.forEach(function (block) {
+                depBlock.blocks.forEach(block => {
                     processDependenciesBlock(block, usedExports);
                 });
             }
@@ -65,7 +65,7 @@ class FlagDependencyUsagePlugin {
             }
 
             function addToSet(a, b) {
-                b.forEach(function (item) {
+                b.forEach(item => {
                     if (!a.includes(item)) {
                         a.push(item);
                     }
@@ -80,9 +80,7 @@ class FlagDependencyUsagePlugin {
                 if (subset === true) {
                     return false;
                 }
-                return subset.every(function (item) {
-                    return biggerSet.includes(item);
-                });
+                return subset.every(item => biggerSet.includes(item));
             }
         });
     }

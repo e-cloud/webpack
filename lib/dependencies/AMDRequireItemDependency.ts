@@ -11,7 +11,8 @@ class AMDRequireItemDependency extends ModuleDependency {
     }
 }
 
-export = AMDRequireItemDependency;
 AMDRequireItemDependency.prototype.type = 'amd require';
+
+export = AMDRequireItemDependency;
 
 AMDRequireItemDependency.Template = require('./ModuleDependencyTemplateAsRequireId');

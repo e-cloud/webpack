@@ -2,9 +2,8 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import Module = require('./Module');
-
 import { OriginalSource, RawSource } from 'webpack-sources'
+import Module = require('./Module');
 import WebpackMissingModule = require('./dependencies/WebpackMissingModule');
 
 class ExternalModule extends Module {
@@ -46,9 +45,8 @@ class ExternalModule extends Module {
             case 'window':
             case 'global':
                 if (Array.isArray(request)) {
-                    str = `(function() { module.exports = ${this.type}${request.map(function (r) {
-                        return '[' + JSON.stringify(r) + ']';
-                    }).join('')}; }());`;
+                    str = `(function() { module.exports = ${this.type}${request.map(r => '[' + JSON.stringify(r) + ']')
+                        .join('')}; }());`;
                 }
                 else {
                     str = `(function() { module.exports = ${this.type}[${JSON.stringify(request)}]; }());`;
@@ -57,9 +55,9 @@ class ExternalModule extends Module {
             case 'commonjs':
             case 'commonjs2':
                 if (Array.isArray(request)) {
-                    str = `module.exports = require(${JSON.stringify(request[0])})${request.slice(1).map(function (r) {
-                        return '[' + JSON.stringify(r) + ']';
-                    }).join('')};`;
+                    str = `module.exports = require(${JSON.stringify(request[0])})${request.slice(1)
+                        .map(r => '[' + JSON.stringify(r) + ']')
+                        .join('')};`;
                 }
                 else {
                     str = `module.exports = require(${JSON.stringify(request)});`;
@@ -95,6 +93,6 @@ class ExternalModule extends Module {
     }
 }
 
-export = ExternalModule;
-
 ExternalModule.prototype.external = true;
+
+export = ExternalModule;

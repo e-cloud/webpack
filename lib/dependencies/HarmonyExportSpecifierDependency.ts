@@ -3,8 +3,31 @@
  Author Tobias Koppers @sokra
  */
 import NullDependency = require('./NullDependency');
-
 import HarmonyModulesHelpers = require('./HarmonyModulesHelpers');
+
+class Template {
+    apply(dep, source, outputOptions, requestShortener) {
+        const used = dep.originModule.isUsed(dep.name);
+        const active = HarmonyModulesHelpers.isActive(dep.originModule, dep);
+        let content;
+        if (!used) {
+            content = `/* unused harmony export ${dep.name || 'namespace'} */\n`;
+        }
+        else if (!active) {
+            content = `/* inactive harmony export ${dep.name || 'namespace'} */\n`;
+        }
+        else if (dep.immutable) {
+            content = `/* harmony export (immutable) */ exports[${JSON.stringify(used)}] = ${dep.id};\n`;
+        }
+        else {
+            content = `/* harmony export (binding) */ __webpack_require__.d(exports, ${JSON.stringify(used)}, function() { return ${dep.id}; });\n`;
+        }
+        if (dep.position > 0) {
+            content = `\n${content}`;
+        }
+        source.insert(dep.position, content);
+    }
+}
 
 class HarmonyExportSpecifierDependency extends NullDependency {
     constructor(originModule, id, name, position, immutable) {
@@ -29,31 +52,9 @@ class HarmonyExportSpecifierDependency extends NullDependency {
         };
     }
 
-    static Template() {
-    }
+    static Template = Template
 }
 
-export = HarmonyExportSpecifierDependency;
 HarmonyExportSpecifierDependency.prototype.type = 'harmony export specifier';
 
-HarmonyExportSpecifierDependency.Template.prototype.apply = function (dep, source) {
-    const used = dep.originModule.isUsed(dep.name);
-    const active = HarmonyModulesHelpers.isActive(dep.originModule, dep);
-    let content;
-    if (!used) {
-        content = `/* unused harmony export ${dep.name || 'namespace'} */\n`;
-    }
-    else if (!active) {
-        content = `/* inactive harmony export ${dep.name || 'namespace'} */\n`;
-    }
-    else if (dep.immutable) {
-        content = `/* harmony export (immutable) */ exports[${JSON.stringify(used)}] = ${dep.id};\n`;
-    }
-    else {
-        content = `/* harmony export (binding) */ __webpack_require__.d(exports, ${JSON.stringify(used)}, function() { return ${dep.id}; });\n`;
-    }
-    if (dep.position > 0) {
-        content = `\n${content}`;
-    }
-    source.insert(dep.position, content);
-};
+export = HarmonyExportSpecifierDependency;

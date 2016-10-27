@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import RequireIncludeDependency = require('./RequireIncludeDependency');
-
 import RequireIncludeDependencyParserPlugin = require('./RequireIncludeDependencyParserPlugin');
 import ConstDependency = require('./ConstDependency');
 import BasicEvaluatedExpression = require('../BasicEvaluatedExpression');

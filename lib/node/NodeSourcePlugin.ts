@@ -2,11 +2,10 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import AliasPlugin = require('enhanced-resolve/lib/AliasPlugin');
-
 import objectAssign = require('object-assign');
-import ModuleParserHelpers = require('../ModuleParserHelpers');
 import nodeLibsBrowser = require('node-libs-browser');
+import AliasPlugin = require('enhanced-resolve/lib/AliasPlugin');
+import ModuleParserHelpers = require('../ModuleParserHelpers');
 
 class NodeSourcePlugin {
     constructor(options) {
@@ -34,8 +33,8 @@ class NodeSourcePlugin {
             }
         }
 
-        compiler.plugin('compilation', function (compilation, params) {
-            params.normalModuleFactory.plugin('parser', function (parser, parserOptions) {
+        compiler.plugin('compilation', (compilation, params) => {
+            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
 
                 if (parserOptions.node === false) {
                     return;
@@ -80,9 +79,9 @@ class NodeSourcePlugin {
                 }
             });
         });
-        compiler.plugin('after-resolvers', function (compiler) {
+        compiler.plugin('after-resolvers', compiler => {
             const alias = {};
-            Object.keys(nodeLibsBrowser).forEach(function (lib) {
+            Object.keys(nodeLibsBrowser).forEach(lib => {
                 if (options[lib] !== false) {
                     compiler.resolvers.normal.apply(new AliasPlugin('described-resolve', {
                         name: lib,

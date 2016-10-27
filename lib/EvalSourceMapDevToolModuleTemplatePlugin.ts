@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import { RawSource } from 'webpack-sources'
-
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
 
 class EvalSourceMapDevToolModuleTemplatePlugin {
@@ -37,18 +36,18 @@ class EvalSourceMapDevToolModuleTemplatePlugin {
             }
 
             // Clone (flat) the sourcemap to ensure that the mutations below do not persist.
-            sourceMap = Object.keys(sourceMap).reduce(function (obj, key) {
+            sourceMap = Object.keys(sourceMap).reduce((obj, key) => {
                 obj[key] = sourceMap[key];
                 return obj;
             }, {});
-            const modules = sourceMap.sources.map(function (source) {
+            const modules = sourceMap.sources.map(source => {
                 const module = self.compilation.findModule(source);
                 return module || source;
             });
             let moduleFilenames = modules.map(function (module) {
                 return ModuleFilenameHelpers.createFilename(module, self.moduleFilenameTemplate, this.requestShortener);
             }, this);
-            moduleFilenames = ModuleFilenameHelpers.replaceDuplicates(moduleFilenames, function (filename, i, n) {
+            moduleFilenames = ModuleFilenameHelpers.replaceDuplicates(moduleFilenames, (filename, i, n) => {
                 for (let j = 0; j < n; j++) filename += '*';
                 return filename;
             });
@@ -64,7 +63,7 @@ class EvalSourceMapDevToolModuleTemplatePlugin {
             source.__EvalSourceMapDevToolData = new RawSource(`eval(${JSON.stringify(content + footer)});`);
             return source.__EvalSourceMapDevToolData;
         });
-        moduleTemplate.plugin('hash', function (hash) {
+        moduleTemplate.plugin('hash', hash => {
             hash.update('eval-source-map');
             hash.update('1');
         });

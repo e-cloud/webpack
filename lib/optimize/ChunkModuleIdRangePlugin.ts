@@ -9,11 +9,9 @@ class ChunkModuleIdRangePlugin {
 
     apply(compiler) {
         const options = this.options;
-        compiler.plugin('compilation', function (compilation) {
+        compiler.plugin('compilation', compilation => {
             compilation.plugin('module-ids', function (modules) {
-                const chunk = this.chunks.filter(function (chunk) {
-                    return chunk.name === options.name;
-                })[0];
+                const chunk = this.chunks.filter(chunk => chunk.name === options.name)[0];
                 if (!chunk) {
                     throw new Error(`ChunkModuleIdRangePlugin: Chunk with name '${options.name}' was not found`);
                 }
@@ -23,23 +21,17 @@ class ChunkModuleIdRangePlugin {
                     chunkModules = chunk.modules.slice();
                     switch (options.order) {
                         case 'index':
-                            chunkModules.sort(function (a, b) {
-                                return a.index - b.index;
-                            });
+                            chunkModules.sort((a, b) => a.index - b.index);
                             break;
                         case 'index2':
-                            chunkModules.sort(function (a, b) {
-                                return a.index2 - b.index2;
-                            });
+                            chunkModules.sort((a, b) => a.index2 - b.index2);
                             break;
                         default:
                             throw new Error('ChunkModuleIdRangePlugin: unexpected value of order');
                     }
                 }
                 else {
-                    chunkModules = modules.filter(function (m) {
-                        return m.chunks.includes(chunk);
-                    });
+                    chunkModules = modules.filter(m => m.chunks.includes(chunk));
                 }
                 console.log(chunkModules);
                 for (let i = 0; i < chunkModules.length; i++) {

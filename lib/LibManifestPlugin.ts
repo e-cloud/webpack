@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import path = require('path');
-
 import async = require('async');
 import HarmonyModulesHelpers = require('./dependencies/HarmonyModulesHelpers');
 
@@ -13,8 +12,8 @@ class LibManifestPlugin {
     }
 
     apply(compiler) {
-        compiler.plugin('emit', function (compilation, callback) {
-            async.forEach(compilation.chunks, function (chunk, callback) {
+        compiler.plugin('emit', (compilation, callback) => {
+            async.forEach(compilation.chunks, (chunk, callback) => {
                 if (!chunk.isInitial()) {
                     callback();
                     return;
@@ -30,7 +29,7 @@ class LibManifestPlugin {
                 const manifest = {
                     name,
                     type: this.options.type,
-                    content: chunk.modules.reduce(function (obj, module) {
+                    content: chunk.modules.reduce((obj, module) => {
                         if (module.libIdent) {
                             const ident = module.libIdent({
                                 context: this.options.context || compiler.options.context
@@ -44,17 +43,17 @@ class LibManifestPlugin {
                             }
                         }
                         return obj;
-                    }.bind(this), {})
+                    }, {})
                 };
                 const content = new Buffer(JSON.stringify(manifest, null, 2), 'utf-8');
-                compiler.outputFileSystem.mkdirp(path.dirname(targetPath), function (err) {
+                compiler.outputFileSystem.mkdirp(path.dirname(targetPath), err => {
                     if (err) {
                         return callback(err);
                     }
                     compiler.outputFileSystem.writeFile(targetPath, content, callback);
                 });
-            }.bind(this), callback);
-        }.bind(this));
+            }, callback);
+        });
     }
 }
 

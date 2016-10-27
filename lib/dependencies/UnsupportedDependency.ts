@@ -3,8 +3,13 @@
  Author Tobias Koppers @sokra
  */
 import NullDependency = require('./NullDependency');
-
 import DepBlockHelpers = require('./DepBlockHelpers');
+
+class Template {
+    apply(dep, source, outputOptions, requestShortener) {
+        source.replace(dep.range[0], dep.range[1], require('./WebpackMissingModule').module(dep.request));
+    }
+}
 
 class UnsupportedDependency extends NullDependency {
     constructor(request, range) {
@@ -13,12 +18,7 @@ class UnsupportedDependency extends NullDependency {
         this.range = range;
     }
 
-    static Template() {
-    }
+    static Template = Template
 }
 
 export = UnsupportedDependency;
-
-UnsupportedDependency.Template.prototype.apply = function (dep, source, outputOptions, requestShortener) {
-    source.replace(dep.range[0], dep.range[1], require('./WebpackMissingModule').module(dep.request));
-};

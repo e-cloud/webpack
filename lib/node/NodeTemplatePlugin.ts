@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import NodeMainTemplatePlugin = require('./NodeMainTemplatePlugin');
-
 import NodeChunkTemplatePlugin = require('./NodeChunkTemplatePlugin');
 import NodeHotUpdateChunkTemplatePlugin = require('./NodeHotUpdateChunkTemplatePlugin');
 
@@ -13,11 +12,11 @@ class NodeTemplatePlugin {
     }
 
     apply(compiler) {
-        compiler.plugin('this-compilation', function (compilation) {
+        compiler.plugin('this-compilation', compilation => {
             compilation.mainTemplate.apply(new NodeMainTemplatePlugin(this.asyncChunkLoading));
             compilation.chunkTemplate.apply(new NodeChunkTemplatePlugin());
             compilation.hotUpdateChunkTemplate.apply(new NodeHotUpdateChunkTemplatePlugin());
-        }.bind(this));
+        });
     }
 }
 

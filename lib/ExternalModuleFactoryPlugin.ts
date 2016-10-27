@@ -12,18 +12,18 @@ class ExternalModuleFactoryPlugin {
 
     apply(normalModuleFactory) {
         const globalType = this.type;
-        normalModuleFactory.plugin('factory', function (factory) {
-            return function (data, callback) {
+        normalModuleFactory.plugin('factory', factory =>
+            (data, outterCallback) => {
                 const context = data.context;
                 const dependency = data.dependencies[0];
 
-                function handleExternal(value, type, callback) {
+                function handleExternal(value, type, externalCallback) {
                     if (typeof type === 'function') {
-                        callback = type;
+                        externalCallback = type;
                         type = undefined;
                     }
                     if (value === false) {
-                        return factory(data, callback);
+                        return factory(data, externalCallback);
                     }
                     if (value === true) {
                         value = dependency.request;
@@ -33,14 +33,15 @@ class ExternalModuleFactoryPlugin {
                         type = value.substr(0, idx);
                         value = value.substr(idx + 1);
                     }
-                    callback(null, new ExternalModule(value, type || globalType));
+                    externalCallback(null, new ExternalModule(value, type || globalType));
                     return true;
                 }
 
-                (function handleExternals(externals, callback) {
+                // todo: need to be refactor
+                (function handleExternals(externals, innerCallback) {
                     if (typeof externals === 'string') {
                         if (externals === dependency.request) {
-                            return handleExternal(dependency.request, callback);
+                            return handleExternal(dependency.request, innerCallback);
                         }
                     }
                     else if (Array.isArray(externals)) {
@@ -49,11 +50,11 @@ class ExternalModuleFactoryPlugin {
                             do {
                                 var async = true;
                                 if (i >= externals.length) {
-                                    return callback();
+                                    return innerCallback();
                                 }
-                                handleExternals(externals[i++], function (err, module) {
+                                handleExternals(externals[i++], (err, module) => {
                                     if (err) {
-                                        return callback(err);
+                                        return innerCallback(err);
                                     }
                                     if (!module) {
                                         if (async) {
@@ -62,7 +63,7 @@ class ExternalModuleFactoryPlugin {
                                         }
                                         return next();
                                     }
-                                    callback(null, module);
+                                    innerCallback(null, module);
                                 });
                             } while (!async);
                             async = false;
@@ -71,38 +72,37 @@ class ExternalModuleFactoryPlugin {
                     }
                     else if (externals instanceof RegExp) {
                         if (externals.test(dependency.request)) {
-                            return handleExternal(dependency.request, callback);
+                            return handleExternal(dependency.request, innerCallback);
                         }
                     }
                     else if (typeof externals === 'function') {
-                        externals.call(null, context, dependency.request, function (err, value, type) {
+                        externals.call(null, context, dependency.request, (err, value, type) => {
                             if (err) {
-                                return callback(err);
+                                return innerCallback(err);
                             }
                             if (typeof value !== 'undefined') {
-                                handleExternal(value, type, callback);
+                                handleExternal(value, type, innerCallback);
                             }
                             else {
-                                callback();
+                                innerCallback();
                             }
                         });
                         return;
                     }
                     else if (typeof externals === 'object' && Object.prototype.hasOwnProperty.call(externals, dependency.request)) {
-                        return handleExternal(externals[dependency.request], callback);
+                        return handleExternal(externals[dependency.request], innerCallback);
                     }
-                    callback();
-                })(this.externals, function (err, module) {
+                    innerCallback();
+                })(this.externals, (err, module) => {
                     if (err) {
-                        return callback(err);
+                        return outterCallback(err);
                     }
                     if (!module) {
-                        return handleExternal(false, callback);
+                        return handleExternal(false, outterCallback);
                     }
-                    return callback(null, module);
+                    return outterCallback(null, module);
                 });
-            }.bind(this);
-        }.bind(this));
+            });
     }
 }
 

@@ -4,14 +4,13 @@
  */
 class RemoveEmptyChunksPlugin {
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation) {
-            compilation.plugin(['optimize-chunks-basic', 'optimize-extracted-chunks-basic'], function (chunks) {
-                chunks.filter(function (chunk) {
-                    return chunk.isEmpty() && !chunk.hasRuntime() && !chunk.hasEntryModule();
-                }).forEach(function (chunk) {
-                    chunk.remove('empty');
-                    chunks.splice(chunks.indexOf(chunk), 1);
-                });
+        compiler.plugin('compilation', compilation => {
+            compilation.plugin(['optimize-chunks-basic', 'optimize-extracted-chunks-basic'], chunks => {
+                chunks.filter(chunk => chunk.isEmpty() && !chunk.hasRuntime() && !chunk.hasEntryModule())
+                    .forEach(chunk => {
+                        chunk.remove('empty');
+                        chunks.splice(chunks.indexOf(chunk), 1);
+                    });
             });
         });
     }

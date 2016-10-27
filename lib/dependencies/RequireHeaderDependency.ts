@@ -4,6 +4,16 @@
  */
 import NullDependency = require('./NullDependency');
 
+class Template {
+    apply(dep, source, outputOptions, requestShortener) {
+        source.replace(dep.range[0], dep.range[1] - 1, '__webpack_require__');
+    }
+
+    applyAsTemplateArgument(name, dep, source) {
+        source.replace(dep.range[0], dep.range[1] - 1, 'require');
+    }
+}
+
 class RequireHeaderDependency extends NullDependency {
     constructor(range) {
         if (!Array.isArray(range)) {
@@ -13,16 +23,7 @@ class RequireHeaderDependency extends NullDependency {
         this.range = range;
     }
 
-    static Template() {
-    }
+    static Template = Template
 }
 
 export = RequireHeaderDependency;
-
-RequireHeaderDependency.Template.prototype.apply = function (dep, source) {
-    source.replace(dep.range[0], dep.range[1] - 1, '__webpack_require__');
-};
-
-RequireHeaderDependency.Template.prototype.applyAsTemplateArgument = function (name, dep, source) {
-    source.replace(dep.range[0], dep.range[1] - 1, 'require');
-};

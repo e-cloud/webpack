@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import AsyncDependenciesBlock = require('../AsyncDependenciesBlock');
-
 import SystemImportDependency = require('./SystemImportDependency');
 
 class SystemImportDependenciesBlock extends AsyncDependenciesBlock {

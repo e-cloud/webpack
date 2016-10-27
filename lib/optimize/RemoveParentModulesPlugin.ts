@@ -20,9 +20,7 @@ function hasModule(chunk, module, checkedChunks) {
     if (chunk.parents.length === 0) {
         return false;
     }
-    return allHaveModule(chunk.parents.filter(function (c) {
-        return !checkedChunks.includes(c);
-    }), module, checkedChunks);
+    return allHaveModule(chunk.parents.filter(c => !checkedChunks.includes(c)), module, checkedChunks);
 }
 
 function allHaveModule(someChunks, module, checkedChunks) {
@@ -42,7 +40,7 @@ function allHaveModule(someChunks, module, checkedChunks) {
 }
 
 function addToSet(set, items) {
-    items.forEach(function (item) {
+    items.forEach(item => {
         if (!set.includes(item)) {
             set.push(item);
         }
@@ -50,12 +48,8 @@ function addToSet(set, items) {
 }
 
 function debugIds(chunks) {
-    const list = chunks.map(function (chunk) {
-        return chunk.debugId;
-    });
-    const debugIdMissing = list.some(function (dId) {
-        return typeof dId !== 'number';
-    });
+    const list = chunks.map(chunk => chunk.debugId);
+    const debugIdMissing = list.some(dId => typeof dId !== 'number');
     if (debugIdMissing) {
         return 'no';
     }
@@ -65,11 +59,11 @@ function debugIds(chunks) {
 
 class RemoveParentModulesPlugin {
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation) {
-            compilation.plugin(['optimize-chunks-basic', 'optimize-extracted-chunks-basic'], function (chunks) {
-                chunks.forEach(function (chunk) {
+        compiler.plugin('compilation', compilation => {
+            compilation.plugin(['optimize-chunks-basic', 'optimize-extracted-chunks-basic'], chunks => {
+                chunks.forEach(chunk => {
                     const cache = {};
-                    chunk.modules.slice().forEach(function (module) {
+                    chunk.modules.slice().forEach(module => {
                         if (chunk.parents.length === 0) {
                             return;
                         }

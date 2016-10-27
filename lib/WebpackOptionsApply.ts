@@ -46,9 +46,11 @@ class WebpackOptionsApply extends OptionsApply {
     process(options, compiler) {
         let ExternalsPlugin;
         compiler.context = options.context;
+
         if (options.plugins && Array.isArray(options.plugins)) {
             compiler.apply(...options.plugins);
         }
+
         compiler.outputPath = options.output.path;
         compiler.recordsInputPath = options.recordsInputPath || options.recordsPath;
         compiler.recordsOutputPath = options.recordsOutputPath || options.recordsPath;
@@ -63,26 +65,49 @@ class WebpackOptionsApply extends OptionsApply {
                 case 'web':
                     JsonpTemplatePlugin = require('./JsonpTemplatePlugin');
                     NodeSourcePlugin = require('./node/NodeSourcePlugin');
-                    compiler.apply(new JsonpTemplatePlugin(options.output), new FunctionModulePlugin(options.output), new NodeSourcePlugin(options.node), new LoaderTargetPlugin('web'));
+                    compiler.apply(
+                        new JsonpTemplatePlugin(options.output),
+                        new FunctionModulePlugin(options.output),
+                        new NodeSourcePlugin(options.node),
+                        new LoaderTargetPlugin('web')
+                    );
                     break;
                 case 'webworker':
                     const WebWorkerTemplatePlugin = require('./webworker/WebWorkerTemplatePlugin');
                     NodeSourcePlugin = require('./node/NodeSourcePlugin');
-                    compiler.apply(new WebWorkerTemplatePlugin(options.output), new FunctionModulePlugin(options.output), new NodeSourcePlugin(options.node), new LoaderTargetPlugin('webworker'));
+                    compiler.apply(
+                        new WebWorkerTemplatePlugin(options.output),
+                        new FunctionModulePlugin(options.output),
+                        new NodeSourcePlugin(options.node),
+                        new LoaderTargetPlugin('webworker')
+                    );
                     break;
                 case 'node':
                 case 'async-node':
                     NodeTemplatePlugin = require('./node/NodeTemplatePlugin');
                     NodeTargetPlugin = require('./node/NodeTargetPlugin');
-                    compiler.apply(new NodeTemplatePlugin({
-                        asyncChunkLoading: options.target === 'async-node'
-                    }), new FunctionModulePlugin(options.output), new NodeTargetPlugin(), new LoaderTargetPlugin('node'));
+                    compiler.apply(
+                        new NodeTemplatePlugin(
+                            {
+                                asyncChunkLoading: options.target === 'async-node'
+                            }
+                        ),
+                        new FunctionModulePlugin(options.output),
+                        new NodeTargetPlugin(),
+                        new LoaderTargetPlugin('node')
+                    );
                     break;
                 case 'node-webkit':
                     JsonpTemplatePlugin = require('./JsonpTemplatePlugin');
                     NodeTargetPlugin = require('./node/NodeTargetPlugin');
                     ExternalsPlugin = require('./ExternalsPlugin');
-                    compiler.apply(new JsonpTemplatePlugin(options.output), new FunctionModulePlugin(options.output), new NodeTargetPlugin(), new ExternalsPlugin('commonjs', 'nw.gui'), new LoaderTargetPlugin('node-webkit'));
+                    compiler.apply(
+                        new JsonpTemplatePlugin(options.output),
+                        new FunctionModulePlugin(options.output),
+                        new NodeTargetPlugin(),
+                        new ExternalsPlugin('commonjs', 'nw.gui'),
+                        new LoaderTargetPlugin('node-webkit')
+                    );
                     break;
                 case 'atom':
                 case 'electron':
@@ -90,50 +115,68 @@ class WebpackOptionsApply extends OptionsApply {
                     NodeTemplatePlugin = require('./node/NodeTemplatePlugin');
                     NodeTargetPlugin = require('./node/NodeTargetPlugin');
                     ExternalsPlugin = require('./ExternalsPlugin');
-                    compiler.apply(new NodeTemplatePlugin({
-                        asyncChunkLoading: true
-                    }), new FunctionModulePlugin(options.output), new NodeTargetPlugin(), new ExternalsPlugin('commonjs', [
-                        'app',
-                        'auto-updater',
-                        'browser-window',
-                        'content-tracing',
-                        'dialog',
-                        'electron',
-                        'global-shortcut',
-                        'ipc',
-                        'ipc-main',
-                        'menu',
-                        'menu-item',
-                        'power-monitor',
-                        'power-save-blocker',
-                        'protocol',
-                        'session',
-                        'web-contents',
-                        'tray',
-                        'clipboard',
-                        'crash-reporter',
-                        'native-image',
-                        'screen',
-                        'shell'
-                    ]), new LoaderTargetPlugin(options.target));
+                    compiler.apply(
+                        new NodeTemplatePlugin(
+                            {
+                                asyncChunkLoading: true
+                            }
+                        ),
+                        new FunctionModulePlugin(options.output),
+                        new NodeTargetPlugin(),
+                        new ExternalsPlugin(
+                            'commonjs', [
+                                'app',
+                                'auto-updater',
+                                'browser-window',
+                                'content-tracing',
+                                'dialog',
+                                'electron',
+                                'global-shortcut',
+                                'ipc',
+                                'ipc-main',
+                                'menu',
+                                'menu-item',
+                                'power-monitor',
+                                'power-save-blocker',
+                                'protocol',
+                                'session',
+                                'web-contents',
+                                'tray',
+                                'clipboard',
+                                'crash-reporter',
+                                'native-image',
+                                'screen',
+                                'shell'
+                            ]
+                        ),
+                        new LoaderTargetPlugin(options.target)
+                    );
                     break;
                 case 'electron-renderer':
                     JsonpTemplatePlugin = require('./JsonpTemplatePlugin');
                     NodeTargetPlugin = require('./node/NodeTargetPlugin');
                     ExternalsPlugin = require('./ExternalsPlugin');
-                    compiler.apply(new JsonpTemplatePlugin(options.output), new FunctionModulePlugin(options.output), new NodeTargetPlugin(), new ExternalsPlugin('commonjs', [
-                        'desktop-capturer',
-                        'electron',
-                        'ipc',
-                        'ipc-renderer',
-                        'remote',
-                        'web-frame',
-                        'clipboard',
-                        'crash-reporter',
-                        'native-image',
-                        'screen',
-                        'shell'
-                    ]), new LoaderTargetPlugin(options.target));
+                    compiler.apply(
+                        new JsonpTemplatePlugin(options.output),
+                        new FunctionModulePlugin(options.output),
+                        new NodeTargetPlugin(),
+                        new ExternalsPlugin(
+                            'commonjs', [
+                                'desktop-capturer',
+                                'electron',
+                                'ipc',
+                                'ipc-renderer',
+                                'remote',
+                                'web-frame',
+                                'clipboard',
+                                'crash-reporter',
+                                'native-image',
+                                'screen',
+                                'shell'
+                            ]
+                        ),
+                        new LoaderTargetPlugin(options.target)
+                    );
                     break;
                 default:
                     throw new Error(`Unsupported target '${options.target}'.`);
@@ -145,15 +188,17 @@ class WebpackOptionsApply extends OptionsApply {
         else {
             throw new Error(`Unsupported target '${options.target}'.`);
         }
+
         if (options.output.library || options.output.libraryTarget !== 'var') {
             const LibraryTemplatePlugin = require('./LibraryTemplatePlugin');
             compiler.apply(new LibraryTemplatePlugin(options.output.library, options.output.libraryTarget, options.output.umdNamedDefine, options.output.auxiliaryComment || ''));
         }
+
         if (options.externals) {
             ExternalsPlugin = require('./ExternalsPlugin');
             compiler.apply(new ExternalsPlugin(options.output.libraryTarget, options.externals));
         }
-        let noSources;
+
         let legacy;
         let modern;
         let comment;
@@ -163,7 +208,7 @@ class WebpackOptionsApply extends OptionsApply {
             const evalWrapped = options.devtool.includes('eval');
             const cheap = options.devtool.includes('cheap');
             const moduleMaps = options.devtool.includes('module');
-            noSources = options.devtool.includes('nosources');
+            let noSources = options.devtool.includes('nosources');
             legacy = options.devtool.includes('@');
             modern = options.devtool.includes('#');
             comment = legacy && modern
@@ -174,16 +219,20 @@ class WebpackOptionsApply extends OptionsApply {
                 ? '\n//# sourceMappingURL=[url]'
                 : null;
             const Plugin = evalWrapped ? EvalSourceMapDevToolPlugin : SourceMapDevToolPlugin;
-            compiler.apply(new Plugin({
-                filename: inline ? null : options.output.sourceMapFilename,
-                moduleFilenameTemplate: options.output.devtoolModuleFilenameTemplate,
-                fallbackModuleFilenameTemplate: options.output.devtoolFallbackModuleFilenameTemplate,
-                append: hidden ? false : comment,
-                module: moduleMaps ? true : cheap ? false : true,
-                columns: cheap ? false : true,
-                lineToLine: options.output.devtoolLineToLine,
-                noSources
-            }));
+            compiler.apply(
+                new Plugin(
+                    {
+                        filename: inline ? null : options.output.sourceMapFilename,
+                        moduleFilenameTemplate: options.output.devtoolModuleFilenameTemplate,
+                        fallbackModuleFilenameTemplate: options.output.devtoolFallbackModuleFilenameTemplate,
+                        append: hidden ? false : comment,
+                        module: moduleMaps ? true : cheap ? false : true,
+                        columns: cheap ? false : true,
+                        lineToLine: options.output.devtoolLineToLine,
+                        noSources
+                    }
+                )
+            );
         }
         else if (options.devtool && options.devtool.includes('eval')) {
             legacy = options.devtool.includes('@');
@@ -201,9 +250,33 @@ class WebpackOptionsApply extends OptionsApply {
         compiler.apply(new EntryOptionPlugin());
         compiler.applyPluginsBailResult('entry-option', options.context, options.entry);
 
-        compiler.apply(new CompatibilityPlugin(), new LoaderPlugin(), new NodeStuffPlugin(options.node), new RequireJsStuffPlugin(), new APIPlugin(), new ConstPlugin(), new UseStrictPlugin(), new RequireIncludePlugin(), new RequireEnsurePlugin(), new RequireContextPlugin(options.resolve.modules, options.resolve.extensions), new AMDPlugin(options.module, options.amd || {}), new CommonJsPlugin(options.module), new HarmonyModulesPlugin(options.module), new SystemPlugin(options.module));
+        compiler.apply(
+            new CompatibilityPlugin(),
+            new LoaderPlugin(),
+            new NodeStuffPlugin(options.node),
+            new RequireJsStuffPlugin(),
+            new APIPlugin(),
+            new ConstPlugin(),
+            new UseStrictPlugin(),
+            new RequireIncludePlugin(),
+            new RequireEnsurePlugin(),
+            new RequireContextPlugin(options.resolve.modules, options.resolve.extensions),
+            new AMDPlugin(options.module, options.amd || {}),
+            new CommonJsPlugin(options.module),
+            new HarmonyModulesPlugin(options.module),
+            new SystemPlugin(options.module)
+        );
 
-        compiler.apply(new EnsureChunkConditionsPlugin(), new RemoveParentModulesPlugin(), new RemoveEmptyChunksPlugin(), new MergeDuplicateChunksPlugin(), new FlagIncludedChunksPlugin(), new OccurrenceOrderPlugin(true), new FlagDependencyExportsPlugin(), new FlagDependencyUsagePlugin());
+        compiler.apply(
+            new EnsureChunkConditionsPlugin(),
+            new RemoveParentModulesPlugin(),
+            new RemoveEmptyChunksPlugin(),
+            new MergeDuplicateChunksPlugin(),
+            new FlagIncludedChunksPlugin(),
+            new OccurrenceOrderPlugin(true),
+            new FlagDependencyExportsPlugin(),
+            new FlagDependencyUsagePlugin()
+        );
 
         compiler.apply(new TemplatedPathPlugin());
 
@@ -217,17 +290,20 @@ class WebpackOptionsApply extends OptionsApply {
         }
 
         compiler.applyPlugins('after-plugins', compiler);
-        compiler.resolvers.normal = ResolverFactory.createResolver(assign({
-            resolver: compiler.resolvers.normal
-        }, options.resolve));
-        compiler.resolvers.context = ResolverFactory.createResolver(assign({
-            resolver: compiler.resolvers.context,
-            resolveToContext: true
-        }, options.resolve));
-        compiler.resolvers.loader = ResolverFactory.createResolver(assign({
-            resolver: compiler.resolvers.loader
-        }, options.resolveLoader));
+        compiler.resolvers.normal = ResolverFactory.createResolver(
+            assign({ resolver: compiler.resolvers.normal }, options.resolve)
+        );
+        compiler.resolvers.context = ResolverFactory.createResolver(
+            assign({
+                resolver: compiler.resolvers.context,
+                resolveToContext: true
+            }, options.resolve)
+        );
+        compiler.resolvers.loader = ResolverFactory.createResolver(
+            assign({ resolver: compiler.resolvers.loader }, options.resolveLoader)
+        );
         compiler.applyPlugins('after-resolvers', compiler);
+
         return options;
     }
 }

@@ -3,13 +3,19 @@
  Author Tobias Koppers @sokra
  */
 import ConstDependency = require('./dependencies/ConstDependency');
-
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import NullFactory = require('./NullFactory');
 
+const REPLACEMENTS = {
+    __webpack_hash__: '__webpack_require__.h' // eslint-disable-line camelcase
+};
+const REPLACEMENT_TYPES = {
+    __webpack_hash__: 'string' // eslint-disable-line camelcase
+};
+
 class ExtendedAPIPlugin {
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation, params) {
+        compiler.plugin('compilation', (compilation, params) => {
             compilation.dependencyFactories.set(ConstDependency, new NullFactory());
             compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
             compilation.mainTemplate.plugin('require-extensions', function (source, chunk, hash) {
@@ -19,21 +25,20 @@ class ExtendedAPIPlugin {
                 buf.push(`${this.requireFn}.h = ${JSON.stringify(hash)};`);
                 return this.asString(buf);
             });
-            compilation.mainTemplate.plugin('global-hash', function () {
-                return true;
-            });
+            compilation.mainTemplate.plugin('global-hash', () => true);
 
-            params.normalModuleFactory.plugin('parser', function (parser, parserOptions) {
-                Object.keys(REPLACEMENTS).forEach(function (key) {
+            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
+                Object.keys(REPLACEMENTS).forEach(key => {
                     parser.plugin(`expression ${key}`, function (expr) {
                         const dep = new ConstDependency(REPLACEMENTS[key], expr.range);
                         dep.loc = expr.loc;
                         this.state.current.addDependency(dep);
                         return true;
                     });
-                    parser.plugin(`evaluate typeof ${key}`, function (expr) {
-                        return new BasicEvaluatedExpression().setString(REPLACEMENT_TYPES[key]).setRange(expr.range);
-                    });
+                    parser.plugin(`evaluate typeof ${key}`, expr =>
+                        new BasicEvaluatedExpression()
+                            .setString(REPLACEMENT_TYPES[key])
+                            .setRange(expr.range));
                 });
             });
         });
@@ -41,10 +46,3 @@ class ExtendedAPIPlugin {
 }
 
 export = ExtendedAPIPlugin;
-
-const REPLACEMENTS = {
-    __webpack_hash__: '__webpack_require__.h' // eslint-disable-line camelcase
-};
-const REPLACEMENT_TYPES = {
-    __webpack_hash__: 'string' // eslint-disable-line camelcase
-};

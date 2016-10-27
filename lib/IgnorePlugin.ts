@@ -11,8 +11,8 @@ class IgnorePlugin {
     apply(compiler) {
         const resourceRegExp = this.resourceRegExp;
         const contextRegExp = this.contextRegExp;
-        compiler.plugin('normal-module-factory', function (nmf) {
-            nmf.plugin('before-resolve', function (result, callback) {
+        compiler.plugin('normal-module-factory', nmf => {
+            nmf.plugin('before-resolve', (result, callback) => {
                 if (!result) {
                     return callback();
                 }
@@ -22,8 +22,8 @@ class IgnorePlugin {
                 return callback(null, result);
             });
         });
-        compiler.plugin('context-module-factory', function (cmf) {
-            cmf.plugin('before-resolve', function (result, callback) {
+        compiler.plugin('context-module-factory', cmf => {
+            cmf.plugin('before-resolve', (result, callback) => {
                 if (!result) {
                     return callback();
                 }

@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import SystemImportContextDependency = require('./SystemImportContextDependency');
-
 import SystemImportDependenciesBlock = require('./SystemImportDependenciesBlock');
 import ContextDependencyHelpers = require('./ContextDependencyHelpers');
 

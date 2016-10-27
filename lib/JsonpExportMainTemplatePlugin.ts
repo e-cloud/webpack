@@ -11,23 +11,23 @@ class JsonpExportMainTemplatePlugin {
 
     apply(compilation) {
         const mainTemplate = compilation.mainTemplate;
-        compilation.templatesPlugin('render-with-entry', function (source, chunk, hash) {
+        compilation.templatesPlugin('render-with-entry', (source, chunk, hash) => {
             const name = mainTemplate.applyPluginsWaterfall('asset-path', this.name || '', {
                 hash,
                 chunk
             });
             return new ConcatSource(`${name}(`, source, ');');
-        }.bind(this));
-        mainTemplate.plugin('global-hash-paths', function (paths) {
+        });
+        mainTemplate.plugin('global-hash-paths', paths => {
             if (this.name) {
                 paths.push(this.name);
             }
             return paths;
-        }.bind(this));
-        mainTemplate.plugin('hash', function (hash) {
+        });
+        mainTemplate.plugin('hash', hash => {
             hash.update('jsonp export');
             hash.update(`${this.name}`);
-        }.bind(this));
+        });
     }
 }
 

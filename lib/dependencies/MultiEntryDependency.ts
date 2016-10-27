@@ -12,5 +12,6 @@ class MultiEntryDependency extends Dependency {
     }
 }
 
-export = MultiEntryDependency;
 MultiEntryDependency.prototype.type = 'multi entry';
+
+export = MultiEntryDependency;

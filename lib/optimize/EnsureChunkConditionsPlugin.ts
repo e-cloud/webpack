@@ -4,18 +4,18 @@
  */
 class EnsureChunkConditionsPlugin {
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation) {
-            compilation.plugin(['optimize-chunks-basic', 'optimize-extracted-chunks-basic'], function (chunks) {
+        compiler.plugin('compilation', compilation => {
+            compilation.plugin(['optimize-chunks-basic', 'optimize-extracted-chunks-basic'], chunks => {
                 let changed = false;
-                chunks.forEach(function (chunk) {
-                    chunk.modules.slice().forEach(function (module) {
+                chunks.forEach(chunk => {
+                    chunk.modules.slice().forEach(module => {
                         if (!module.chunkCondition) {
                             return;
                         }
                         if (!module.chunkCondition(chunk)) {
                             const usedChunks = module._EnsureChunkConditionsPlugin_usedChunks = (module._EnsureChunkConditionsPlugin_usedChunks || []).concat(chunk);
                             const newChunks = [];
-                            chunk.parents.forEach(function (parent) {
+                            chunk.parents.forEach(parent => {
                                 if (!usedChunks.includes(parent)) {
                                     parent.addModule(module);
                                     newChunks.push(parent);

@@ -3,10 +3,10 @@
  Author Tobias Koppers @sokra
  */
 import DependenciesBlock = require('./DependenciesBlock');
-
 import ModuleReason = require('./ModuleReason');
 import Template = require('./Template');
 import HarmonyModulesHelpers = require('./dependencies/HarmonyModulesHelpers');
+import removeAndDo = require('./removeAndDo');
 
 let debugId = 1000;
 
@@ -30,6 +30,10 @@ class Module extends DependenciesBlock {
         this.dependenciesErrors = [];
         this.strict = false;
         this.meta = {};
+    }
+
+    _removeAndDo(collection, thing, action) {
+        return removeAndDo.call(this, collection, thing, action)
     }
 
     get entry() {
@@ -104,14 +108,14 @@ class Module extends DependenciesBlock {
     }
 
     rewriteChunkInReasons(oldChunk, newChunks) {
-        this.reasons.forEach(function (r) {
+        this.reasons.forEach(r => {
             if (!r.chunks) {
                 if (!r.module.chunks.includes(oldChunk)) {
                     return;
                 }
                 r.chunks = r.module.chunks;
             }
-            r.chunks = r.chunks.reduce(function (arr, c) {
+            r.chunks = r.chunks.reduce((arr, c) => {
                 addToSet(arr, c !== oldChunk ? [c] : newChunks);
                 return arr;
             }, []);
@@ -168,18 +172,14 @@ class Module extends DependenciesBlock {
     sortItems() {
         super.sortItems();
         this.chunks.sort(byId);
-        this.reasons.sort(function (a, b) {
-            return byId(a.module, b.module);
-        });
+        this.reasons.sort((a, b) => byId(a.module, b.module));
     }
 }
 
 export = Module;
 
-Module.prototype._removeAndDo = require('./removeAndDo');
-
 function addToSet(set, items) {
-    items.forEach(function (item) {
+    items.forEach(item => {
         if (!set.includes(item)) {
             set.push(item);
         }
@@ -190,6 +190,7 @@ function byId(a, b) {
     return a.id - b.id;
 }
 
+// todo: why?
 Module.prototype.identifier = null;
 Module.prototype.readableIdentifier = null;
 Module.prototype.build = null;

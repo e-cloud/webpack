@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import AMDRequireItemDependency = require('./AMDRequireItemDependency');
-
 import AMDRequireArrayDependency = require('./AMDRequireArrayDependency');
 import AMDRequireContextDependency = require('./AMDRequireContextDependency');
 import AMDRequireDependenciesBlock = require('./AMDRequireDependenciesBlock');
@@ -33,9 +32,9 @@ class AMDRequireDependenciesBlockParserPlugin {
                     dep = new AMDRequireDependenciesBlock(expr, param.range, null, this.state.module, expr.loc);
                     old = this.state.current;
                     this.state.current = dep;
-                    this.inScope([], function () {
+                    this.inScope([], () => {
                         result = this.applyPluginsBailResult('call require:amd:array', expr, param);
-                    }.bind(this));
+                    });
                     this.state.current = old;
                     if (!result) {
                         return;
@@ -49,9 +48,9 @@ class AMDRequireDependenciesBlockParserPlugin {
                     old = this.state.current;
                     this.state.current = dep;
                     try {
-                        this.inScope([], function () {
+                        this.inScope([], () => {
                             result = this.applyPluginsBailResult('call require:amd:array', expr, param);
-                        }.bind(this));
+                        });
                         if (!result) {
                             dep = new UnsupportedDependency('unsupported', expr.range);
                             old.addDependency(dep);
@@ -63,16 +62,17 @@ class AMDRequireDependenciesBlockParserPlugin {
                         }
                         const fnData = getFunctionExpression(expr.arguments[1]);
                         if (fnData) {
-                            this.inScope(fnData.fn.params.filter(function (i) {
-                                return !['require', 'module', 'exports'].includes(i.name);
-                            }), function () {
-                                if (fnData.fn.body.type === 'BlockStatement') {
-                                    this.walkStatement(fnData.fn.body);
+                            this.inScope(
+                                fnData.fn.params.filter(i =>!['require', 'module', 'exports'].includes(i.name)),
+                                () => {
+                                    if (fnData.fn.body.type === 'BlockStatement') {
+                                        this.walkStatement(fnData.fn.body);
+                                    }
+                                    else {
+                                        this.walkExpression(fnData.fn.body);
+                                    }
                                 }
-                                else {
-                                    this.walkExpression(fnData.fn.body);
-                                }
-                            }.bind(this));
+                            );
                             this.walkExpressions(fnData.expressions);
                             if (fnData.needThis === false) {
                                 // smaller bundles for simple function expression

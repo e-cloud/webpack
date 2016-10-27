@@ -11,7 +11,8 @@ class RequireResolveDependency extends ModuleDependency {
     }
 }
 
-export = RequireResolveDependency;
 RequireResolveDependency.prototype.type = 'require.resolve';
+
+export = RequireResolveDependency;
 
 RequireResolveDependency.Template = require('./ModuleDependencyTemplateAsId');

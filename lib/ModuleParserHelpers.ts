@@ -2,9 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-const ModuleParserHelpers = exports;
-
-ModuleParserHelpers.addParsedVariable = function (parser, name, expression) {
+export function addParsedVariable(parser, name, expression) {
     if (!parser.state.current.addVariable) {
         return false;
     }
@@ -20,4 +18,4 @@ ModuleParserHelpers.addParsedVariable = function (parser, name, expression) {
     });
     parser.state.current.addVariable(name, expression, deps);
     return true;
-};
+}

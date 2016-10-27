@@ -42,19 +42,20 @@ class NodeWatchFileSystem {
             this.watcher.once('change', callbackUndelayed);
         }
 
-        this.watcher.once('aggregated', function (changes) {
+        this.watcher.once('aggregated', changes => {
             if (this.inputFileSystem && this.inputFileSystem.purge) {
                 this.inputFileSystem.purge(changes);
             }
             const times = this.watcher.getTimes();
-            callback(null, changes.filter(function (file) {
-                return files.includes(file);
-            }).sort(), changes.filter(function (file) {
-                return dirs.includes(file);
-            }).sort(), changes.filter(function (file) {
-                return missing.includes(file);
-            }).sort(), times, times);
-        }.bind(this));
+            callback(
+                null,
+                changes.filter(file => files.includes(file)).sort(),
+                changes.filter(file => dirs.includes(file)).sort(),
+                changes.filter(file => missing.includes(file)).sort(),
+                times,
+                times
+            );
+        });
 
         this.watcher.watch(files.concat(missing), dirs, startTime);
 
@@ -62,12 +63,12 @@ class NodeWatchFileSystem {
             oldWatcher.close();
         }
         return {
-            close: function () {
+            close: () => {
                 this.watcher.close();
-            }.bind(this),
-            pause: function () {
+            },
+            pause: () => {
                 this.watcher.pause();
-            }.bind(this)
+            }
         };
     }
 }

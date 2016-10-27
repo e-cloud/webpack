@@ -2,9 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-const HarmonyModulesHelpers = exports;
-
-HarmonyModulesHelpers.getModuleVar = function (state, request) {
+export function getModuleVar(state, request) {
     if (!state.harmonyModules) {
         state.harmonyModules = [];
     }
@@ -14,25 +12,25 @@ HarmonyModulesHelpers.getModuleVar = function (state, request) {
         state.harmonyModules.push(request);
     }
     return `__WEBPACK_IMPORTED_MODULE_${idx}_${request.replace(/[^A-Za-z0-9_]/g, '_').replace(/__+/g, '_')}__`;
-};
+}
 
-HarmonyModulesHelpers.getNewModuleVar = function (state, request) {
+export function getNewModuleVar(state, request) {
     if (state.harmonyModules && state.harmonyModules.includes(request)) {
         return null;
     }
-    return HarmonyModulesHelpers.getModuleVar(state, request);
-};
+    return getModuleVar(state, request);
+}
 
-HarmonyModulesHelpers.checkModuleVar = function (state, request) {
+export function checkModuleVar(state, request) {
     if (!state.harmonyModules || !state.harmonyModules.includes(request)) {
         return null;
     }
-    return HarmonyModulesHelpers.getModuleVar(state, request);
-};
+    return getModuleVar(state, request);
+}
 
 // checks if an harmory dependency is active in a module according to
 // precedence rules.
-HarmonyModulesHelpers.isActive = function (module, depInQuestion) {
+export function isActive(module, depInQuestion) {
     const desc = depInQuestion.describeHarmonyExport();
     if (!desc.exportedName) {
         return true;
@@ -61,15 +59,15 @@ HarmonyModulesHelpers.isActive = function (module, depInQuestion) {
         }
     }
     return true;
-};
+}
 
 // get a list of named exports defined in a module
 // doesn't include * reexports.
-HarmonyModulesHelpers.getActiveExports = function (module) {
+export function getActiveExports(module) {
     if (module.activeExports) {
         return module.activeExports;
     }
-    return module.dependencies.reduce(function (arr, dep) {
+    return module.dependencies.reduce((arr, dep) => {
         if (!dep.describeHarmonyExport) {
             return arr;
         }
@@ -84,4 +82,4 @@ HarmonyModulesHelpers.getActiveExports = function (module) {
         arr.push(name);
         return arr;
     }, []);
-};
+}

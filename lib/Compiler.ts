@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import path = require('path');
-
 import assign = require('object-assign');
 import Tapable = require('tapable');
 import Compilation = require('./Compilation');
@@ -32,69 +31,71 @@ class Watching {
         this.watchOptions.aggregateTimeout = this.watchOptions.aggregateTimeout || 200;
         this.compiler = compiler;
         this.running = true;
-        this.compiler.readRecords(function (err) {
+        this.compiler.readRecords(err => {
             if (err) {
                 return this._done(err);
             }
 
             this._go();
-        }.bind(this));
+        });
     }
 
     _go() {
-        const self = this;
-        self.startTime = new Date().getTime();
-        self.running = true;
-        self.invalid = false;
-        self.compiler.applyPluginsAsync('watch-run', self, function (err) {
+        this.startTime = new Date().getTime();
+        this.running = true;
+        this.invalid = false;
+        this.compiler.applyPluginsAsync('watch-run', this, err => {
             if (err) {
-                return self._done(err);
+                return this._done(err);
             }
-            self.compiler.compile(function onCompiled(err, compilation) {
+
+            const onCompiled = (err, compilation) => {
                 if (err) {
-                    return self._done(err);
+                    return this._done(err);
                 }
-                if (self.invalid) {
-                    return self._done();
-                }
-
-                if (self.compiler.applyPluginsBailResult('should-emit', compilation) === false) {
-                    return self._done(null, compilation);
+                if (this.invalid) {
+                    return this._done();
                 }
 
-                self.compiler.emitAssets(compilation, function (err) {
+                if (this.compiler.applyPluginsBailResult('should-emit', compilation) === false) {
+                    return this._done(null, compilation);
+                }
+
+                this.compiler.emitAssets(compilation, err => {
                     if (err) {
-                        return self._done(err);
+                        return this._done(err);
                     }
-                    if (self.invalid) {
-                        return self._done();
+                    if (this.invalid) {
+                        return this._done();
                     }
 
-                    self.compiler.emitRecords(function (err) {
+                    this.compiler.emitRecords(err => {
                         if (err) {
-                            return self._done(err);
+                            return this._done(err);
                         }
 
                         if (compilation.applyPluginsBailResult('need-additional-pass')) {
                             compilation.needAdditionalPass = true;
 
                             const stats = compilation.getStats();
-                            stats.startTime = self.startTime;
+                            stats.startTime = this.startTime;
                             stats.endTime = new Date().getTime();
-                            self.compiler.applyPlugins('done', stats);
+                            this.compiler.applyPlugins('done', stats);
 
-                            self.compiler.applyPluginsAsync('additional-pass', function (err) {
+                            this.compiler.applyPluginsAsync('additional-pass', err => {
                                 if (err) {
-                                    return self._done(err);
+                                    return this._done(err);
                                 }
-                                self.compiler.compile(onCompiled);
+                                this.compiler.compile(onCompiled);
                             });
                             return;
                         }
-                        return self._done(null, compilation);
+                        return this._done(null, compilation);
                     });
                 });
-            });
+            }
+
+            this.compiler.compile(onCompiled);
         });
     }
 
@@ -122,25 +123,26 @@ class Watching {
     }
 
     watch(files, dirs, missing) {
-        this.watcher = this.compiler.watchFileSystem.watch(files, dirs, missing, this.startTime, this.watchOptions, function (
-            err,
-            filesModified,
-            contextModified,
-            missingModified,
-            fileTimestamps,
-            contextTimestamps
-        ) {
-            this.watcher = null;
-            if (err) {
-                return this.handler(err);
-            }
+        this.watcher = this.compiler.watchFileSystem.watch(
+            files,
+            dirs,
+            missing,
+            this.startTime,
+            this.watchOptions,
+            (err, filesModified, contextModified, missingModified, fileTimestamps, contextTimestamps) => {
+                this.watcher = null;
+                if (err) {
+                    return this.handler(err);
+                }
 
-            this.compiler.fileTimestamps = fileTimestamps;
-            this.compiler.contextTimestamps = contextTimestamps;
-            this.invalidate();
-        }.bind(this), function (fileName, changeTime) {
-            this.compiler.applyPlugins('invalid', fileName, changeTime);
-        }.bind(this));
+                this.compiler.fileTimestamps = fileTimestamps;
+                this.compiler.contextTimestamps = contextTimestamps;
+                this.invalidate();
+            },
+            (fileName, changeTime) => {
+                this.compiler.applyPlugins('invalid', fileName, changeTime);
+            }
+        );
     }
 
     invalidate() {
@@ -159,7 +161,7 @@ class Watching {
 
     close(callback) {
         if (callback === undefined) {
-            callback = function () {
+            callback = () => {
             };
         }
 
@@ -169,7 +171,7 @@ class Watching {
         }
         if (this.running) {
             this.invalid = true;
-            this._done = function () {
+            this._done = () => {
                 callback();
             };
         }
@@ -201,33 +203,34 @@ class Compiler extends Tapable {
         };
         let deprecationReported = false;
         this.parser = {
-            plugin: function (hook, fn) {
+            plugin: (hook, fn) => {
                 if (!deprecationReported) {
                     console.warn(`webpack: Using compiler.parser is deprecated.\nUse compiler.plugin("compilation", function(compilation, data) {\n  data.normalModuleFactory.plugin("parser", function(parser, options) { parser.plugin(/* ... */); });\n}); instead. It was called ${new Error().stack.split('\n')[2].trim()}.`);
                     deprecationReported = true;
                 }
-                this.plugin('compilation', function (compilation, data) {
-                    data.normalModuleFactory.plugin('parser', function (parser) {
+                this.plugin('compilation', (compilation, data) => {
+                    data.normalModuleFactory.plugin('parser', parser => {
                         parser.plugin(hook, fn);
                     });
                 });
-            }.bind(this),
-            apply: function () {
-                const args = arguments;
+            },
+            apply: (...args) => {
                 if (!deprecationReported) {
                     console.warn(`webpack: Using compiler.parser is deprecated.\nUse compiler.plugin("compilation", function(compilation, data) {\n  data.normalModuleFactory.plugin("parser", function(parser, options) { parser.apply(/* ... */); });\n}); instead. It was called ${new Error().stack.split('\n')[2].trim()}.`);
                     deprecationReported = true;
                 }
-                this.plugin('compilation', function (compilation, data) {
-                    data.normalModuleFactory.plugin('parser', function (parser) {
-                        parser.apply(...args);
+                this.plugin('compilation', (compilation, data) => {
+                    data.normalModuleFactory.plugin('parser', parser => {
+                        parser.apply(args);
                     });
                 });
-            }.bind(this)
+            }
         };
 
         this.options = {};
     }
+
+    static Watching = Watching
 
     watch(watchOptions, handler) {
         this.fileTimestamps = {};
@@ -240,17 +243,17 @@ class Compiler extends Tapable {
         const self = this;
         const startTime = new Date().getTime();
 
-        self.applyPluginsAsync('before-run', self, function (err) {
+        self.applyPluginsAsync('before-run', self, err => {
             if (err) {
                 return callback(err);
             }
 
-            self.applyPluginsAsync('run', self, function (err) {
+            self.applyPluginsAsync('run', self, err => {
                 if (err) {
                     return callback(err);
                 }
 
-                self.readRecords(function (err) {
+                self.readRecords(err => {
                     if (err) {
                         return callback(err);
                     }
@@ -268,7 +271,7 @@ class Compiler extends Tapable {
                             return callback(null, stats);
                         }
 
-                        self.emitAssets(compilation, function (err) {
+                        self.emitAssets(compilation, err => {
                             if (err) {
                                 return callback(err);
                             }
@@ -281,7 +284,7 @@ class Compiler extends Tapable {
                                 stats.endTime = new Date().getTime();
                                 self.applyPlugins('done', stats);
 
-                                self.applyPluginsAsync('additional-pass', function (err) {
+                                self.applyPluginsAsync('additional-pass', err => {
                                     if (err) {
                                         return callback(err);
                                     }
@@ -290,7 +293,7 @@ class Compiler extends Tapable {
                                 return;
                             }
 
-                            self.emitRecords(function (err) {
+                            self.emitRecords(err => {
                                 if (err) {
                                     return callback(err);
                                 }
@@ -309,24 +312,22 @@ class Compiler extends Tapable {
     }
 
     runAsChild(callback) {
-        this.compile(function (err, compilation) {
+        this.compile((err, compilation) => {
             if (err) {
                 return callback(err);
             }
 
             this.parentCompilation.children.push(compilation);
-            Object.keys(compilation.assets).forEach(function (name) {
+            Object.keys(compilation.assets).forEach(name => {
                 this.parentCompilation.assets[name] = compilation.assets[name];
-            }.bind(this));
+            });
 
-            const entries = Object.keys(compilation.entrypoints).map(function (name) {
-                return compilation.entrypoints[name].chunks;
-            }).reduce(function (array, chunks) {
-                return array.concat(chunks);
-            }, []);
+            const entries = Object.keys(compilation.entrypoints)
+                .map(name => compilation.entrypoints[name].chunks)
+                .reduce((array, chunks) => array.concat(chunks), []);
 
             return callback(null, entries, compilation);
-        }.bind(this));
+        });
     }
 
     purgeInputFileSystem() {
@@ -338,20 +339,20 @@ class Compiler extends Tapable {
     emitAssets(compilation, callback) {
         let outputPath;
 
-        this.applyPluginsAsync('emit', compilation, function (err) {
+        this.applyPluginsAsync('emit', compilation, err => {
             if (err) {
                 return callback(err);
             }
             outputPath = compilation.getPath(this.outputPath);
             this.outputFileSystem.mkdirp(outputPath, emitFiles.bind(this));
-        }.bind(this));
+        });
 
         function emitFiles(err) {
             if (err) {
                 return callback(err);
             }
 
-            require('async').forEach(Object.keys(compilation.assets), function (file, callback) {
+            require('async').forEach(Object.keys(compilation.assets), (file, callback) => {
 
                 let targetFile = file;
                 const queryStringIdx = targetFile.indexOf('?');
@@ -385,17 +386,17 @@ class Compiler extends Tapable {
                     source.emitted = true;
                     this.outputFileSystem.writeFile(targetPath, content, callback);
                 }
-            }.bind(this), function (err) {
+            }, err => {
                 if (err) {
                     return callback(err);
                 }
 
                 afterEmit.call(this);
-            }.bind(this));
+            });
         }
 
         function afterEmit() {
-            this.applyPluginsAsync('after-emit', compilation, function (err) {
+            this.applyPluginsAsync('after-emit', compilation, err => {
                 if (err) {
                     return callback(err);
                 }
@@ -421,12 +422,12 @@ class Compiler extends Tapable {
         if (!recordsOutputPathDirectory) {
             return writeFile.call(this);
         }
-        this.outputFileSystem.mkdirp(recordsOutputPathDirectory, function (err) {
+        this.outputFileSystem.mkdirp(recordsOutputPathDirectory, err => {
             if (err) {
                 return callback(err);
             }
             writeFile.call(this);
-        }.bind(this));
+        });
 
         function writeFile() {
             this.outputFileSystem.writeFile(this.recordsOutputPath, JSON.stringify(this.records, undefined, 2), callback);
@@ -439,14 +440,14 @@ class Compiler extends Tapable {
             self.records = {};
             return callback();
         }
-        self.inputFileSystem.stat(self.recordsInputPath, function (err) {
+        self.inputFileSystem.stat(self.recordsInputPath, err => {
             // It doesn't exist
             // We can ignore self.
             if (err) {
                 return callback();
             }
 
-            self.inputFileSystem.readFile(self.recordsInputPath, function (err, content) {
+            self.inputFileSystem.readFile(self.recordsInputPath, (err, content) => {
                 if (err) {
                     return callback(err);
                 }
@@ -465,14 +466,15 @@ class Compiler extends Tapable {
 
     createChildCompiler(compilation, compilerName, outputOptions) {
         const childCompiler = new Compiler();
-        for (var name in this._plugins) {
+
+        for (const pluginName in this._plugins) {
             if (![
-                    'make', 'compile', 'emit', 'after-emit', 'invalid', 'done',
-                    'this-compilation'
-                ].includes(name)) {
-                childCompiler._plugins[name] = this._plugins[name].slice();
+                    'make', 'compile', 'emit', 'after-emit', 'invalid', 'done', 'this-compilation'
+                ].includes(pluginName)) {
+                childCompiler._plugins[pluginName] = this._plugins[pluginName].slice();
             }
         }
+
         childCompiler.name = compilerName;
         childCompiler.outputPath = this.outputPath;
         childCompiler.inputFileSystem = this.inputFileSystem;
@@ -480,16 +482,21 @@ class Compiler extends Tapable {
         childCompiler.resolvers = this.resolvers;
         childCompiler.fileTimestamps = this.fileTimestamps;
         childCompiler.contextTimestamps = this.contextTimestamps;
+
         if (!this.records[compilerName]) {
             this.records[compilerName] = [];
         }
+
         this.records[compilerName].push(childCompiler.records = {});
         childCompiler.options = Object.create(this.options);
         childCompiler.options.output = Object.create(childCompiler.options.output);
-        for (name in outputOptions) {
-            childCompiler.options.output[name] = outputOptions[name];
+
+        for (const optionName in outputOptions) {
+            childCompiler.options.output[optionName] = outputOptions[optionName];
         }
+
         childCompiler.parentCompilation = compilation;
+
         return childCompiler;
     }
 
@@ -537,7 +544,7 @@ class Compiler extends Tapable {
     compile(callback) {
         const self = this;
         const params = self.newCompilationParams();
-        self.applyPluginsAsync('before-compile', params, function (err) {
+        self.applyPluginsAsync('before-compile', params, err => {
             if (err) {
                 return callback(err);
             }
@@ -546,19 +553,19 @@ class Compiler extends Tapable {
 
             const compilation = self.newCompilation(params);
 
-            self.applyPluginsParallel('make', compilation, function (err) {
+            self.applyPluginsParallel('make', compilation, err => {
                 if (err) {
                     return callback(err);
                 }
 
                 compilation.finish();
 
-                compilation.seal(function (err) {
+                compilation.seal(err => {
                     if (err) {
                         return callback(err);
                     }
 
-                    self.applyPluginsAsync('after-compile', compilation, function (err) {
+                    self.applyPluginsAsync('after-compile', compilation, err => {
                         if (err) {
                             return callback(err);
                         }
@@ -572,5 +579,3 @@ class Compiler extends Tapable {
 }
 
 export = Compiler;
-
-Compiler.Watching = Watching;

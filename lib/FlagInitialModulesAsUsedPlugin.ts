@@ -3,18 +3,17 @@
  Author Tobias Koppers @sokra
  */
 import path = require('path');
-
 import async = require('async');
 
 class FlagInitialModulesAsUsedPlugin {
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation) {
-            compilation.plugin('after-optimize-chunks', function (chunks) {
-                chunks.forEach(function (chunk) {
+        compiler.plugin('compilation', compilation => {
+            compilation.plugin('after-optimize-chunks', chunks => {
+                chunks.forEach(chunk => {
                     if (!chunk.isInitial()) {
                         return;
                     }
-                    chunk.modules.forEach(function (module) {
+                    chunk.modules.forEach(module => {
                         module.usedExports = true;
                     });
                 });

@@ -25,8 +25,8 @@ export = function () {
     function hotDownloadManifest() {
         // eslint-disable-line no-unused-vars
         const filename = require('path').join(__dirname, $hotMainFilename$);
-        return new Promise(function (resolve, reject) {
-            require('fs').readFile(filename, 'utf-8', function (err, content) {
+        return new Promise((resolve, reject) => {
+            require('fs').readFile(filename, 'utf-8', (err, content) => {
                 if (err) {
                     return resolve();
                 }

@@ -3,8 +3,17 @@
  Author Tobias Koppers @sokra
  */
 import Tapable = require('tapable');
-
 import { ConcatSource } from 'webpack-sources'
+const A_CODE = 'a'.charCodeAt(0);
+const Z_CODE = 'z'.charCodeAt(0);
+const AZ_COUNT = Z_CODE - A_CODE + 1;
+const A2_CODE = 'A'.charCodeAt(0);
+const Z2_CODE = 'Z'.charCodeAt(0);
+const AZ2_COUNT = Z2_CODE - A2_CODE + 1;
+
+function moduleIdIsNumber(module) {
+    return typeof module.id === 'number';
+}
 
 class Template extends Tapable {
     constructor(outputOptions) {
@@ -23,6 +32,7 @@ class Template extends Tapable {
         return str.replace(/^[^a-zA-Z$_]/, '_').replace(/[^a-zA-Z0-9$_]/g, '_');
     }
 
+    // todo: to be renamed
     static numberToIdentifer(n) {
         if (n < AZ_COUNT) {
             return String.fromCharCode(A_CODE + n);
@@ -35,7 +45,7 @@ class Template extends Tapable {
 
     indent(str) {
         if (Array.isArray(str)) {
-            return str.map(indent).join('\n');
+            return str.map(this.indent).join('\n');
         }
         else {
             str = str.trimRight();
@@ -51,11 +61,15 @@ class Template extends Tapable {
         if (Array.isArray(str)) {
             str = str.join('\n');
         }
+
         str = str.trim();
+
         if (!str) {
             return '';
         }
+
         const ind = str[0] === '\n' ? '' : prefix;
+
         return ind + str.replace(/\n([^\n])/g, '\n' + prefix + '$1');
     }
 
@@ -70,9 +84,11 @@ class Template extends Tapable {
         if (!modules.every(moduleIdIsNumber)) {
             return false;
         }
+
         let maxId = -Infinity;
         let minId = Infinity;
-        modules.forEach(function (module) {
+
+        modules.forEach(module => {
             if (maxId < module.id) {
                 maxId = module.id;
             }
@@ -80,17 +96,19 @@ class Template extends Tapable {
                 minId = module.id;
             }
         });
+
         if (minId < 16 + ('' + minId).length) {
             // add minId x ',' instead of 'Array(minId).concat(...)'
             minId = 0;
         }
-        const objectOverhead = modules.map(function (module) {
+
+        const objectOverhead = modules.map(module => {
             const idLength = (`${module.id}`).length;
             return idLength + 2;
-        }).reduce(function (a, b) {
-            return a + b;
-        }, -1);
+        }).reduce((a, b) => a + b, -1);
+
         const arrayOverhead = minId === 0 ? maxId : 16 + ('' + minId).length + maxId;
+
         return arrayOverhead < objectOverhead ? [minId, maxId] : false;
     }
 
@@ -104,46 +122,56 @@ class Template extends Tapable {
             return source;
         }
         const removedModules = chunk.removedModules;
-        const allModules = chunk.modules.map(function (module) {
-            return {
-                id: module.id,
-                source: moduleTemplate.render(module, dependencyTemplates, chunk)
-            };
-        });
+        const allModules = chunk.modules.map(module => ({
+            id: module.id,
+            source: moduleTemplate.render(module, dependencyTemplates, chunk)
+        }));
+
         if (removedModules && removedModules.length > 0) {
-            removedModules.forEach(function (id) {
+            removedModules.forEach(id => {
                 allModules.push({
                     id,
                     source: 'false'
                 });
             });
         }
+
         const bounds = this.getModulesArrayBounds(chunk.modules);
 
         if (bounds) {
             // Render a spare array
             const minId = bounds[0];
             const maxId = bounds[1];
+
             if (minId !== 0) {
                 source.add(`Array(${minId}).concat(`);
             }
+
             source.add('[\n');
+
             const modules = {};
-            allModules.forEach(function (module) {
+
+            allModules.forEach(module => {
                 modules[module.id] = module;
             });
+
             for (let idx = minId; idx <= maxId; idx++) {
                 const module = modules[idx];
+
                 if (idx !== minId) {
                     source.add(',\n');
                 }
+
                 source.add(`/* ${idx} */`);
+
                 if (module) {
                     source.add('\n');
                     source.add(module.source);
                 }
             }
+
             source.add(`\n${prefix}]`);
+
             if (minId !== 0) {
                 source.add(')');
             }
@@ -151,7 +179,7 @@ class Template extends Tapable {
         else {
             // Render an object
             source.add('{\n');
-            allModules.sort(function (a, b) {
+            allModules.sort((a, b) => {
                 const aId = `${a.id}`;
                 const bId = `${b.id}`;
                 if (aId < bId) {
@@ -161,13 +189,14 @@ class Template extends Tapable {
                     return 1;
                 }
                 return 0;
-            }).forEach(function (module, idx) {
+            }).forEach((module, idx) => {
                 if (idx !== 0) {
                     source.add(',\n');
                 }
                 source.add(`\n/***/ ${JSON.stringify(module.id)}:\n`);
                 source.add(module.source);
             });
+
             source.add(`\n\n${prefix}}`);
         }
         return source;
@@ -175,14 +204,3 @@ class Template extends Tapable {
 }
 
 export = Template;
-
-const A_CODE = 'a'.charCodeAt(0);
-const Z_CODE = 'z'.charCodeAt(0);
-const AZ_COUNT = Z_CODE - A_CODE + 1;
-const A2_CODE = 'A'.charCodeAt(0);
-const Z2_CODE = 'Z'.charCodeAt(0);
-const AZ2_COUNT = Z2_CODE - A2_CODE + 1;
-
-function moduleIdIsNumber(module) {
-    return typeof module.id === 'number';
-}

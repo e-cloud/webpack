@@ -4,7 +4,7 @@
  */
 class NewWatchingPlugin {
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation) {
+        compiler.plugin('compilation', compilation => {
             compilation.warnings.push(new Error('The \'NewWatchingPlugin\' is no longer necessary (now default)'));
         });
     }

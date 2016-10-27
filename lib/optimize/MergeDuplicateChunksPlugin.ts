@@ -4,10 +4,10 @@
  */
 class MergeDuplicateChunksPlugin {
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation) {
-            compilation.plugin('optimize-chunks-basic', function (chunks) {
+        compiler.plugin('compilation', compilation => {
+            compilation.plugin('optimize-chunks-basic', chunks => {
                 const map = {};
-                chunks.slice().forEach(function (chunk) {
+                chunks.slice().forEach(chunk => {
                     if (chunk.hasRuntime() || chunk.hasEntryModule()) {
                         return;
                     }
@@ -28,7 +28,8 @@ class MergeDuplicateChunksPlugin {
 export = MergeDuplicateChunksPlugin;
 
 function getChunkIdentifier(chunk) {
-    return chunk.modules.map(function (m) {
-        return m.identifier();
-    }).sort().join(', ');
+    return chunk.modules
+        .map(m => m.identifier())
+        .sort()
+        .join(', ');
 }

@@ -13,9 +13,7 @@ class JsonpMainTemplatePlugin {
                     '',
                     '// objects to store loaded and loading chunks',
                     'var installedChunks = {',
-                    this.indent(chunk.ids.map(function (id) {
-                        return `${id}: 0`;
-                    }).join(',\n')),
+                    this.indent(chunk.ids.map(id => `${id}: 0`).join(',\n')),
                     '};'
                 ]);
             }
@@ -33,29 +31,29 @@ class JsonpMainTemplatePlugin {
                 'script.charset = \'utf-8\';',
                 'script.async = true;',
                 `script.timeout = ${chunkLoadTimeout};`,
-                crossOriginLoading
-                    ? `script.crossOrigin = '${crossOriginLoading}';`
-                    : '',
-                `script.src = ${this.requireFn}.p + ${this.applyPluginsWaterfall('asset-path', JSON.stringify(chunkFilename), {
-                    hash: '" + ' + this.renderCurrentHashCode(hash) + ' + "',
-                    hashWithLength: function (length) {
-                        return '" + ' + this.renderCurrentHashCode(hash, length) + ' + "';
-                    }.bind(this),
-                    chunk: {
-                        id: '" + chunkId + "',
-                        hash: '" + ' + JSON.stringify(chunkMaps.hash) + '[chunkId] + "',
-                        hashWithLength(length) {
-                            const shortChunkHashMap = {};
-                            Object.keys(chunkMaps.hash).forEach(function (chunkId) {
-                                if (typeof chunkMaps.hash[chunkId] === 'string') {
-                                    shortChunkHashMap[chunkId] = chunkMaps.hash[chunkId].substr(0, length);
-                                }
-                            });
-                            return '" + ' + JSON.stringify(shortChunkHashMap) + '[chunkId] + "';
-                        },
-                        name: '" + (' + JSON.stringify(chunkMaps.name) + '[chunkId]||chunkId) + "'
-                    }
-                })};`,
+                crossOriginLoading ? `script.crossOrigin = '${crossOriginLoading}';` : '',
+                `script.src = ${this.requireFn}.p + ${
+                    this.applyPluginsWaterfall(
+                        'asset-path', JSON.stringify(chunkFilename),
+                        {
+                            hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
+                            hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
+                            chunk: {
+                                id: '" + chunkId + "',
+                                hash: `" + ${JSON.stringify(chunkMaps.hash)}[chunkId] + "`,
+                                hashWithLength(length) {
+                                    const shortChunkHashMap = {};
+                                    Object.keys(chunkMaps.hash).forEach(chunkId => {
+                                        if (typeof chunkMaps.hash[chunkId] === 'string') {
+                                            shortChunkHashMap[chunkId] = chunkMaps.hash[chunkId].substr(0, length);
+                                        }
+                                    });
+                                    return '" + ' + JSON.stringify(shortChunkHashMap) + '[chunkId] + "';
+                                },
+                                name: '" + (' + JSON.stringify(chunkMaps.name) + '[chunkId]||chunkId) + "'
+                            }
+                        }
+                    )};`,
                 `var timeout = setTimeout(onScriptComplete, ${chunkLoadTimeout});`,
                 'script.onerror = script.onload = onScriptComplete;',
                 'function onScriptComplete() {',
@@ -137,8 +135,7 @@ class JsonpMainTemplatePlugin {
                         'if(parentJsonpFunction) parentJsonpFunction(chunkIds, moreModules, executeModules);',
                         'while(resolves.length)',
                         this.indent('resolves.shift()();'),
-                        this.entryPointInChildren(chunk)
-                            ? [
+                        this.entryPointInChildren(chunk) ? [
                             'if(executeModules) {',
                             this.indent([
                                 'for(i=0; i < executeModules.length; i++) {',
@@ -147,8 +144,7 @@ class JsonpMainTemplatePlugin {
                             ]),
                             '}',
                             'return result;'
-                        ]
-                            : ''
+                        ] : ''
                     ]),
                     '};'
                 ]);
@@ -161,18 +157,14 @@ class JsonpMainTemplatePlugin {
             const hotUpdateFunction = this.outputOptions.hotUpdateFunction;
             const currentHotUpdateChunkFilename = this.applyPluginsWaterfall('asset-path', JSON.stringify(hotUpdateChunkFilename), {
                 hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
-                hashWithLength: function (length) {
-                    return `" + ${this.renderCurrentHashCode(hash, length)} + "`;
-                }.bind(this),
+                hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
                 chunk: {
                     id: '" + chunkId + "'
                 }
             });
             const currentHotUpdateMainFilename = this.applyPluginsWaterfall('asset-path', JSON.stringify(hotUpdateMainFilename), {
                 hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
-                hashWithLength: function (length) {
-                    return `" + ${this.renderCurrentHashCode(hash, length)} + "`;
-                }.bind(this)
+                hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`
             });
 
             return `${source}\nfunction hotDisposeChunk(chunkId) {\n\tdelete installedChunks[chunkId];\n}\nvar parentHotUpdateCallback = this[${JSON.stringify(hotUpdateFunction)}];\nthis[${JSON.stringify(hotUpdateFunction)}] = ${Template.getFunctionContent(require('./JsonpMainTemplate.runtime.js'))
@@ -194,5 +186,3 @@ class JsonpMainTemplatePlugin {
 }
 
 export = JsonpMainTemplatePlugin;
-
-JsonpMainTemplatePlugin.prototype.constructor = JsonpMainTemplatePlugin;

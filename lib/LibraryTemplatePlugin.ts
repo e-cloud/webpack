@@ -3,18 +3,15 @@
  Author Tobias Koppers @sokra
  */
 import SetVarMainTemplatePlugin = require('./SetVarMainTemplatePlugin');
-
 import CommonJsHarmonyMainTemplatePlugin = require('./CommonJsHarmonyMainTemplatePlugin');
 
 function accessorToObjectAccess(accessor) {
-    return accessor.map(function (a) {
-        return `[${JSON.stringify(a)}]`;
-    }).join('');
+    return accessor.map(a => `[${JSON.stringify(a)}]`).join('');
 }
 
 function accessorAccess(base, accessor, joinWith) {
     accessor = [].concat(accessor);
-    return accessor.map(function (a, idx) {
+    return accessor.map((a, idx) => {
         a = base
             ? base + accessorToObjectAccess(accessor.slice(0, idx + 1))
             : accessor[0] + accessorToObjectAccess(accessor.slice(1, idx + 1));
@@ -37,7 +34,7 @@ class LibraryTemplatePlugin {
     }
 
     apply(compiler) {
-        compiler.plugin('this-compilation', function (compilation) {
+        compiler.plugin('this-compilation', compilation => {
             switch (this.target) {
                 case 'var':
                     compilation.apply(new SetVarMainTemplatePlugin(`var ${accessorAccess(false, this.name)}`));
@@ -89,7 +86,7 @@ class LibraryTemplatePlugin {
                 default:
                     throw new Error(`${this.target} is not a valid Library target`);
             }
-        }.bind(this));
+        });
     }
 }
 

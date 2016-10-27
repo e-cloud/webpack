@@ -4,10 +4,10 @@
  */
 class FlagIncludedChunksPlugin {
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation) {
-            compilation.plugin('optimize-chunk-ids', function (chunks) {
-                chunks.forEach(function (chunkA) {
-                    chunks.forEach(function (chunkB) {
+        compiler.plugin('compilation', compilation => {
+            compilation.plugin('optimize-chunk-ids', chunks => {
+                chunks.forEach(chunkA => {
+                    chunks.forEach(chunkB => {
                         if (chunkA === chunkB) {
                             return;
                         }

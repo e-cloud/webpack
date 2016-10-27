@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import AsyncDependenciesBlock = require('../AsyncDependenciesBlock');
-
 import RequireEnsureDependency = require('./RequireEnsureDependency');
 
 class RequireEnsureDependenciesBlock extends AsyncDependenciesBlock {

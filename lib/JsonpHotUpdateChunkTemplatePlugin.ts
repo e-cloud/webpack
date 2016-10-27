@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import { ConcatSource } from 'webpack-sources'
-
 import Template = require('./Template');
 
 class JsonpHotUpdateChunkTemplatePlugin {

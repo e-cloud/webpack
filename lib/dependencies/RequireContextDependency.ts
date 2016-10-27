@@ -11,7 +11,8 @@ class RequireContextDependency extends ContextDependency {
     }
 }
 
-export = RequireContextDependency;
 RequireContextDependency.prototype.type = 'require.context';
+
+export = RequireContextDependency;
 
 RequireContextDependency.Template = require('./ModuleDependencyTemplateAsRequireId');

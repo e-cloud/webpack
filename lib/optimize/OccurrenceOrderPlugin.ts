@@ -12,42 +12,37 @@ class OccurrenceOrderPlugin {
 
     apply(compiler) {
         const preferEntry = this.preferEntry;
-        compiler.plugin('compilation', function (compilation) {
-            compilation.plugin('optimize-module-order', function (modules) {
+        compiler.plugin('compilation', compilation => {
+            compilation.plugin('optimize-module-order', modules => {
                 function entryChunks(m) {
-                    return m.chunks.map(function (c) {
+                    return m.chunks.map(c => {
                         const sum = (c.isInitial() ? 1 : 0) + (c.entryModule === m ? 1 : 0);
                         return sum;
-                    }).reduce(function (a, b) {
-                        return a + b;
-                    }, 0);
+                    }).reduce((a, b) => a + b, 0);
                 }
 
                 function occursInEntry(m) {
-                    return m.reasons.map(function (r) {
+                    return m.reasons.map(r => {
                             if (!r.module) {
                                 return 0;
                             }
                             return entryChunks(r.module);
-                        }).reduce(function (a, b) {
-                            return a + b;
-                        }, 0) + entryChunks(m);
+                        }).reduce((a, b) => a + b, 0) + entryChunks(m);
                 }
 
                 function occurs(m) {
-                    return m.reasons.map(function (r) {
+                    return m.reasons.map(r => {
                             if (!r.module) {
                                 return 0;
                             }
                             return r.module.chunks.length;
-                        }).reduce(function (a, b) {
-                            return a + b;
-                        }, 0) + m.chunks.length + m.chunks.filter(function (c) {
+                        }).reduce((a, b) => a + b, 0) + m.chunks.length + m.chunks.filter(c => {
+                            // todo: what?
                             c.entryModule === m;
                         }).length;
                 }
 
-                modules.sort(function (a, b) {
+                modules.sort((a, b) => {
                     if (preferEntry) {
                         const aEntryOccurs = occursInEntry(a);
                         const bEntryOccurs = occursInEntry(b);
@@ -75,19 +70,19 @@ class OccurrenceOrderPlugin {
                     return 0;
                 });
             });
-            compilation.plugin('optimize-chunk-order', function (chunks) {
+            compilation.plugin('optimize-chunk-order', chunks => {
                 function occursInEntry(c) {
-                    return c.parents.filter(function (p) {
-                        return p.isInitial();
-                    }).length;
+                    return c.parents
+                        .filter(p => p.isInitial())
+                        .length;
                 }
 
                 function occurs(c) {
                     return c.blocks.length;
                 }
 
-                chunks.forEach(function (c) {
-                    c.modules.sort(function (a, b) {
+                chunks.forEach(c => {
+                    c.modules.sort((a, b) => {
                         if (a.identifier() > b.identifier()) {
                             return 1;
                         }
@@ -97,7 +92,7 @@ class OccurrenceOrderPlugin {
                         return 0;
                     });
                 });
-                chunks.sort(function (a, b) {
+                chunks.sort((a, b) => {
                     const aEntryOccurs = occursInEntry(a);
                     const bEntryOccurs = occursInEntry(b);
                     if (aEntryOccurs > bEntryOccurs) {

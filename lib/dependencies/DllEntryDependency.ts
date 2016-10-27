@@ -13,5 +13,6 @@ class DllEntryDependency extends Dependency {
     }
 }
 
-export = DllEntryDependency;
 DllEntryDependency.prototype.type = 'dll entry';
+
+export = DllEntryDependency;

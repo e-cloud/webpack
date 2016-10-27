@@ -16,12 +16,12 @@ class ModuleBuildError extends Error {
                 for (let i = 0; i < stack.length; i++) if (stack[i].includes(loaderFlag)) {
                     stack.length = i;
                 }
-                stack = stack.join('\n');
+                const stackStr = stack.join('\n');
                 if (!err.hideStack) {
-                    this.message += stack;
+                    this.message += stackStr;
                 }
                 else {
-                    this.details = stack;
+                    this.details = stackStr;
                     if (typeof err.message === 'string' && err.message) {
                         this.message += err.message;
                     }

@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import ContextDependency = require('./ContextDependency');
-
 import CriticalDependencyWarning = require('./CriticalDependencyWarning');
 
 class RequireResolveContextDependency extends ContextDependency {
@@ -20,7 +19,8 @@ class RequireResolveContextDependency extends ContextDependency {
     }
 }
 
-export = RequireResolveContextDependency;
 RequireResolveContextDependency.prototype.type = 'amd require context';
+
+export = RequireResolveContextDependency;
 
 RequireResolveContextDependency.Template = require('./ContextDependencyTemplateAsId');

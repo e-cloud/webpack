@@ -2,9 +2,8 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import Module = require('./Module');
-
 import { OriginalSource, RawSource } from 'webpack-sources'
+import Module = require('./Module');
 import AsyncDependenciesBlock = require('./AsyncDependenciesBlock');
 
 class ContextModule extends Module {
@@ -74,12 +73,12 @@ class ContextModule extends Module {
         this.built = true;
         this.builtTime = new Date().getTime();
         const addon = this.addon;
-        this.resolveDependencies(fs, this.context, this.recursive, this.regExp, function (err, dependencies) {
+        this.resolveDependencies(fs, this.context, this.recursive, this.regExp, (err, dependencies) => {
             if (err) {
                 return callback(err);
             }
             if (dependencies) {
-                dependencies.forEach(function (dep) {
+                dependencies.forEach(dep => {
                     dep.loc = dep.userRequest;
                     dep.request = addon + dep.request;
                 });
@@ -96,20 +95,20 @@ class ContextModule extends Module {
             else {
                 this.dependencies = dependencies;
             }
-            callback();
-        }.bind(this));
+            return callback();
+        });
     }
 
     source() {
         let str;
         const map = {};
         if (this.dependencies && this.dependencies.length > 0) {
-            this.dependencies.slice().sort(function (a, b) {
+            this.dependencies.slice().sort((a, b) => {
                 if (a.userRequest === b.userRequest) {
                     return 0;
                 }
                 return a.userRequest < b.userRequest ? -1 : 1;
-            }).forEach(function (dep) {
+            }).forEach(dep => {
                 if (dep.module) {
                     map[dep.userRequest] = dep.module.id;
                 }
@@ -136,30 +135,24 @@ class ContextModule extends Module {
             ];
         }
         else if (this.blocks && this.blocks.length > 0) {
-            const items = this.blocks.map(function (block) {
-                return {
-                    dependency: block.dependencies[0],
-                    block,
-                    userRequest: block.dependencies[0].userRequest
-                };
-            }).filter(function (item) {
-                return item.dependency.module;
-            });
+            const items = this.blocks.map(block => ({
+                dependency: block.dependencies[0],
+                block,
+                userRequest: block.dependencies[0].userRequest
+            })).filter(item => item.dependency.module);
             let hasMultipleChunks = false;
-            items.sort(function (a, b) {
+            items.sort((a, b) => {
                 if (a.userRequest === b.userRequest) {
                     return 0;
                 }
                 return a.userRequest < b.userRequest ? -1 : 1;
-            }).forEach(function (item) {
+            }).forEach(item => {
                 if (item.dependency.module) {
                     const chunks = item.block.chunks || [];
                     if (chunks.length !== 1) {
                         hasMultipleChunks = true;
                     }
-                    map[item.userRequest] = [item.dependency.module.id].concat(chunks.map(function (chunk) {
-                        return chunk.id;
-                    }));
+                    map[item.userRequest] = [item.dependency.module.id].concat(chunks.map(chunk => chunk.id));
                 }
             });
             str = [
@@ -205,11 +198,8 @@ class ContextModule extends Module {
     }
 
     size() {
-        return this.dependencies.map(function (dep) {
-            return dep.userRequest.length + 5;
-        }).reduce(function (a, b) {
-            return a + b;
-        }, 160);
+        return this.dependencies.map(dep => dep.userRequest.length + 5)
+            .reduce((a, b) => a + b, 160);
     }
 }
 

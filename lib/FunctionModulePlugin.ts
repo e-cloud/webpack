@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import FunctionModuleTemplatePlugin = require('./FunctionModuleTemplatePlugin');
-
 import RequestShortener = require('./RequestShortener');
 
 class FunctionModulePlugin {
@@ -13,10 +12,10 @@ class FunctionModulePlugin {
     }
 
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation) {
+        compiler.plugin('compilation', compilation => {
             compilation.moduleTemplate.requestShortener = this.requestShortener || new RequestShortener(compiler.context);
             compilation.moduleTemplate.apply(new FunctionModuleTemplatePlugin());
-        }.bind(this));
+        });
     }
 }
 

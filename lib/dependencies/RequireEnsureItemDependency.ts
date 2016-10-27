@@ -10,7 +10,8 @@ class RequireEnsureItemDependency extends ModuleDependency {
     }
 }
 
-export = RequireEnsureItemDependency;
 RequireEnsureItemDependency.prototype.type = 'require.ensure item';
+
+export = RequireEnsureItemDependency;
 
 RequireEnsureItemDependency.Template = require('./NullDependencyTemplate');

@@ -2,7 +2,9 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-const ModuleFilenameHelpers = exports;
+import crypto = require('crypto')
+
+const ModuleFilenameHelpers: any = {};
 
 ModuleFilenameHelpers.ALL_LOADERS_RESOURCE = '[all-loaders][resource]';
 ModuleFilenameHelpers.REGEXP_ALL_LOADERS_RESOURCE = /\[all-?loaders\]\[resource\]/gi;
@@ -36,7 +38,7 @@ function getBefore(str, token) {
 }
 
 function getHash(str) {
-    const hash = require('crypto').createHash('md5');
+    const hash = crypto.createHash('md5');
     hash.update(str);
     return hash.digest('hex').substr(0, 4);
 }
@@ -89,7 +91,8 @@ ModuleFilenameHelpers.createFilename = function createFilename(module, moduleFil
             hash
         });
     }
-    return moduleFilenameTemplate.replace(ModuleFilenameHelpers.REGEXP_ALL_LOADERS_RESOURCE, identifier)
+    return moduleFilenameTemplate
+        .replace(ModuleFilenameHelpers.REGEXP_ALL_LOADERS_RESOURCE, identifier)
         .replace(ModuleFilenameHelpers.REGEXP_LOADERS_RESOURCE, shortIdentifier)
         .replace(ModuleFilenameHelpers.REGEXP_RESOURCE, resource)
         .replace(ModuleFilenameHelpers.REGEXP_RESOURCE_PATH, resourcePath)
@@ -111,9 +114,7 @@ ModuleFilenameHelpers.createFooter = function createFooter(module, requestShorte
     else {
         return [
             '//////////////////', '// WEBPACK FOOTER', `// ${module.readableIdentifier(requestShortener)}`,
-            `// module id = ${module.id}`, `// module chunks = ${module.chunks.map(function (c) {
-                return c.id;
-            }).join(' ')}`
+            `// module id = ${module.id}`, `// module chunks = ${module.chunks.map(chunk => chunk.id).join(' ')}`
         ].join('\n');
     }
 };
@@ -121,17 +122,17 @@ ModuleFilenameHelpers.createFooter = function createFooter(module, requestShorte
 ModuleFilenameHelpers.replaceDuplicates = function replaceDuplicates(array, fn, comparator) {
     const countMap = {};
     const posMap = {};
-    array.forEach(function (item, idx) {
+    array.forEach((item, idx) => {
         countMap[item] = countMap[item] || [];
         countMap[item].push(idx);
         posMap[item] = 0;
     });
     if (comparator) {
-        Object.keys(countMap).forEach(function (item) {
+        Object.keys(countMap).forEach(item => {
             countMap[item].sort(comparator);
         });
     }
-    return array.map(function (item, i) {
+    return array.map((item, i) => {
         if (countMap[item].length > 1) {
             if (comparator && countMap[item][0] === i) {
                 return item;
@@ -148,13 +149,12 @@ ModuleFilenameHelpers.matchPart = function matchPart(str, test) {
     if (!test) {
         return true;
     }
-    test = asRegExp(test);
+
     if (Array.isArray(test)) {
-        return test.map(asRegExp).filter(function (regExp) {
-                return regExp.test(str);
-            }).length > 0;
+        return test.map(asRegExp).filter((regExp: RegExp) => regExp.test(str)).length > 0;
     }
     else {
+        test = asRegExp(test);
         return test.test(str);
     }
 };
@@ -177,3 +177,5 @@ ModuleFilenameHelpers.matchObject = function matchObject(obj, str) {
     }
     return true;
 };
+
+export = ModuleFilenameHelpers

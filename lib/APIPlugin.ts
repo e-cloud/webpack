@@ -3,39 +3,8 @@
  Author Tobias Koppers @sokra
  */
 import ConstDependency = require('./dependencies/ConstDependency');
-
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import NullFactory = require('./NullFactory');
-
-class APIPlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', function (compilation, params) {
-            compilation.dependencyFactories.set(ConstDependency, new NullFactory());
-            compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
-
-            params.normalModuleFactory.plugin('parser', function (parser) {
-                Object.keys(REPLACEMENTS).forEach(function (key) {
-                    parser.plugin(`expression ${key}`, function (expr) {
-                        const dep = new ConstDependency(REPLACEMENTS[key], expr.range);
-                        dep.loc = expr.loc;
-                        this.state.current.addDependency(dep);
-                        return true;
-                    });
-                    parser.plugin(`evaluate typeof ${key}`, function (expr) {
-                        return new BasicEvaluatedExpression().setString(REPLACEMENT_TYPES[key]).setRange(expr.range);
-                    });
-                });
-                IGNORES.forEach(function (key) {
-                    parser.plugin(key, function () {
-                        return true;
-                    });
-                });
-            });
-        });
-    }
-}
-
-export = APIPlugin;
 
 const REPLACEMENTS = {
     __webpack_require__: '__webpack_require__', // eslint-disable-line camelcase
@@ -52,3 +21,33 @@ const REPLACEMENT_TYPES = {
     __webpack_chunk_load__: 'function' // eslint-disable-line camelcase
 };
 const IGNORES = [];
+
+class APIPlugin {
+    apply(compiler) {
+        compiler.plugin('compilation', (compilation, params) => {
+            compilation.dependencyFactories.set(ConstDependency, new NullFactory());
+            compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
+
+            params.normalModuleFactory.plugin('parser', parser => {
+                Object.keys(REPLACEMENTS).forEach(key => {
+                    parser.plugin(`expression ${key}`, function (expr) {
+                        const dep = new ConstDependency(REPLACEMENTS[key], expr.range);
+                        dep.loc = expr.loc;
+                        this.state.current.addDependency(dep);
+                        return true;
+                    });
+                    parser.plugin(`evaluate typeof ${key}`, expr =>
+                        new BasicEvaluatedExpression()
+                            .setString(REPLACEMENT_TYPES[key])
+                            .setRange(expr.range)
+                    );
+                });
+                IGNORES.forEach(key => {
+                    parser.plugin(key, () => true);
+                });
+            });
+        });
+    }
+}
+
+export = APIPlugin;

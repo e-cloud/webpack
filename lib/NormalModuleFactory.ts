@@ -36,7 +36,7 @@ class NormalModuleFactory extends Tapable {
         this.parserCache = {};
         this.plugin('factory', function () {
             const _this = this;
-            return function (result, callback) {
+            return (result, callback) => {
                 const resolver = _this.applyPluginsWaterfall0('resolver', null);
 
                 // Ignored
@@ -59,7 +59,7 @@ class NormalModuleFactory extends Tapable {
                         return callback(null, data);
                     }
 
-                    _this.applyPluginsAsyncWaterfall('after-resolve', data, function (err, result) {
+                    _this.applyPluginsAsyncWaterfall('after-resolve', data, (err, result) => {
                         if (err) {
                             return callback(err);
                         }
@@ -87,8 +87,7 @@ class NormalModuleFactory extends Tapable {
             };
         });
         this.plugin('resolver', function () {
-            const _this = this;
-            return function (data, callback) {
+            return (data, callback) => {
                 const contextInfo = data.contextInfo;
                 const context = data.context;
                 const request = data.request;
@@ -98,7 +97,7 @@ class NormalModuleFactory extends Tapable {
                 const noPostAutoLoaders = /^-!/.test(request);
                 let elements = request.replace(/^-?!+/, '').replace(/!!+/g, '!').split('!');
                 let resource = elements.pop();
-                elements = elements.map(function (element) {
+                elements = elements.map(element => {
                     const idx = element.indexOf('?');
                     let options;
                     if (idx >= 0) {
@@ -112,20 +111,21 @@ class NormalModuleFactory extends Tapable {
                 });
 
                 async.parallel([
-                    function (callback) {
-                        _this.resolveRequestArray(contextInfo, context, elements, _this.resolvers.loader, callback);
-                    }, function (callback) {
+                    callback => {
+                        this.resolveRequestArray(contextInfo, context, elements, this.resolvers.loader, callback);
+                    },
+                    callback => {
                         if (resource === '' || resource[0] === '?') {
                             return callback(null, resource);
                         }
-                        _this.resolvers.normal.resolve(contextInfo, context, resource, function (err, result) {
+                        this.resolvers.normal.resolve(contextInfo, context, resource, (err, result) => {
                             if (err) {
                                 return callback(err);
                             }
                             callback(null, result);
                         });
                     }
-                ], function (err, results) {
+                ], (err, results: string[][]) => {
                     if (err) {
                         return callback(err);
                     }
@@ -144,15 +144,15 @@ class NormalModuleFactory extends Tapable {
                         resourcePath = resourcePath.substr(0, queryIndex);
                     }
 
-                    const result = _this.ruleSet.exec({
+                    const result = this.ruleSet.exec({
                         resource: resourcePath,
                         issuer: contextInfo.issuer
                     });
-                    const settings = {};
+                    const settings: any = {};
                     const useLoadersPost = [];
                     const useLoaders = [];
                     const useLoadersPre = [];
-                    result.forEach(function (r) {
+                    result.forEach(r => {
                         if (r.type === 'use') {
                             if (r.enforce === 'post' && !noPostAutoLoaders && !noPrePostAutoLoaders) {
                                 useLoadersPost.push(r.value);
@@ -169,10 +169,10 @@ class NormalModuleFactory extends Tapable {
                         }
                     });
                     async.parallel([
-                        _this.resolveRequestArray.bind(_this, contextInfo, _this.context, useLoadersPost, _this.resolvers.loader),
-                        _this.resolveRequestArray.bind(_this, contextInfo, _this.context, useLoaders, _this.resolvers.loader),
-                        _this.resolveRequestArray.bind(_this, contextInfo, _this.context, useLoadersPre, _this.resolvers.loader)
-                    ], function (err, results) {
+                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoadersPost, this.resolvers.loader),
+                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoaders, this.resolvers.loader),
+                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoadersPre, this.resolvers.loader)
+                    ], (err, results: string[][]) => {
                         if (err) {
                             return callback(err);
                         }
@@ -189,7 +189,7 @@ class NormalModuleFactory extends Tapable {
                             rawRequest: request,
                             loaders,
                             resource,
-                            parser: _this.getParser(settings.parser)
+                            parser: this.getParser(settings.parser)
                         });
                     }
                 });
@@ -208,7 +208,7 @@ class NormalModuleFactory extends Tapable {
             context,
             request,
             dependencies
-        }, function (err, result) {
+        }, (err, result) => {
             if (err) {
                 return callback(err);
             }
@@ -233,8 +233,8 @@ class NormalModuleFactory extends Tapable {
         if (array.length === 0) {
             return callback(null, []);
         }
-        async.map(array, function (item, callback) {
-            resolver.resolve(contextInfo, context, item.loader, function (err, result) {
+        async.map(array, (item, callback) => {
+            resolver.resolve(contextInfo, context, item.loader, (err, result) => {
                 if (err) {
                     return callback(err);
                 }

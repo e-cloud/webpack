@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import Module = require('./Module');
-
 import { RawSource } from 'webpack-sources'
 
 class DllModule extends Module {

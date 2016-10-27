@@ -14,14 +14,14 @@ class DependenciesBlockVariable {
     updateHash(hash) {
         hash.update(this.name);
         hash.update(this.expression);
-        this.dependencies.forEach(function (d) {
+        this.dependencies.forEach(d => {
             d.updateHash(hash);
         });
     }
 
     expressionSource(dependencyTemplates, outputOptions, requestShortener) {
         const source = new ReplaceSource(new RawSource(this.expression));
-        this.dependencies.forEach(function (dep) {
+        this.dependencies.forEach(dep => {
             const template = dependencyTemplates.get(dep.constructor);
             if (!template) {
                 throw new Error(`No template for dependency: ${dep.constructor.name}`);
@@ -32,7 +32,7 @@ class DependenciesBlockVariable {
     }
 
     disconnect() {
-        this.dependencies.forEach(function (d) {
+        this.dependencies.forEach(d => {
             d.disconnect();
         });
     }

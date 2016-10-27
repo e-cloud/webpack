@@ -3,6 +3,7 @@
  Author Tobias Koppers @sokra
  */
 import ModuleDependency = require('./ModuleDependency');
+import ModuleDependencyTemplateAsId = require('./ModuleDependencyTemplateAsId')
 
 class ModuleHotDeclineDependency extends ModuleDependency {
     constructor(request, range) {
@@ -10,9 +11,10 @@ class ModuleHotDeclineDependency extends ModuleDependency {
         this.range = range;
         this.weak = true;
     }
+
+    static Template = ModuleDependencyTemplateAsId
 }
 
-export = ModuleHotDeclineDependency;
 ModuleHotDeclineDependency.prototype.type = 'module.hot.decline';
 
-ModuleHotDeclineDependency.Template = require('./ModuleDependencyTemplateAsId');
+export = ModuleHotDeclineDependency;

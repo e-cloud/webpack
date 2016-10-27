@@ -14,8 +14,8 @@ class NormalModuleReplacementPlugin {
     apply(compiler) {
         const resourceRegExp = this.resourceRegExp;
         const newResource = this.newResource;
-        compiler.plugin('normal-module-factory', function (nmf) {
-            nmf.plugin('before-resolve', function (result, callback) {
+        compiler.plugin('normal-module-factory', nmf => {
+            nmf.plugin('before-resolve', (result, callback) => {
                 if (!result) {
                     return callback();
                 }
@@ -29,7 +29,7 @@ class NormalModuleReplacementPlugin {
                 }
                 return callback(null, result);
             });
-            nmf.plugin('after-resolve', function (result, callback) {
+            nmf.plugin('after-resolve', (result, callback) => {
                 if (!result) {
                     return callback();
                 }

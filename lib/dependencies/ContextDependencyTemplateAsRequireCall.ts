@@ -13,9 +13,9 @@ class ContextDependencyTemplateAsRequireCall {
         if (dep.module && (isAsync || containsDeps)) {
             if (dep.valueRange) {
                 source.replace(dep.valueRange[1], dep.range[1] - 1, ')');
-                source.replace(dep.range[0], dep.valueRange[0] - 1, `__webpack_require__(${comment}${JSON.stringify(dep.module.id)})(${typeof dep.prepend === 'string'
-                    ? JSON.stringify(dep.prepend)
-                    : ''}`);
+                source.replace(dep.range[0],
+                    dep.valueRange[0] - 1, `__webpack_require__(${comment}${JSON.stringify(dep.module.id)})(${
+                        typeof dep.prepend === 'string' ? JSON.stringify(dep.prepend) : ''}`);
             }
             else {
                 source.replace(dep.range[0], dep.range[1] - 1, `__webpack_require__(${comment}${JSON.stringify(dep.module.id)})`);
@@ -30,9 +30,9 @@ class ContextDependencyTemplateAsRequireCall {
     applyAsTemplateArgument(name, dep, source) {
         if (dep.valueRange) {
             source.replace(dep.valueRange[1], dep.range[1] - 1, ')');
-            source.replace(dep.range[0], dep.valueRange[0] - 1, `__webpack_require__(${name})(${typeof dep.prepend === 'string'
-                ? JSON.stringify(dep.prepend)
-                : ''}`);
+            source.replace(dep.range[0],
+                dep.valueRange[0] - 1, `__webpack_require__(${name})(${
+                    typeof dep.prepend === 'string' ? JSON.stringify(dep.prepend) : ''}`);
         }
         else {
             source.replace(dep.range[0], dep.range[1] - 1, `__webpack_require__(${name})`);

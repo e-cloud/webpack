@@ -4,17 +4,19 @@
  */
 import HarmonyImportDependency = require('./HarmonyImportDependency');
 
+class Template {
+    apply(dep, source, outputOptions, requestShortener) {
+    }
+}
+
 class HarmonyAcceptImportDependency extends HarmonyImportDependency {
     constructor(request, importedVar, range) {
         super(request, importedVar, range);
     }
 
-    static Template() {
-    }
+    static Template = Template
 }
 
-export = HarmonyAcceptImportDependency;
 HarmonyAcceptImportDependency.prototype.type = 'harmony accept';
 
-HarmonyAcceptImportDependency.Template.prototype.apply = function (dep, source, outputOptions, requestShortener) {
-};
+export = HarmonyAcceptImportDependency;

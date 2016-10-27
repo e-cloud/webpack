@@ -11,16 +11,14 @@ class AmdMainTemplatePlugin {
 
     apply(compilation) {
         const mainTemplate = compilation.mainTemplate;
-        compilation.templatesPlugin('render-with-entry', function (source, chunk, hash) {
-            const externals = chunk.modules.filter(function (m) {
-                return m.external;
-            });
-            const externalsDepsArray = JSON.stringify(externals.map(function (m) {
-                return typeof m.request === 'object' ? m.request.amd : m.request;
-            }));
-            const externalsArguments = externals.map(function (m) {
-                return `__WEBPACK_EXTERNAL_MODULE_${m.id}__`;
-            }).join(', ');
+        compilation.templatesPlugin('render-with-entry', (source, chunk, hash) => {
+            const externals = chunk.modules.filter(m => m.external);
+            const externalsDepsArray = JSON.stringify(externals.map(
+                m => typeof m.request === 'object' ? m.request.amd : m.request)
+            );
+            const externalsArguments = externals
+                .map(m => `__WEBPACK_EXTERNAL_MODULE_${m.id}__`)
+                .join(', ');
             if (this.name) {
                 const name = mainTemplate.applyPluginsWaterfall('asset-path', this.name, {
                     hash,
@@ -34,17 +32,17 @@ class AmdMainTemplatePlugin {
             else {
                 return new ConcatSource('define(function() { return ', source, '});');
             }
-        }.bind(this));
-        mainTemplate.plugin('global-hash-paths', function (paths) {
+        });
+        mainTemplate.plugin('global-hash-paths', paths => {
             if (this.name) {
                 paths.push(this.name);
             }
             return paths;
-        }.bind(this));
-        mainTemplate.plugin('hash', function (hash) {
+        });
+        mainTemplate.plugin('hash', hash => {
             hash.update('exports amd');
             hash.update(`${this.name}`);
-        }.bind(this));
+        });
     }
 }
 

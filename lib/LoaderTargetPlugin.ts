@@ -8,10 +8,9 @@ class LoaderTargetPlugin {
     }
 
     apply(compiler) {
-        const target = this.target;
-        compiler.plugin('compilation', function (compilation) {
-            compilation.plugin('normal-module-loader', function (loaderContext) {
-                loaderContext.target = target;
+        compiler.plugin('compilation', compilation => {
+            compilation.plugin('normal-module-loader', loaderContext => {
+                loaderContext.target = this.target;
             });
         });
     }

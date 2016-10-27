@@ -2,26 +2,25 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Jason Anderson @diurnalist
  */
+import Template = require('./Template');
 
 const REGEXP_HASH = /\[hash(?::(\d+))?\]/gi;
-
 const REGEXP_CHUNKHASH = /\[chunkhash(?::(\d+))?\]/gi;
 const REGEXP_NAME = /\[name\]/gi;
 const REGEXP_ID = /\[id\]/gi;
 const REGEXP_FILE = /\[file\]/gi;
 const REGEXP_QUERY = /\[query\]/gi;
+
 const REGEXP_FILEBASE = /\[filebase\]/gi;
 
 // Using global RegExp for .test is dangerous
 // We use a normal RegExp instead of .test
 const REGEXP_HASH_FOR_TEST = new RegExp(REGEXP_HASH.source, 'i');
-
 const REGEXP_CHUNKHASH_FOR_TEST = new RegExp(REGEXP_CHUNKHASH.source, 'i');
+
 const REGEXP_NAME_FOR_TEST = new RegExp(REGEXP_NAME.source, 'i');
 
-// Backwards compatibility; expose regexes on Template object
-import Template = require('./Template');
-
+// Backwards compatibility; expose regexps on Template object
 Template.REGEXP_HASH = REGEXP_HASH;
 Template.REGEXP_CHUNKHASH = REGEXP_CHUNKHASH;
 Template.REGEXP_NAME = REGEXP_NAME;
@@ -32,7 +31,7 @@ Template.REGEXP_FILEBASE = REGEXP_FILEBASE;
 
 class TemplatedPathPlugin {
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation) {
+        compiler.plugin('compilation', compilation => {
             const mainTemplate = compilation.mainTemplate;
 
             mainTemplate.plugin('asset-path', replacePathVariables);
@@ -75,15 +74,18 @@ export = TemplatedPathPlugin;
 function withHashLength(replacer, handlerFn) {
     return function (_, hashLength) {
         const length = hashLength && parseInt(hashLength, 10);
+
         if (length && handlerFn) {
             return handlerFn(length);
         }
+
         const hash = replacer.apply(this, arguments);
+
         return length ? hash.slice(0, length) : hash;
     };
 }
 
-function getReplacer(value, allowEmpty) {
+function getReplacer(value, allowEmpty?) {
     return function (match) {
         // last argument in replacer is the entire input string
         const input = arguments[arguments.length - 1];
@@ -98,7 +100,6 @@ function getReplacer(value, allowEmpty) {
         }
     };
 }
-
 function replacePathVariables(path, data) {
     const chunk = data.chunk;
     const chunkId = chunk && chunk.id;
@@ -120,4 +121,3 @@ function replacePathVariables(path, data) {
         .replace(REGEXP_QUERY, getReplacer(data.query, true));
 }
 
-TemplatedPathPlugin.prototype.constructor = TemplatedPathPlugin;

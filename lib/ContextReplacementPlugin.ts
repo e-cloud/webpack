@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import path = require('path');
-
 import ContextElementDependency = require('./dependencies/ContextElementDependency');
 
 class ContextReplacementPlugin {
@@ -14,7 +13,7 @@ class ContextReplacementPlugin {
         }
         else if (typeof newContentResource === 'string' && typeof newContentRecursive === 'object') {
             this.newContentResource = newContentResource;
-            this.newContentCreateContextMap = function (fs, callback) {
+            this.newContentCreateContextMap = (fs, callback) => {
                 callback(null, newContentRecursive);
             };
         }
@@ -45,8 +44,8 @@ class ContextReplacementPlugin {
         const newContentRecursive = this.newContentRecursive;
         const newContentRegExp = this.newContentRegExp;
         const newContentCreateContextMap = this.newContentCreateContextMap;
-        compiler.plugin('context-module-factory', function (cmf) {
-            cmf.plugin('before-resolve', function (result, callback) {
+        compiler.plugin('context-module-factory', cmf => {
+            cmf.plugin('before-resolve', (result, callback) => {
                 if (!result) {
                     return callback();
                 }
@@ -64,7 +63,7 @@ class ContextReplacementPlugin {
                         newContentCallback(result);
                     }
                     else {
-                        result.dependencies.forEach(function (d) {
+                        result.dependencies.forEach(d => {
                             if (d.critical) {
                                 d.critical = false;
                             }
@@ -73,7 +72,7 @@ class ContextReplacementPlugin {
                 }
                 return callback(null, result);
             });
-            cmf.plugin('after-resolve', function (result, callback) {
+            cmf.plugin('after-resolve', (result, callback) => {
                 if (!result) {
                     return callback();
                 }
@@ -98,7 +97,7 @@ class ContextReplacementPlugin {
                         }
                     }
                     else {
-                        result.dependencies.forEach(function (d) {
+                        result.dependencies.forEach(d => {
                             if (d.critical) {
                                 d.critical = false;
                             }
@@ -115,13 +114,11 @@ export = ContextReplacementPlugin;
 
 function createResolveDependenciesFromContextMap(createContextMap) {
     return function resolveDependenciesFromContextMap(fs, resource, recursive, regExp, callback) {
-        createContextMap(fs, function (err, map) {
+        createContextMap(fs, (err, map) => {
             if (err) {
                 return callback(err);
             }
-            const dependencies = Object.keys(map).map(function (key) {
-                return new ContextElementDependency(map[key], key);
-            });
+            const dependencies = Object.keys(map).map(key => new ContextElementDependency(map[key], key));
             callback(null, dependencies);
         });
     };

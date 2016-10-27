@@ -23,8 +23,8 @@ class AggressiveSplittingPlugin {
 
     apply(compiler) {
         const _this = this;
-        compiler.plugin('compilation', function (compilation) {
-            compilation.plugin('optimize-chunks-advanced', function (chunks) {
+        compiler.plugin('compilation', compilation => {
+            compilation.plugin('optimize-chunks-advanced', chunks => {
                 let i;
                 let chunk;
                 let newChunk;
@@ -40,25 +40,17 @@ class AggressiveSplittingPlugin {
                     const splitData = usedSplits[j];
                     for (i = 0; i < chunks.length; i++) {
                         chunk = chunks[i];
-                        const chunkModuleNames = chunk.modules.map(function (m) {
-                            return makeRelative(compiler, m.identifier());
-                        });
+                        const chunkModuleNames = chunk.modules.map(m => makeRelative(compiler, m.identifier()));
                         if (chunkModuleNames.length < splitData.modules) {
                             continue;
                         }
-                        const moduleIndicies = splitData.modules.map(function (m) {
-                            return chunkModuleNames.indexOf(m);
-                        });
-                        const hasAllModules = moduleIndicies.every(function (idx) {
-                            return idx >= 0;
-                        });
+                        const moduleIndicies = splitData.modules.map(m => chunkModuleNames.indexOf(m));
+                        const hasAllModules = moduleIndicies.every(idx => idx >= 0);
                         if (hasAllModules) {
                             if (chunkModuleNames.length > splitData.modules.length) {
-                                const selectedModules = moduleIndicies.map(function (idx) {
-                                    return chunk.modules[idx];
-                                });
+                                const selectedModules = moduleIndicies.map(idx => chunk.modules[idx]);
                                 newChunk = compilation.addChunk();
-                                selectedModules.forEach(function (m) {
+                                selectedModules.forEach(m => {
                                     chunk.moveModule(m, newChunk);
                                 });
                                 chunk.split(newChunk);
@@ -92,19 +84,18 @@ class AggressiveSplittingPlugin {
                     const size = chunk.size(_this.options);
                     if (size > maxSize && chunk.modules.length > 1) {
                         newChunk = compilation.addChunk();
-                        const modules = chunk.modules.filter(function (m) {
-                            return chunk.entryModule !== m;
-                        }).sort(function (a, b) {
-                            a = a.identifier();
-                            b = b.identifier();
-                            if (a > b) {
-                                return 1;
-                            }
-                            if (a < b) {
-                                return -1;
-                            }
-                            return 0;
-                        });
+                        const modules = chunk.modules.filter(m => chunk.entryModule !== m)
+                            .sort((a, b) => {
+                                a = a.identifier();
+                                b = b.identifier();
+                                if (a > b) {
+                                    return 1;
+                                }
+                                if (a < b) {
+                                    return -1;
+                                }
+                                return 0;
+                            });
                         for (let k = 0; k < modules.length; k++) {
                             chunk.moveModule(modules[k], newChunk);
                             const newSize = newChunk.size(_this.options);
@@ -131,11 +122,10 @@ class AggressiveSplittingPlugin {
                             chunk.name = null;
                             newChunk.origins = chunk.origins.map(copyWithReason);
                             chunk.origins = chunk.origins.map(copyWithReason);
-                            compilation._aggressiveSplittingSplits = (compilation._aggressiveSplittingSplits || []).concat({
-                                modules: newChunk.modules.map(function (m) {
-                                    return makeRelative(compiler, m.identifier());
-                                })
-                            });
+                            compilation._aggressiveSplittingSplits =
+                                (compilation._aggressiveSplittingSplits || []).concat({
+                                    modules: newChunk.modules.map(m => makeRelative(compiler, m.identifier()))
+                                });
                             return true;
                         }
                         else {
@@ -144,22 +134,20 @@ class AggressiveSplittingPlugin {
                     }
                 }
             });
-            compilation.plugin('record-hash', function (records) {
+            compilation.plugin('record-hash', records => {
                 // 3. save to made splittings to records
                 const minSize = _this.options.minSize;
                 const maxSize = _this.options.maxSize;
                 if (!records.aggressiveSplits) {
                     records.aggressiveSplits = [];
                 }
-                compilation.chunks.forEach(function (chunk) {
+                compilation.chunks.forEach(chunk => {
                     if (chunk.hasEntryModule()) {
                         return;
                     }
                     const size = chunk.size(_this.options);
                     const incorrectSize = size < minSize;
-                    const modules = chunk.modules.map(function (m) {
-                        return makeRelative(compiler, m.identifier());
-                    });
+                    const modules = chunk.modules.map(m => makeRelative(compiler, m.identifier()));
                     if (typeof chunk._fromAggressiveSplittingIndex === 'undefined') {
                         if (incorrectSize) {
                             return;
@@ -184,14 +172,10 @@ class AggressiveSplittingPlugin {
                         }
                     }
                 });
-                records.aggressiveSplits = records.aggressiveSplits.filter(function (splitData) {
-                    return !splitData.invalid;
-                });
+                records.aggressiveSplits = records.aggressiveSplits.filter(splitData => !splitData.invalid);
             });
             compilation.plugin('need-additional-seal', function (callback) {
-                const invalid = this.chunks.some(function (chunk) {
-                    return chunk._aggressiveSplittingInvalid;
-                });
+                const invalid = this.chunks.some(chunk => chunk._aggressiveSplittingInvalid);
                 if (invalid) {
                     return true;
                 }
@@ -204,16 +188,17 @@ export = AggressiveSplittingPlugin;
 
 function makeRelative(compiler, identifier) {
     const context = compiler.context;
-    return identifier.split('|').map(function (str) {
-        return str.split('!').map(function (str) {
-            return path.relative(context, str);
-        }).join('!');
-    }).join('|');
+    return identifier.split('|')
+        .map(str =>
+            str.split('!').map(str =>
+                path.relative(context, str)
+            ).join('!')
+        ).join('|');
 }
 
 function copyWithReason(obj) {
-    const newObj = {};
-    Object.keys(obj).forEach(function (key) {
+    const newObj: any = {};
+    Object.keys(obj).forEach(key => {
         newObj[key] = obj[key];
     });
     if (!newObj.reasons || !newObj.reasons.includes('aggressive-splitted')) {

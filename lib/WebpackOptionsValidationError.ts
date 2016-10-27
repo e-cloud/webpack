@@ -2,16 +2,15 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Gajus Kuizinas @gajus
  */
-import webpackOptionsSchema = require('../schemas/webpackOptionsSchema.json');
+const webpackOptionsSchema = require('../schemas/webpackOptionsSchema.json')
 
 class WebpackOptionsValidationError extends Error {
     constructor(validationErrors) {
         super();
         Error.captureStackTrace(this, WebpackOptionsValidationError);
         this.name = 'WebpackOptionsValidationError';
-        this.message = `Invalid configuration object. Webpack has been initialised using a configuration object that does not match the API schema.\n${validationErrors.map(function (err) {
-            return ' - ' + indent(WebpackOptionsValidationError.formatValidationError(err), '   ', false);
-        }).join('\n')}`;
+        this.message = `Invalid configuration object. Webpack has been initialised using a configuration object that does not match the API schema.\n${validationErrors.map(
+            err => ' - ' + indent(WebpackOptionsValidationError.formatValidationError(err), '   ', false)).join('\n')}`;
         this.validationErrors = validationErrors;
     }
 
@@ -23,9 +22,30 @@ class WebpackOptionsValidationError extends Error {
                 if (!err.dataPath) {
                     switch (err.params.additionalProperty) {
                         case 'debug':
-                            return `${baseMessage}\nThe 'debug' property was removed in webpack 2.\nLoaders should be updated to allow passing this option via loader options in module.rules.\nUntil loaders are updated one can use the LoaderOptionsPlugin to switch loaders into debug mode:\nplugins: [\n  new webpack.LoaderOptionsPlugin({\n    debug: true\n  })\n]`;
+                            return `${baseMessage}
+The 'debug' property was removed in webpack 2.
+Loaders should be updated to allow passing this option via loader options in module.rules.
+Until loaders are updated one can use the LoaderOptionsPlugin to switch loaders into debug mode:
+plugins: [
+    new webpack.LoaderOptionsPlugin({
+        debug: true
+    })
+]`;
                     }
-                    return `${baseMessage}\nFor typos: please correct them.\nFor loader options: webpack 2 no longer allows custom properties in configuration.\n  Loaders should be updated to allow passing options via loader options in module.rules.\n  Until loaders are updated one can use the LoaderOptionsPlugin to pass these options to the loader:\n  plugins: [\n    new webpack.LoaderOptionsPlugin({\n      // test: /\\.xxx$/, // may apply this only for some modules\n      options: {\n        ${err.params.additionalProperty}: ...\n      }\n    })\n  ]`;
+                    return `${baseMessage}
+For typos: please correct them.
+For loader options: webpack 2 no longer allows custom properties in configuration.
+Loaders should be updated to allow passing options via loader options in module.rules.
+Until loaders are updated one can use the LoaderOptionsPlugin to pass these options to the loader:
+plugins: [
+    new webpack.LoaderOptionsPlugin({
+        // test: /\\.xxx$/,
+        // may apply this only for some modules
+        options: {
+            ${err.params.additionalProperty}: ...
+        }
+    })
+]`;
                 }
                 return baseMessage;
             case 'oneOf':
@@ -60,9 +80,11 @@ class WebpackOptionsValidationError extends Error {
                     return `${dataPath} ${err.message}`;
                 }
             default:
-                return `${dataPath} ${err.message} (${JSON.stringify(err, 0, 2)}).\n${getSchemaPartText(err.parentSchema)}`;
+                return `${dataPath} ${err.message} (${JSON.stringify(err, null, 2)}).\n${getSchemaPartText(err.parentSchema)}`;
         }
     }
+
+    static formatSchema = formatSchema
 }
 
 export = WebpackOptionsValidationError;
@@ -132,7 +154,7 @@ function formatSchema(schema, prevSchemas = []) {
         case 'object':
             if (schema.properties) {
                 const required = schema.required || [];
-                return `object { ${Object.keys(schema.properties).map(function (property) {
+                return `object { ${Object.keys(schema.properties).map(property => {
                     if (!required.includes(property)) {
                         return property + '?';
                     }
@@ -165,11 +187,9 @@ function formatSchema(schema, prevSchemas = []) {
         return schema.anyOf.map(formatInnerSchema).join(' | ');
     }
     if (schema.enum) {
-        return schema.enum.map(function (item) {
-            return JSON.stringify(item);
-        }).join(' | ');
+        return schema.enum.map(item => JSON.stringify(item)).join(' | ');
     }
-    return JSON.stringify(schema, 0, 2);
+    return JSON.stringify(schema, null, 2);
 }
 
 function indent(str, prefix, firstLine) {
@@ -180,5 +200,3 @@ function indent(str, prefix, firstLine) {
         return str.replace(/\n(?!$)/g, `\n${prefix}`);
     }
 }
-
-WebpackOptionsValidationError.formatSchema = formatSchema;

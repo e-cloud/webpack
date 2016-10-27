@@ -8,9 +8,11 @@ class WatchIgnorePlugin {
     }
 
     apply(compiler) {
-        compiler.plugin('after-environment', function () {
-            compiler.watchFileSystem = new IgnoringWatchFileSystem(compiler.watchFileSystem, this.paths);
-        }.bind(this));
+        compiler.plugin(
+            'after-environment', () => {
+                compiler.watchFileSystem = new IgnoringWatchFileSystem(compiler.watchFileSystem, this.paths);
+            }
+        );
     }
 }
 
@@ -23,40 +25,40 @@ class IgnoringWatchFileSystem {
     }
 
     watch(files, dirs, missing, startTime, options, callback, callbackUndelayed) {
-        const ignored = function (path) {
-            return this.paths.some(function (p) {
-                return p instanceof RegExp ? p.test(path) : path.indexOf(p) === 0;
-            });
-        }.bind(this);
+        const ignored = path => this.paths.some(p => p instanceof RegExp ? p.test(path) : path.indexOf(p) === 0);
 
-        const notIgnored = function (path) {
-            return !ignored(path);
-        };
+        const notIgnored = path => !ignored(path);
 
         const ignoredFiles = files.filter(ignored);
         const ignoredDirs = dirs.filter(ignored);
 
-        this.wfs.watch(files.filter(notIgnored), dirs.filter(notIgnored), missing, startTime, options, function (
-            err,
-            filesModified,
-            dirsModified,
-            missingModified,
-            fileTimestamps,
-            dirTimestamps
-        ) {
-            if (err) {
-                return callback(err);
-            }
+        this.wfs.watch(
+            files.filter(notIgnored), dirs.filter(notIgnored), missing, startTime, options, (
+                err,
+                filesModified,
+                dirsModified,
+                missingModified,
+                fileTimestamps,
+                dirTimestamps
+            ) => {
+                if (err) {
+                    return callback(err);
+                }
 
-            ignoredFiles.forEach(function (path) {
-                fileTimestamps[path] = 1;
-            });
+                ignoredFiles.forEach(
+                    path => {
+                        fileTimestamps[path] = 1;
+                    }
+                );
 
-            ignoredDirs.forEach(function (path) {
-                dirTimestamps[path] = 1;
-            });
+                ignoredDirs.forEach(
+                    path => {
+                        dirTimestamps[path] = 1;
+                    }
+                );
 
-            callback(err, filesModified, dirsModified, missingModified, fileTimestamps, dirTimestamps);
-        }, callbackUndelayed);
+                callback(err, filesModified, dirsModified, missingModified, fileTimestamps, dirTimestamps);
+            }, callbackUndelayed
+        );
     }
 }

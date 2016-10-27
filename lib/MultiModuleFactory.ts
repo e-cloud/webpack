@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import Tapable = require('tapable');
-
 import MultiModule = require('./MultiModule');
 
 class MultiModuleFactory extends Tapable {

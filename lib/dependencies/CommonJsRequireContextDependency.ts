@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import ContextDependency = require('./ContextDependency');
-
 import CriticalDependencyWarning = require('./CriticalDependencyWarning');
 
 class CommonJsRequireContextDependency extends ContextDependency {
@@ -20,7 +19,8 @@ class CommonJsRequireContextDependency extends ContextDependency {
     }
 }
 
-export = CommonJsRequireContextDependency;
 CommonJsRequireContextDependency.prototype.type = 'cjs require context';
+
+export = CommonJsRequireContextDependency;
 
 CommonJsRequireContextDependency.Template = require('./ContextDependencyTemplateAsRequireCall');

@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import DllEntryDependency = require('./dependencies/DllEntryDependency');
-
 import SingleEntryDependency = require('./dependencies/SingleEntryDependency');
 import DllModuleFactory = require('./DllModuleFactory');
 
@@ -16,7 +15,7 @@ class DllEntryPlugin {
     }
 
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation, params) {
+        compiler.plugin('compilation', (compilation, params) => {
             const dllModuleFactory = new DllModuleFactory();
             const normalModuleFactory = params.normalModuleFactory;
 
@@ -24,13 +23,13 @@ class DllEntryPlugin {
 
             compilation.dependencyFactories.set(SingleEntryDependency, normalModuleFactory);
         });
-        compiler.plugin('make', function (compilation, callback) {
+        compiler.plugin('make', (compilation, callback) => {
             compilation.addEntry(this.context, new DllEntryDependency(this.entries.map(function (e, idx) {
                 const dep = new SingleEntryDependency(e);
                 dep.loc = `${this.name}:${idx}`;
                 return dep;
             }, this), this.name, this.type), this.name, callback);
-        }.bind(this));
+        });
     }
 }
 

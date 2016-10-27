@@ -3,6 +3,7 @@
  Author Tobias Koppers @sokra
  */
 import compareLocations = require('./compareLocations');
+import removeAndDo = require('./removeAndDo')
 
 let debugId = 1000;
 
@@ -43,6 +44,10 @@ class Chunk {
 
     set initial(val) {
         throw new Error('Chunk.initial was removed. Use isInitial()');
+    }
+
+    _removeAndDo(collection, thing, action) {
+        return removeAndDo.call(this, collection, thing, action)
     }
 
     hasRuntime() {
@@ -105,7 +110,7 @@ class Chunk {
             if (idx >= 0) {
                 c.chunks.splice(idx, 1);
             }
-            this.chunks.forEach(function (cc) {
+            this.chunks.forEach(cc => {
                 cc.addParent(c);
             });
         }, this);
@@ -114,7 +119,7 @@ class Chunk {
             if (idx >= 0) {
                 c.parents.splice(idx, 1);
             }
-            this.parents.forEach(function (cc) {
+            this.parents.forEach(cc => {
                 cc.addChunk(c);
             });
         }, this);
@@ -152,7 +157,7 @@ class Chunk {
         other.modules.length = 0;
 
         function moveChunks(chunks, kind, onChunk) {
-            chunks.forEach(function (c) {
+            chunks.forEach(c => {
                 const idx = c[kind].indexOf(other);
                 if (idx >= 0) {
                     c[kind].splice(idx, 1);
@@ -161,17 +166,17 @@ class Chunk {
             });
         }
 
-        moveChunks(other.parents, 'chunks', function (c) {
+        moveChunks(other.parents, 'chunks', c => {
             if (c !== this && this.addParent(c)) {
                 c.addChunk(this);
             }
-        }.bind(this));
+        });
         other.parents.length = 0;
-        moveChunks(other.chunks, 'parents', function (c) {
+        moveChunks(other.chunks, 'parents', c => {
             if (c !== this && this.addChunk(c)) {
                 c.addParent(this);
             }
-        }.bind(this));
+        });
         other.chunks.length = 0;
         other.blocks.forEach(function (b) {
             b.chunks = (b.chunks || [this]).map(function (c) {
@@ -184,7 +189,7 @@ class Chunk {
         other.origins.forEach(function (origin) {
             this.origins.push(origin);
         }, this);
-        this.origins.forEach(function (origin) {
+        this.origins.forEach(origin => {
             if (!origin.reasons) {
                 origin.reasons = [reason];
             }
@@ -203,19 +208,19 @@ class Chunk {
 
     split(newChunk) {
         const _this = this;
-        this.blocks.forEach(function (b) {
+        this.blocks.forEach(b => {
             newChunk.blocks.push(b);
             b.chunks.push(newChunk);
         });
-        this.chunks.forEach(function (c) {
+        this.chunks.forEach(c => {
             newChunk.chunks.push(c);
             c.parents.push(newChunk);
         });
-        this.parents.forEach(function (p) {
+        this.parents.forEach(p => {
             p.chunks.push(newChunk);
             newChunk.parents.push(p);
         });
-        this.entrypoints.forEach(function (e) {
+        this.entrypoints.forEach(e => {
             e.insertChunk(newChunk, _this);
         });
     }
@@ -228,7 +233,7 @@ class Chunk {
         hash.update(`${this.id} `);
         hash.update(this.ids ? this.ids.join(',') : '');
         hash.update(`${this.name || ''} `);
-        this.modules.forEach(function (m) {
+        this.modules.forEach(m => {
             m.updateHash(hash);
         });
     }
@@ -237,9 +242,7 @@ class Chunk {
         const CHUNK_OVERHEAD = typeof options.chunkOverhead === 'number' ? options.chunkOverhead : 10000;
         const ENTRY_CHUNK_MULTIPLICATOR = options.entryChunkMultiplicator || 10;
 
-        const modulesSize = this.modules.reduce(function (a, b) {
-            return a + b.size();
-        }, 0);
+        const modulesSize = this.modules.reduce((a, b) => a + b.size(), 0);
         return modulesSize * (this.isInitial() ? ENTRY_CHUNK_MULTIPLICATOR : 1) + CHUNK_OVERHEAD;
     }
 
@@ -271,9 +274,7 @@ class Chunk {
             }
         }, this);
 
-        const modulesSize = mergedModules.reduce(function (a, m) {
-            return a + m.size();
-        }, 0);
+        const modulesSize = mergedModules.reduce((a, m) => a + m.size(), 0);
         return modulesSize * (this.isInitial() || other.isInitial() ? ENTRY_CHUNK_MULTIPLICATOR : 1) + CHUNK_OVERHEAD;
     }
 
@@ -302,7 +303,7 @@ class Chunk {
 
     sortItems() {
         this.modules.sort(byId);
-        this.origins.sort(function (a, b) {
+        this.origins.sort((a, b) => {
             const aIdent = a.module.identifier();
             const bIdent = b.module.identifier();
             if (aIdent < bIdent) {
@@ -313,7 +314,7 @@ class Chunk {
             }
             return compareLocations(a.loc, b.loc);
         });
-        this.origins.forEach(function (origin) {
+        this.origins.forEach(origin => {
             if (origin.reasons) {
                 origin.reasons.sort();
             }
@@ -326,7 +327,7 @@ class Chunk {
 
     checkConstraints() {
         const chunk = this;
-        chunk.chunks.forEach(function (child, idx) {
+        chunk.chunks.forEach((child, idx) => {
             if (chunk.chunks.indexOf(child) !== idx) {
                 throw new Error(`checkConstraints: duplicate child in chunk ${chunk.debugId} ${child.debugId}`);
             }
@@ -334,7 +335,7 @@ class Chunk {
                 throw new Error(`checkConstraints: child missing parent ${chunk.debugId} -> ${child.debugId}`);
             }
         });
-        chunk.parents.forEach(function (parent, idx) {
+        chunk.parents.forEach((parent, idx) => {
             if (chunk.parents.indexOf(parent) !== idx) {
                 throw new Error(`checkConstraints: duplicate parent in chunk ${chunk.debugId} ${parent.debugId}`);
             }
@@ -343,28 +344,31 @@ class Chunk {
             }
         });
     }
-}
 
-export = Chunk;
-
-Chunk.prototype._removeAndDo = require('./removeAndDo');
-
-function createAdder(collection) {
-    return function (chunk) {
+    addChunk(chunk) {
         if (chunk === this) {
             return false;
         }
-        if (this[collection].includes(chunk)) {
+        if (this.chunks.includes(chunk)) {
             return false;
         }
-        this[collection].push(chunk);
+        this.chunks.push(chunk);
         return true;
-    };
+    }
+
+    addParent(chunk) {
+        if (chunk === this) {
+            return false;
+        }
+        if (this.parents.includes(chunk)) {
+            return false;
+        }
+        this.parents.push(chunk);
+        return true;
+    }
 }
 
-Chunk.prototype.addChunk = createAdder('chunks');
-
-Chunk.prototype.addParent = createAdder('parents');
+export = Chunk;
 
 function byId(a, b) {
     return a.id - b.id;

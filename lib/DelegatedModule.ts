@@ -2,9 +2,8 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import Module = require('./Module');
-
 import { OriginalSource, RawSource } from 'webpack-sources'
+import Module = require('./Module');
 import WebpackMissingModule = require('./dependencies/WebpackMissingModule');
 import DelegatedSourceDependency = require('./dependencies/DelegatedSourceDependency');
 
@@ -70,6 +69,6 @@ class DelegatedModule extends Module {
     }
 }
 
-export = DelegatedModule;
-
 DelegatedModule.prototype.delegated = true;
+
+export = DelegatedModule;

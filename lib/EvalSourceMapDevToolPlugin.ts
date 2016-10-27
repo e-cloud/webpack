@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import EvalSourceMapDevToolModuleTemplatePlugin = require('./EvalSourceMapDevToolModuleTemplatePlugin');
-
 import SourceMapDevToolModuleOptionsPlugin = require('./SourceMapDevToolModuleOptionsPlugin');
 
 class EvalSourceMapDevToolPlugin {
@@ -24,7 +23,7 @@ class EvalSourceMapDevToolPlugin {
 
     apply(compiler) {
         const options = this.options;
-        compiler.plugin('compilation', function (compilation) {
+        compiler.plugin('compilation', compilation => {
             new SourceMapDevToolModuleOptionsPlugin(options).apply(compilation);
             compilation.moduleTemplate.apply(new EvalSourceMapDevToolModuleTemplatePlugin(compilation, options));
         });

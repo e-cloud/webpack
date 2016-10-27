@@ -4,13 +4,13 @@
  */
 class NoErrorsPlugin {
     apply(compiler) {
-        compiler.plugin('should-emit', function (compilation) {
+        compiler.plugin('should-emit', compilation => {
             if (compilation.errors.length > 0) {
                 return false;
             }
         });
-        compiler.plugin('compilation', function (compilation) {
-            compilation.plugin('should-record', function () {
+        compiler.plugin('compilation', compilation => {
+            compilation.plugin('should-record', () => {
                 if (compilation.errors.length > 0) {
                     return false;
                 }

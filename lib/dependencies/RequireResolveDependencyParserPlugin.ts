@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import RequireResolveDependency = require('./RequireResolveDependency');
-
 import RequireResolveContextDependency = require('./RequireResolveContextDependency');
 import RequireResolveHeaderDependency = require('./RequireResolveHeaderDependency');
 import ContextDependencyHelpers = require('./ContextDependencyHelpers');

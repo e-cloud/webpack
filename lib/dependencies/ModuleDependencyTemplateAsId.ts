@@ -2,6 +2,8 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import WebpackMissingModule = require('./WebpackMissingModule')
+
 class ModuleDependencyTemplateAsId {
     apply(dep, source, outputOptions, requestShortener) {
         if (!dep.range) {
@@ -16,7 +18,7 @@ class ModuleDependencyTemplateAsId {
             content = comment + JSON.stringify(dep.module.id);
         }
         else {
-            content = require('./WebpackMissingModule').module(dep.request);
+            content = WebpackMissingModule.module(dep.request);
         }
         source.replace(dep.range[0], dep.range[1] - 1, content);
     }

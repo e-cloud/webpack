@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import Compiler = require('./Compiler');
-
 import MultiCompiler = require('./MultiCompiler');
 import NodeEnvironmentPlugin = require('./node/NodeEnvironmentPlugin');
 import WebpackOptionsApply = require('./WebpackOptionsApply');
@@ -18,9 +17,7 @@ function webpack(options, callback) {
     }
     let compiler;
     if (Array.isArray(options)) {
-        compiler = new MultiCompiler(options.map(function (options) {
-            return webpack(options);
-        }));
+        compiler = new MultiCompiler(options.map(options => webpack(options)));
     }
     else if (typeof options === 'object') {
         new WebpackOptionsDefaulter().process(options);
@@ -39,9 +36,7 @@ function webpack(options, callback) {
         if (typeof callback !== 'function') {
             throw new Error('Invalid argument: callback');
         }
-        if (options.watch === true || Array.isArray(options) && options.some(function (o) {
-                return o.watch;
-            })) {
+        if (options.watch === true || Array.isArray(options) && options.some(o => o.watch)) {
             const watchOptions = (!Array.isArray(options) ? options : options[0]).watchOptions || {};
             return compiler.watch(watchOptions, callback);
         }
@@ -49,7 +44,8 @@ function webpack(options, callback) {
     }
     return compiler;
 }
-exports = module.exports = webpack;
+
+export = webpack;
 
 webpack.WebpackOptionsDefaulter = WebpackOptionsDefaulter;
 webpack.WebpackOptionsApply = WebpackOptionsApply;
@@ -59,7 +55,7 @@ webpack.NodeEnvironmentPlugin = NodeEnvironmentPlugin;
 webpack.validate = validateWebpackOptions;
 
 function exportPlugins(exports, path, plugins) {
-    plugins.forEach(function (name) {
+    plugins.forEach(name => {
         Object.defineProperty(exports, name, {
             configurable: false,
             enumerable: true,
@@ -71,44 +67,44 @@ function exportPlugins(exports, path, plugins) {
 }
 
 exportPlugins(exports, '.', [
-    'DefinePlugin',
-    'NormalModuleReplacementPlugin',
-    'ContextReplacementPlugin',
-    'IgnorePlugin',
-    'WatchIgnorePlugin',
-    'BannerPlugin',
-    'PrefetchPlugin',
     'AutomaticPrefetchPlugin',
-    'ProvidePlugin',
-    'HotModuleReplacementPlugin',
-    'SourceMapDevToolPlugin',
-    'EvalSourceMapDevToolPlugin',
-    'EvalDevToolModulePlugin',
+    'BannerPlugin',
     'CachePlugin',
-    'ExtendedAPIPlugin',
-    'ExternalsPlugin',
-    'JsonpTemplatePlugin',
-    'LibraryTemplatePlugin',
-    'LoaderTargetPlugin',
-    'MemoryOutputFileSystem',
-    'ProgressPlugin',
-    'SetVarMainTemplatePlugin',
-    'UmdMainTemplatePlugin',
-    'NoErrorsPlugin',
-    'NewWatchingPlugin',
-    'EnvironmentPlugin',
+    'ContextReplacementPlugin',
+    'DefinePlugin',
     'DllPlugin',
     'DllReferencePlugin',
-    'LoaderOptionsPlugin',
-    'NamedModulesPlugin',
+    'EnvironmentPlugin',
+    'EvalDevToolModulePlugin',
+    'EvalSourceMapDevToolPlugin',
+    'ExtendedAPIPlugin',
+    'ExternalsPlugin',
     'HashedModuleIdsPlugin',
-    'ModuleFilenameHelpers'
+    'HotModuleReplacementPlugin',
+    'IgnorePlugin',
+    'JsonpTemplatePlugin',
+    'LibraryTemplatePlugin',
+    'LoaderOptionsPlugin',
+    'LoaderTargetPlugin',
+    'MemoryOutputFileSystem',
+    'ModuleFilenameHelpers',
+    'NamedModulesPlugin',
+    'NewWatchingPlugin',
+    'NoErrorsPlugin',
+    'NormalModuleReplacementPlugin',
+    'PrefetchPlugin',
+    'ProgressPlugin',
+    'ProvidePlugin',
+    'SetVarMainTemplatePlugin',
+    'SourceMapDevToolPlugin',
+    'UmdMainTemplatePlugin',
+    'WatchIgnorePlugin'
 ]);
 exportPlugins(exports.optimize = {}, './optimize', [
     'AggressiveMergingPlugin',
     'AggressiveSplittingPlugin',
-    'CommonsChunkPlugin',
     'ChunkModuleIdRangePlugin',
+    'CommonsChunkPlugin',
     'DedupePlugin',
     'LimitChunkCountPlugin',
     'MinChunkSizePlugin',

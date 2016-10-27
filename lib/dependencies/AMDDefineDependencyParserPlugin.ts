@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import AMDRequireItemDependency = require('./AMDRequireItemDependency');
-
 import AMDRequireContextDependency = require('./AMDRequireContextDependency');
 import ConstDependency = require('./ConstDependency');
 import AMDDefineDependency = require('./AMDDefineDependency');
@@ -142,7 +141,7 @@ class AMDDefineDependencyParserPlugin {
                     return;
                 }
                 if (fnParams) {
-                    fnParams = fnParams.slice(fnParamsOffset).filter(function (param, idx) {
+                    fnParams = fnParams.slice(fnParamsOffset).filter((param, idx) => {
                         if (identifiers[idx]) {
                             fnRenames[`$${param.name}`] = identifiers[idx];
                             return false;
@@ -154,7 +153,7 @@ class AMDDefineDependencyParserPlugin {
             else {
                 identifiers = ['require', 'exports', 'module'];
                 if (fnParams) {
-                    fnParams = fnParams.slice(fnParamsOffset).filter(function (param, idx) {
+                    fnParams = fnParams.slice(fnParamsOffset).filter((param, idx) => {
                         if (identifiers[idx]) {
                             fnRenames[`$${param.name}`] = identifiers[idx];
                             return false;
@@ -166,7 +165,7 @@ class AMDDefineDependencyParserPlugin {
             let inTry;
             if (fn && fn.type === 'FunctionExpression') {
                 inTry = this.scope.inTry;
-                this.inScope(fnParams, function () {
+                this.inScope(fnParams, () => {
                     this.scope.renames = fnRenames;
                     this.scope.inTry = inTry;
                     if (fn.body.type === 'BlockStatement') {
@@ -175,22 +174,23 @@ class AMDDefineDependencyParserPlugin {
                     else {
                         this.walkExpression(fn.body);
                     }
-                }.bind(this));
+                });
             }
             else if (fn && isBoundFunctionExpression(fn)) {
                 inTry = this.scope.inTry;
-                this.inScope(fn.callee.object.params.filter(function (i) {
-                    return !['require', 'module', 'exports'].includes(i.name);
-                }), function () {
-                    this.scope.renames = fnRenames;
-                    this.scope.inTry = inTry;
-                    if (fn.callee.object.body.type === 'BlockStatement') {
-                        this.walkStatement(fn.callee.object.body);
+                this.inScope(
+                    fn.callee.object.params.filter(i => !['require', 'module', 'exports'].includes(i.name)),
+                    () => {
+                        this.scope.renames = fnRenames;
+                        this.scope.inTry = inTry;
+                        if (fn.callee.object.body.type === 'BlockStatement') {
+                            this.walkStatement(fn.callee.object.body);
+                        }
+                        else {
+                            this.walkExpression(fn.callee.object.body);
+                        }
                     }
-                    else {
-                        this.walkExpression(fn.callee.object.body);
-                    }
-                }.bind(this));
+                );
                 if (fn.arguments) {
                     this.walkExpressions(fn.arguments);
                 }
@@ -211,10 +211,7 @@ class AMDDefineDependencyParserPlugin {
         parser.plugin('call define:amd:array', function (expr, param, identifiers, namedModule) {
             if (param.isArray()) {
                 param.items.forEach(function (param, idx) {
-                    if (param.isString() && [
-                            'require', 'module',
-                            'exports'
-                        ].includes(param.string)) {
+                    if (param.isString() && ['require', 'module', 'exports'].includes(param.string)) {
                         identifiers[idx] = param.string;
                     }
                     const result = this.applyPluginsBailResult('call define:amd:item', expr, param, namedModule);

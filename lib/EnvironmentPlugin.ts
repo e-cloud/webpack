@@ -10,11 +10,11 @@ class EnvironmentPlugin {
     }
 
     apply(compiler) {
-        compiler.apply(new DefinePlugin(this.keys.reduce(function (definitions, key) {
+        compiler.apply(new DefinePlugin(this.keys.reduce((definitions, key) => {
             const value = process.env[key];
 
             if (value === undefined) {
-                compiler.plugin('this-compilation', function (compilation) {
+                compiler.plugin('this-compilation', compilation => {
                     const error = new Error(`${key} environment variable is undefined.`);
                     error.name = 'EnvVariableNotDefinedError';
                     compilation.warnings.push(error);

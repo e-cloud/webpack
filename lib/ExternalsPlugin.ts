@@ -11,9 +11,9 @@ class ExternalsPlugin {
     }
 
     apply(compiler) {
-        compiler.plugin('compile', function (params) {
+        compiler.plugin('compile', params => {
             params.normalModuleFactory.apply(new ExternalModuleFactoryPlugin(this.type, this.externals));
-        }.bind(this));
+        });
     }
 }
 

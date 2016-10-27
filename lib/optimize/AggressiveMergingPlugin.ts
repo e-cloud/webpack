@@ -15,17 +15,14 @@ class AggressiveMergingPlugin {
         const minSizeReduce = options.minSizeReduce || 1.5;
 
         function getParentsWeight(chunk) {
-            return chunk.parents.map(function (p) {
-                return p.isInitial() ? options.entryChunkMultiplicator || 10 : 1;
-            }).reduce(function (a, b) {
-                return a + b;
-            }, 0);
+            return chunk.parents.map(p => p.isInitial() ? options.entryChunkMultiplicator || 10 : 1)
+                .reduce((a, b) => a + b, 0);
         }
 
-        compiler.plugin('compilation', function (compilation) {
-            compilation.plugin('optimize-chunks-advanced', function (chunks) {
+        compiler.plugin('compilation', compilation => {
+            compilation.plugin('optimize-chunks-advanced', chunks => {
                 let combinations = [];
-                chunks.forEach(function (a, idx) {
+                chunks.forEach((a, idx) => {
                     if (a.isInitial()) {
                         return;
                     }
@@ -38,7 +35,7 @@ class AggressiveMergingPlugin {
                     }
                 });
 
-                combinations.forEach(function (pair) {
+                combinations.forEach(pair => {
                     const a = pair[0].size({
                         chunkOverhead: 0
                     });
@@ -75,12 +72,8 @@ class AggressiveMergingPlugin {
 
                     pair.unshift((a + b) / newSize);
                 });
-                combinations = combinations.filter(function (pair) {
-                    return pair[0] !== false;
-                });
-                combinations.sort(function (a, b) {
-                    return b[0] - a[0];
-                });
+                combinations = combinations.filter(pair => pair[0] !== false);
+                combinations.sort((a, b) => b[0] - a[0]);
 
                 const pair = combinations[0];
 
@@ -92,27 +85,21 @@ class AggressiveMergingPlugin {
                 }
 
                 if (options.moveToParents) {
-                    const commonModules = pair[1].modules.filter(function (m) {
-                        return pair[2].modules.includes(m);
-                    });
-                    const aOnlyModules = pair[1].modules.filter(function (m) {
-                        return !commonModules.includes(m);
-                    });
-                    const bOnlyModules = pair[2].modules.filter(function (m) {
-                        return !commonModules.includes(m);
-                    });
-                    aOnlyModules.forEach(function (m) {
+                    const commonModules = pair[1].modules.filter(m => pair[2].modules.includes(m));
+                    const aOnlyModules = pair[1].modules.filter(m => !commonModules.includes(m));
+                    const bOnlyModules = pair[2].modules.filter(m => !commonModules.includes(m));
+                    aOnlyModules.forEach(m => {
                         pair[1].removeModule(m);
                         m.removeChunk(pair[1]);
-                        pair[1].parents.forEach(function (c) {
+                        pair[1].parents.forEach(c => {
                             c.addModule(m);
                             m.addChunk(c);
                         });
                     });
-                    bOnlyModules.forEach(function (m) {
+                    bOnlyModules.forEach(m => {
                         pair[2].removeModule(m);
                         m.removeChunk(pair[2]);
-                        pair[2].parents.forEach(function (c) {
+                        pair[2].parents.forEach(c => {
                             c.addModule(m);
                             m.addChunk(c);
                         });

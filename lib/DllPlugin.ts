@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import DllEntryPlugin = require('./DllEntryPlugin');
-
 import LibManifestPlugin = require('./LibManifestPlugin');
 import FlagInitialModulesAsUsedPlugin = require('./FlagInitialModulesAsUsedPlugin');
 
@@ -13,7 +12,7 @@ class DllPlugin {
     }
 
     apply(compiler) {
-        compiler.plugin('entry-option', function (context, entry) {
+        compiler.plugin('entry-option', (context, entry) => {
             function itemToPlugin(item, name) {
                 if (Array.isArray(item)) {
                     return new DllEntryPlugin(context, item, name);
@@ -24,7 +23,7 @@ class DllPlugin {
             }
 
             if (typeof entry === 'object' && !Array.isArray(entry)) {
-                Object.keys(entry).forEach(function (name) {
+                Object.keys(entry).forEach(name => {
                     compiler.apply(itemToPlugin(entry[name], name));
                 });
             }

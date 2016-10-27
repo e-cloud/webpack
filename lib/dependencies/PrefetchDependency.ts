@@ -10,5 +10,6 @@ class PrefetchDependency extends ModuleDependency {
     }
 }
 
-export = PrefetchDependency;
 PrefetchDependency.prototype.type = 'prefetch';
+
+export = PrefetchDependency;

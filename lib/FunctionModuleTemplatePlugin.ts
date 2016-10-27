@@ -44,7 +44,7 @@ class FunctionModuleTemplatePlugin {
             }
             return moduleSource;
         });
-        moduleTemplate.plugin('hash', function (hash) {
+        moduleTemplate.plugin('hash', hash => {
             hash.update('FunctionModuleTemplatePlugin');
             hash.update('2');
         });

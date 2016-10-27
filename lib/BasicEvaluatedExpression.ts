@@ -70,9 +70,7 @@ class BasicEvaluatedExpression {
             return true;
         }
         else if (this.isWrapped()) {
-            return this.prefix && this.prefix.asBool() || this.postfix && this.postfix.asBool()
-                ? true
-                : undefined;
+            return this.prefix && this.prefix.asBool() || this.postfix && this.postfix.asBool() ? true : undefined;
         }
         return undefined;
     }

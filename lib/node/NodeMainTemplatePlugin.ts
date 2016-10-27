@@ -19,9 +19,7 @@ class NodeMainTemplatePlugin {
                     '// object to store loaded chunks',
                     '// "0" means "already loaded"',
                     'var installedChunks = {',
-                    this.indent(chunk.ids.map(function (id) {
-                        return `${id}: 0`;
-                    }).join(',\n')),
+                    this.indent(chunk.ids.map(id => `${id}: 0`).join(',\n')),
                     '};'
                 ]);
             }
@@ -68,15 +66,13 @@ class NodeMainTemplatePlugin {
                         'installedChunks[chunkId] = [resolve, reject];',
                         `var filename = __dirname + ${this.applyPluginsWaterfall('asset-path', JSON.stringify('/' + chunkFilename), {
                             hash: '" + ' + this.renderCurrentHashCode(hash) + ' + "',
-                            hashWithLength: function (length) {
-                                return '" + ' + this.renderCurrentHashCode(hash, length) + ' + "';
-                            }.bind(this),
+                            hashWithLength: length => '" + ' + this.renderCurrentHashCode(hash, length) + ' + "',
                             chunk: {
                                 id: '" + chunkId + "',
                                 hash: '" + ' + JSON.stringify(chunkMaps.hash) + '[chunkId] + "',
                                 hashWithLength(length) {
                                     const shortChunkHashMap = {};
-                                    Object.keys(chunkMaps.hash).forEach(function (chunkId) {
+                                    Object.keys(chunkMaps.hash).forEach(chunkId => {
                                         if (typeof chunkMaps.hash[chunkId] === 'string') {
                                             shortChunkHashMap[chunkId] = chunkMaps.hash[chunkId].substr(0, length);
                                         }
@@ -90,7 +86,8 @@ class NodeMainTemplatePlugin {
                         this.indent([
                             'if(err) return reject(err);', 'var chunk = {};',
                             'require(\'vm\').runInThisContext(\'(function(exports, require, __dirname, __filename) {\' + content + \'\\n})\', filename)' + '(chunk, require, require(\'path\').dirname(filename), filename);'
-                        ].concat(insertMoreModules)
+                        ]
+                            .concat(insertMoreModules)
                             .concat([
                                 'var callbacks = [];',
                                 'for(var i = 0; i < chunkIds.length; i++) {',
@@ -112,15 +109,13 @@ class NodeMainTemplatePlugin {
             else {
                 const request = this.applyPluginsWaterfall('asset-path', JSON.stringify(`./${chunkFilename}`), {
                     hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
-                    hashWithLength: function (length) {
-                        return `" + ${this.renderCurrentHashCode(hash, length)} + "`;
-                    }.bind(this),
+                    hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
                     chunk: {
                         id: '" + chunkId + "',
                         hash: `" + ${JSON.stringify(chunkMaps.hash)}[chunkId] + "`,
                         hashWithLength(length) {
                             const shortChunkHashMap = {};
-                            Object.keys(chunkMaps.hash).forEach(function (chunkId) {
+                            Object.keys(chunkMaps.hash).forEach(chunkId => {
                                 if (typeof chunkMaps.hash[chunkId] === 'string') {
                                     shortChunkHashMap[chunkId] = chunkMaps.hash[chunkId].substr(0, length);
                                 }
@@ -133,11 +128,10 @@ class NodeMainTemplatePlugin {
                 return this.asString([
                     '// "0" is the signal for "already loaded"',
                     'if(installedChunks[chunkId] !== 0) {',
-                    this.indent([`var chunk = require(${request});`].concat(insertMoreModules)
-                        .concat([
-                            'for(var i = 0; i < chunkIds.length; i++)',
-                            this.indent('installedChunks[chunkIds[i]] = 0;')
-                        ])),
+                    this.indent([`var chunk = require(${request});`].concat(insertMoreModules).concat([
+                        'for(var i = 0; i < chunkIds.length; i++)',
+                        this.indent('installedChunks[chunkIds[i]] = 0;')
+                    ])),
                     '}',
                     'return Promise.resolve();'
                 ]);
@@ -149,15 +143,13 @@ class NodeMainTemplatePlugin {
             const chunkMaps = chunk.getChunkMaps();
             const currentHotUpdateChunkFilename = this.applyPluginsWaterfall('asset-path', JSON.stringify(hotUpdateChunkFilename), {
                 hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
-                hashWithLength: function (length) {
-                    return `" + ${this.renderCurrentHashCode(hash, length)} + "`;
-                }.bind(this),
+                hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
                 chunk: {
                     id: '" + chunkId + "',
                     hash: `" + ${JSON.stringify(chunkMaps.hash)}[chunkId] + "`,
                     hashWithLength(length) {
                         const shortChunkHashMap = {};
-                        Object.keys(chunkMaps.hash).forEach(function (chunkId) {
+                        Object.keys(chunkMaps.hash).forEach(chunkId => {
                             if (typeof chunkMaps.hash[chunkId] === 'string') {
                                 shortChunkHashMap[chunkId] = chunkMaps.hash[chunkId].substr(0, length);
                             }
@@ -167,15 +159,19 @@ class NodeMainTemplatePlugin {
                     name: `" + (${JSON.stringify(chunkMaps.name)}[chunkId]||chunkId) + "`
                 }
             });
-            const currentHotUpdateMainFilename = this.applyPluginsWaterfall('asset-path', JSON.stringify(hotUpdateMainFilename), {
-                hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
-                hashWithLength: function (length) {
-                    return `" + ${this.renderCurrentHashCode(hash, length)} + "`;
-                }.bind(this)
-            });
-            return Template.getFunctionContent(self.asyncChunkLoading
+            const currentHotUpdateMainFilename = this.applyPluginsWaterfall(
+                'asset-path',
+                JSON.stringify(hotUpdateMainFilename),
+                {
+                    hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
+                    hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`
+                }
+            );
+            return Template
+                .getFunctionContent(self.asyncChunkLoading
                     ? require('./NodeMainTemplateAsync.runtime.js')
-                    : require('./NodeMainTemplate.runtime.js'))
+                    : require('./NodeMainTemplate.runtime.js')
+                )
                 .replace(/\$require\$/g, this.requireFn)
                 .replace(/\$hotMainFilename\$/g, currentHotUpdateMainFilename)
                 .replace(/\$hotChunkFilename\$/g, currentHotUpdateChunkFilename);

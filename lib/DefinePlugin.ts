@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import ConstDependency = require('./dependencies/ConstDependency');
-
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import NullFactory = require('./NullFactory');
 
@@ -14,13 +13,13 @@ class DefinePlugin {
 
     apply(compiler) {
         const definitions = this.definitions;
-        compiler.plugin('compilation', function (compilation, params) {
+        compiler.plugin('compilation', (compilation, params) => {
             compilation.dependencyFactories.set(ConstDependency, new NullFactory());
             compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', function (parser) {
+            params.normalModuleFactory.plugin('parser', parser => {
                 (function walkDefinitions(definitions, prefix) {
-                    Object.keys(definitions).forEach(function (key) {
+                    Object.keys(definitions).forEach(key => {
                         const code = definitions[key];
                         if (code && typeof code === 'object' && !(code instanceof RegExp)) {
                             walkDefinitions(code, `${prefix + key}.`);
@@ -33,7 +32,7 @@ class DefinePlugin {
                 })(definitions, '');
 
                 function stringifyObj(obj) {
-                    return `{${Object.keys(obj).map(function (key) {
+                    return `{${Object.keys(obj).map(key => {
                         const code = obj[key];
                         return JSON.stringify(key) + ':' + toCode(code);
                     }).join(',')}}`;
@@ -62,11 +61,9 @@ class DefinePlugin {
 
                 function applyDefineKey(prefix, key) {
                     const splittedKey = key.split('.');
-                    splittedKey.slice(1).forEach(function (_, i) {
+                    splittedKey.slice(1).forEach((_, i) => {
                         const fullKey = prefix + splittedKey.slice(0, i + 1).join('.');
-                        parser.plugin(`can-rename ${fullKey}`, function () {
-                            return true;
-                        });
+                        parser.plugin(`can-rename ${fullKey}`, () => true);
                     });
                 }
 
@@ -79,9 +76,7 @@ class DefinePlugin {
                     let recurseTypeof = false;
                     code = toCode(code);
                     if (!isTypeof) {
-                        parser.plugin(`can-rename ${key}`, function () {
-                            return true;
-                        });
+                        parser.plugin(`can-rename ${key}`, () => true);
                         parser.plugin(`evaluate Identifier ${key}`, function (expr) {
                             if (recurse) {
                                 return;
@@ -124,15 +119,11 @@ class DefinePlugin {
 
                 function applyObjectDefine(key, obj) {
                     const code = stringifyObj(obj);
-                    parser.plugin(`can-rename ${key}`, function () {
-                        return true;
-                    });
-                    parser.plugin(`evaluate Identifier ${key}`, function (expr) {
-                        return new BasicEvaluatedExpression().setRange(expr.range);
-                    });
-                    parser.plugin(`evaluate typeof ${key}`, function (expr) {
-                        return new BasicEvaluatedExpression().setString('object').setRange(expr.range);
-                    });
+                    parser.plugin(`can-rename ${key}`, () => true);
+                    parser.plugin(`evaluate Identifier ${key}`,
+                        expr => new BasicEvaluatedExpression().setRange(expr.range));
+                    parser.plugin(`evaluate typeof ${key}`,
+                        expr => new BasicEvaluatedExpression().setString('object').setRange(expr.range));
                     parser.plugin(`expression ${key}`, function (expr) {
                         const dep = new ConstDependency(code, expr.range);
                         dep.loc = expr.loc;

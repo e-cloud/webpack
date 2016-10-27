@@ -12,7 +12,7 @@ class SetVarMainTemplatePlugin {
 
     apply(compilation) {
         const mainTemplate = compilation.mainTemplate;
-        compilation.templatesPlugin('render-with-entry', function (source, chunk, hash) {
+        compilation.templatesPlugin('render-with-entry', (source, chunk, hash) => {
             const varExpression = mainTemplate.applyPluginsWaterfall('asset-path', this.varExpression, {
                 hash,
                 chunk
@@ -24,18 +24,18 @@ class SetVarMainTemplatePlugin {
                 const prefix = `${varExpression} =\n`;
                 return new ConcatSource(prefix, source);
             }
-        }.bind(this));
+        });
         mainTemplate.plugin('global-hash-paths', function (paths) {
             if (this.varExpression) {
                 paths.push(this.varExpression);
             }
             return paths;
         });
-        mainTemplate.plugin('hash', function (hash) {
+        mainTemplate.plugin('hash', hash => {
             hash.update('set var');
             hash.update(`${this.varExpression}`);
             hash.update(`${this.copyObject}`);
-        }.bind(this));
+        });
     }
 }
 

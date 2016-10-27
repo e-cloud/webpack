@@ -3,19 +3,20 @@
  Author Gajus Kuizinas @gajus
  */
 import webpackOptionsSchema = require('../schemas/webpackOptionsSchema.json');
-
 import Ajv = require('ajv');
+
 const ajv = new Ajv({
     errorDataPath: 'configuration',
     allErrors: true,
     verbose: true
 });
+
 const validate = ajv.compile(webpackOptionsSchema);
 
 function validateWebpackOptions(options) {
     if (Array.isArray(options)) {
         const errors = options.map(validateObject);
-        errors.forEach(function (list, idx) {
+        errors.forEach((list, idx) => {
             list.forEach(function applyPrefix(err) {
                 err.dataPath = `[${idx}]${err.dataPath}`;
                 if (err.children) {
@@ -23,9 +24,7 @@ function validateWebpackOptions(options) {
                 }
             });
         });
-        return errors.reduce(function (arr, items) {
-            return arr.concat(items);
-        }, []);
+        return errors.reduce((arr, items) => arr.concat(items), []);
     }
     else {
         return validateObject(options);
@@ -40,7 +39,7 @@ function validateObject(options) {
 function filterErrors(errors) {
     const errorsByDataPath = {};
     const newErrors = [];
-    errors.forEach(function (err) {
+    errors.forEach(err => {
         const dataPath = err.dataPath;
         const key = `$${dataPath}`;
         if (errorsByDataPath[key]) {

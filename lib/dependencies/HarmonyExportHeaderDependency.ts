@@ -4,6 +4,14 @@
  */
 import NullDependency = require('./NullDependency');
 
+class Template {
+    apply(dep, source, outputOptions, requestShortener) {
+        let content;
+        content = '';
+        source.replace(dep.rangeStatement[0], dep.range ? dep.range[0] - 1 : dep.rangeStatement[1] - 1, content);
+    }
+}
+
 class HarmonyExportHeaderDependency extends NullDependency {
     constructor(range, rangeStatement) {
         super();
@@ -11,15 +19,9 @@ class HarmonyExportHeaderDependency extends NullDependency {
         this.rangeStatement = rangeStatement;
     }
 
-    static Template() {
-    }
+    static Template = Template
 }
 
-export = HarmonyExportHeaderDependency;
 HarmonyExportHeaderDependency.prototype.type = 'harmony export header';
 
-HarmonyExportHeaderDependency.Template.prototype.apply = function (dep, source) {
-    let content;
-    content = '';
-    source.replace(dep.rangeStatement[0], dep.range ? dep.range[0] - 1 : dep.rangeStatement[1] - 1, content);
-};
+export = HarmonyExportHeaderDependency;

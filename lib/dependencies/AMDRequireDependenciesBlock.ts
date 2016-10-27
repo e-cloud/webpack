@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import AsyncDependenciesBlock = require('../AsyncDependenciesBlock');
-
 import AMDRequireDependency = require('./AMDRequireDependency');
 
 class AMDRequireDependenciesBlock extends AsyncDependenciesBlock {
@@ -15,15 +14,10 @@ class AMDRequireDependenciesBlock extends AsyncDependenciesBlock {
         this.functionRange = functionRange;
         this.bindThis = true;
         this.range = arrayRange && functionRange
-            ? [
-            arrayRange[0],
-            functionRange[1]
-        ]
-            : arrayRange
-            ? arrayRange
-            : functionRange
-            ? functionRange
-            : expr.range;
+            ? [arrayRange[0], functionRange[1]]
+            : (arrayRange
+                ? arrayRange
+                : (functionRange ? functionRange : expr.range));
         const dep = new AMDRequireDependency(this);
         dep.loc = loc;
         this.addDependency(dep);

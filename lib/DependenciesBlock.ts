@@ -17,8 +17,7 @@ class DependenciesBlock {
     }
 
     addVariable(name, expression, dependencies) {
-        for (let i = 0; i < this.variables.length; i++) {
-            const v = this.variables[i];
+        for (let v of this.variables) {
             if (v.name === name && v.expression === expression) {
                 return;
             }
@@ -31,13 +30,13 @@ class DependenciesBlock {
     }
 
     updateHash(hash) {
-        this.dependencies.forEach(function (d) {
+        this.dependencies.forEach(d => {
             d.updateHash(hash);
         });
-        this.blocks.forEach(function (b) {
+        this.blocks.forEach(b => {
             b.updateHash(hash);
         });
-        this.variables.forEach(function (v) {
+        this.variables.forEach(v => {
             v.updateHash(hash);
         });
     }
@@ -61,13 +60,11 @@ class DependenciesBlock {
     }
 
     hasDependencies() {
-        return this.dependencies.length > 0 || this.blocks.concat(this.variables).some(function (item) {
-                return item.hasDependencies();
-            });
+        return this.dependencies.length > 0 || this.blocks.concat(this.variables).some(item => item.hasDependencies());
     }
 
     sortItems() {
-        this.blocks.forEach(function (block) {
+        this.blocks.forEach(block => {
             block.sortItems();
         });
     }

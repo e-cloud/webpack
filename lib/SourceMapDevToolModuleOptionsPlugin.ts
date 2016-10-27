@@ -12,17 +12,17 @@ class SourceMapDevToolModuleOptionsPlugin {
     apply(compilation) {
         const options = this.options;
         if (options.module !== false) {
-            compilation.plugin('build-module', function (module) {
+            compilation.plugin('build-module', module => {
                 module.useSourceMap = true;
             });
         }
         if (options.lineToLine === true) {
-            compilation.plugin('build-module', function (module) {
+            compilation.plugin('build-module', module => {
                 module.lineToLine = true;
             });
         }
         else if (options.lineToLine) {
-            compilation.plugin('build-module', function (module) {
+            compilation.plugin('build-module', module => {
                 if (!module.resource) {
                     return;
                 }

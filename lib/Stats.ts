@@ -36,7 +36,7 @@ class Stats {
         const showVersion = d(options.version, true);
         const showTimings = d(options.timings, true);
         const showAssets = d(options.assets, true);
-        const showEntrypoints = d(options.entrypoints, !forToString);
+        const showEntryPoints = d(options.entrypoints, !forToString);
         const showChunks = d(options.chunks, true);
         const showChunkModules = d(options.chunkModules, !!forToString);
         const showChunkOrigins = d(options.chunkOrigins, !forToString);
@@ -52,7 +52,7 @@ class Stats {
         const showErrorDetails = d(options.errorDetails, !forToString);
         const showWarnings = d(options.warnings, true);
         const showPublicPath = d(options.publicPath, !forToString);
-        const excludeModules = [].concat(d(options.exclude, [])).map(function (str) {
+        const excludeModules = [].concat(d(options.exclude, [])).map(str => {
             if (typeof str !== 'string') {
                 return str;
             }
@@ -70,27 +70,23 @@ class Stats {
                 return true;
             }
             const ident = module.identifier();
-            return !excludeModules.some(function (regExp) {
-                return regExp.test(ident);
-            });
+            return !excludeModules.some(regExp => regExp.test(ident));
         }
 
         function sortByField(field) {
             if (!field) {
-                return function () {
-                    return 0;
-                };
+                return () => 0;
             }
             if (field[0] === '!') {
                 field = field.substr(1);
-                return function (a, b) {
+                return (a, b) => {
                     if (a[field] === b[field]) {
                         return 0;
                     }
                     return a[field] < b[field] ? 1 : -1;
                 };
             }
-            return function (a, b) {
+            return (a, b) => {
                 if (a[field] === b[field]) {
                     return 0;
                 }
@@ -123,13 +119,11 @@ class Stats {
                 text += `\n${e.details}`;
             }
             if (showErrorDetails && e.missing) {
-                text += e.missing.map(function (item) {
-                    return `\n[${item}]`;
-                }).join('');
+                text += e.missing.map(item => `\n[${item}]`).join('');
             }
             if (e.dependencies && e.origin) {
                 text += `\n @ ${e.origin.readableIdentifier(requestShortener)}`;
-                e.dependencies.forEach(function (dep) {
+                e.dependencies.forEach(dep => {
                     if (!dep.loc) {
                         return;
                     }
@@ -192,7 +186,7 @@ class Stats {
         if (showAssets) {
             const assetsByFile = {};
             obj.assetsByChunkName = {};
-            obj.assets = Object.keys(compilation.assets).map(function (asset) {
+            obj.assets = Object.keys(compilation.assets).map(asset => {
                 const obj = {
                     name: asset,
                     size: compilation.assets[asset].size(),
@@ -202,13 +196,11 @@ class Stats {
                 };
                 assetsByFile[asset] = obj;
                 return obj;
-            }).filter(function (asset) {
-                return showCachedAssets || asset.emitted;
-            });
-            compilation.chunks.forEach(function (chunk) {
-                chunk.files.forEach(function (asset) {
+            }).filter(asset => showCachedAssets || asset.emitted);
+            compilation.chunks.forEach(chunk => {
+                chunk.files.forEach(asset => {
                     if (assetsByFile[asset]) {
-                        chunk.ids.forEach(function (id) {
+                        chunk.ids.forEach(id => {
                             assetsByFile[asset].chunks.push(id);
                         });
                         if (chunk.name) {
@@ -227,17 +219,13 @@ class Stats {
             obj.assets.sort(sortByField(sortAssets));
         }
 
-        if (showEntrypoints) {
+        if (showEntryPoints) {
             obj.entrypoints = {};
-            Object.keys(compilation.entrypoints).forEach(function (name) {
+            Object.keys(compilation.entrypoints).forEach(name => {
                 const ep = compilation.entrypoints[name];
                 obj.entrypoints[name] = {
-                    chunks: ep.chunks.map(function (c) {
-                        return c.id;
-                    }),
-                    assets: ep.chunks.reduce(function (array, c) {
-                        return array.concat(c.files || []);
-                    }, [])
+                    chunks: ep.chunks.map(c => c.id),
+                    assets: ep.chunks.reduce((array, c) => array.concat(c.files || []), [])
                 };
             });
         }
@@ -254,9 +242,7 @@ class Stats {
                 built: !!module.built,
                 optional: !!module.optional,
                 prefetched: !!module.prefetched,
-                chunks: module.chunks.map(function (chunk) {
-                    return chunk.id;
-                }),
+                chunks: module.chunks.map(chunk => chunk.id),
                 assets: Object.keys(module.assets || {}),
                 issuer: module.issuer && module.issuer.identifier(),
                 issuerId: module.issuer && module.issuer.id,
@@ -267,10 +253,7 @@ class Stats {
                 warnings: module.errors && module.dependenciesErrors && module.warnings.length + module.dependenciesWarnings.length
             };
             if (showReasons) {
-                obj.reasons = module.reasons.filter(function (reason) {
-                    return reason.dependency && reason.module;
-                }).map(function (reason) {
-                    const obj = {
+                obj.reasons = module.reasons.filter(reason => reason.dependency && reason.module).map(reason => {
                         moduleId: reason.module.id,
                         moduleIdentifier: reason.module.identifier(),
                         module: reason.module.readableIdentifier(requestShortener),
@@ -280,9 +263,7 @@ class Stats {
                     };
                     const dep = reason.dependency;
                     if (dep.templateModules) {
-                        obj.templateModules = dep.templateModules.map(function (module) {
-                            return module.id;
-                        });
+                        obj.templateModules = dep.templateModules.map(module => module.id);
                     }
                     if (typeof dep.loc === 'object') {
                         obj.loc = `${dep.loc.start.line}:${dep.loc.start.column}-${dep.loc.start.line !== dep.loc.end.line
@@ -290,9 +271,7 @@ class Stats {
                             : ''}${dep.loc.end.column}`;
                     }
                     return obj;
-                }).sort(function (a, b) {
-                    return a.moduleId - b.moduleId;
-                });
+                }).sort((a, b) => a.moduleId - b.moduleId);
             }
             if (showUsedExports) {
                 obj.usedExports = module.used ? module.usedExports : false;
@@ -307,7 +286,7 @@ class Stats {
         }
 
         if (showChunks) {
-            obj.chunks = compilation.chunks.map(function (chunk) {
+            obj.chunks = compilation.chunks.map(chunk => {
                 const obj = {
                     id: chunk.id,
                     rendered: chunk.rendered,
@@ -315,15 +294,11 @@ class Stats {
                     entry: chunk.hasRuntime(),
                     recorded: chunk.recorded,
                     extraAsync: !!chunk.extraAsync,
-                    size: chunk.modules.reduce(function (size, module) {
-                        return size + module.size();
-                    }, 0),
+                    size: chunk.modules.reduce((size, module) => size + module.size(), 0),
                     names: chunk.name ? [chunk.name] : [],
                     files: chunk.files.slice(),
                     hash: chunk.renderedHash,
-                    parents: chunk.parents.map(function (c) {
-                        return c.id;
-                    })
+                    parents: chunk.parents.map(c => c.id)
                 };
                 if (showChunkModules) {
                     obj.modules = chunk.modules.filter(moduleFilter).map(fnModule);
@@ -331,21 +306,19 @@ class Stats {
                     obj.modules.sort(sortByField(sortModules));
                 }
                 if (showChunkOrigins) {
-                    obj.origins = chunk.origins.map(function (origin) {
-                        return {
-                            moduleId: origin.module ? origin.module.id : undefined,
-                            module: origin.module ? origin.module.identifier() : '',
-                            moduleIdentifier: origin.module ? origin.module.identifier() : '',
-                            moduleName: origin.module ? origin.module.readableIdentifier(requestShortener) : '',
-                            loc: typeof origin.loc === 'object'
-                                ? obj.loc = `${origin.loc.start.line}:${origin.loc.start.column}-${origin.loc.start.line !== origin.loc.end.line
-                                ? origin.loc.end.line + ':'
-                                : ''}${origin.loc.end.column}`
-                                : '',
-                            name: origin.name,
-                            reasons: origin.reasons || []
-                        };
-                    });
+                    obj.origins = chunk.origins.map(origin => ({
+                        moduleId: origin.module ? origin.module.id : undefined,
+                        module: origin.module ? origin.module.identifier() : '',
+                        moduleIdentifier: origin.module ? origin.module.identifier() : '',
+                        moduleName: origin.module ? origin.module.readableIdentifier(requestShortener) : '',
+                        loc: typeof origin.loc === 'object'
+                            ? obj.loc = `${origin.loc.start.line}:${origin.loc.start.column}-${origin.loc.start.line !== origin.loc.end.line
+                            ? origin.loc.end.line + ':'
+                            : ''}${origin.loc.end.column}`
+                            : '',
+                        name: origin.name,
+                        reasons: origin.reasons || []
+                    }));
                 }
                 return obj;
             });
@@ -357,7 +330,7 @@ class Stats {
             obj.modules.sort(sortByField(sortModules));
         }
         if (showChildren) {
-            obj.children = compilation.children.map(function (child) {
+            obj.children = compilation.children.map(child => {
                 const obj = new Stats(child).toJson(options, forToString);
                 delete obj.hash;
                 delete obj.version;
@@ -388,7 +361,7 @@ class Stats {
     }
 
     static jsonToString(obj, useColors) {
-        const buf = [];
+        const buffer = [];
 
         const defaultColors = {
             bold: '\x1B[1m',
@@ -399,24 +372,25 @@ class Stats {
             magenta: '\x1B[1m\x1B[35m'
         };
 
-        const colors = Object.keys(defaultColors).reduce(function (obj, color) {
-            obj[color] = function (str) {
-                if (useColors) {
-                    buf.push(useColors === true || useColors[color] === undefined
-                        ? defaultColors[color]
-                        : useColors[color]);
+        const colors = Object.keys(defaultColors)
+            .reduce((obj, color) => {
+                obj[color] = str => {
+                    if (useColors) {
+                        buffer.push(useColors === true || useColors[color] === undefined
+                            ? defaultColors[color]
+                            : useColors[color]);
+                    }
+                    buffer.push(str);
+                    if (useColors) {
+                        buffer.push('\x1B[39m\x1B[22m');
+                    }
+                };
+                return obj;
+            }, {
+                normal(str) {
+                    buffer.push(str);
                 }
-                buf.push(str);
-                if (useColors) {
-                    buf.push('\x1B[39m\x1B[22m');
-                }
-            };
-            return obj;
-        }, {
-            normal(str) {
-                buf.push(str);
-            }
-        });
+            });
 
         function coloredTime(time) {
             let times = [800, 400, 200, 100];
@@ -441,7 +415,7 @@ class Stats {
         }
 
         function newline() {
-            buf.push('\n');
+            buffer.push('\n');
         }
 
         function table(array, formats, align, splitter) {
@@ -451,7 +425,8 @@ class Stats {
             const cols = array[0].length;
             const colSizes = new Array(cols);
             let value;
-            for (col = 0; col < cols; col++) colSizes[col] = 3;
+            for (col = 0; col < cols; col++)
+                colSizes[col] = 3;
             for (row = 0; row < rows; row++) {
                 for (col = 0; col < cols; col++) {
                     value = `${array[row][col]}`;
@@ -468,7 +443,8 @@ class Stats {
                     if (align[col] === 'l') {
                         format(value);
                     }
-                    for (; l < colSizes[col] && col !== cols - 1; l++) colors.normal(' ');
+                    for (; l < colSizes[col] && col !== cols - 1; l++)
+                        colors.normal(' ');
                     if (align[col] === 'r') {
                         format(value);
                     }
@@ -514,41 +490,40 @@ class Stats {
         }
         if (obj.assets && obj.assets.length > 0) {
             const t = [['Asset', 'Size', 'Chunks', '', 'Chunk Names']];
-            obj.assets.forEach(function (asset) {
+            obj.assets.forEach(asset => {
                 t.push([
                     asset.name,
                     formatSize(asset.size),
                     asset.chunks.join(', '),
-                    asset.emitted
-                        ? '[emitted]'
-                        : '',
+                    asset.emitted ? '[emitted]' : '',
                     asset.chunkNames.join(', ')
                 ]);
             });
             table(t, [colors.green, colors.normal, colors.bold, colors.green, colors.normal], 'rrrll');
         }
         if (obj.entrypoints) {
-            Object.keys(obj.entrypoints).forEach(function (name) {
+            Object.keys(obj.entrypoints).forEach(name => {
                 colors.normal('Entrypoint ');
                 colors.bold(name);
                 colors.normal(' =');
-                obj.entrypoints[name].assets.forEach(function (asset) {
+                obj.entrypoints[name].assets.forEach(asset => {
                     colors.normal(' ');
                     colors.green(asset);
                 });
                 newline();
             });
         }
+
         const modulesByIdentifier = {};
         if (obj.modules) {
-            obj.modules.forEach(function (module) {
+            obj.modules.forEach(module => {
                 modulesByIdentifier[`$${module.identifier}`] = module;
             });
         }
         else if (obj.chunks) {
-            obj.chunks.forEach(function (chunk) {
+            obj.chunks.forEach(chunk => {
                 if (chunk.modules) {
-                    chunk.modules.forEach(function (module) {
+                    chunk.modules.forEach(module => {
                         modulesByIdentifier[`$${module.identifier}`] = module;
                     });
                 }
@@ -559,7 +534,7 @@ class Stats {
             colors.normal(' ');
             colors.normal(formatSize(module.size));
             if (module.chunks) {
-                module.chunks.forEach(function (chunk) {
+                module.chunks.forEach(chunk => {
                     colors.normal(' {');
                     colors.yellow(chunk);
                     colors.normal('}');
@@ -607,7 +582,7 @@ class Stats {
                 }
             }
             if (module.reasons) {
-                module.reasons.forEach(function (reason) {
+                module.reasons.forEach(reason => {
                     colors.normal(prefix);
                     colors.normal(reason.type);
                     colors.normal(' ');
@@ -634,7 +609,7 @@ class Stats {
                 while (current.issuer) {
                     path.unshift(current = current.issuer);
                 }
-                path.forEach(function (module) {
+                path.forEach(module => {
                     colors.normal('[');
                     colors.normal(module.id);
                     colors.normal('] ');
@@ -646,7 +621,7 @@ class Stats {
                     }
                     colors.normal('->');
                 });
-                Object.keys(module.profile).forEach(function (key) {
+                Object.keys(module.profile).forEach(key => {
                     colors.normal(` ${key}:`);
                     const time = module.profile[key];
                     coloredTime(time);
@@ -659,7 +634,7 @@ class Stats {
         }
 
         if (obj.chunks) {
-            obj.chunks.forEach(function (chunk) {
+            obj.chunks.forEach(chunk => {
                 colors.normal('chunk ');
                 if (chunk.id < 1000) {
                     colors.normal(' ');
@@ -681,7 +656,7 @@ class Stats {
                 }
                 colors.normal(' ');
                 colors.normal(formatSize(chunk.size));
-                chunk.parents.forEach(function (id) {
+                chunk.parents.forEach(id => {
                     colors.normal(' {');
                     colors.yellow(id);
                     colors.normal('}');
@@ -700,7 +675,7 @@ class Stats {
                 }
                 newline();
                 if (chunk.origins) {
-                    chunk.origins.forEach(function (origin) {
+                    chunk.origins.forEach(origin => {
                         colors.normal('    > ');
                         if (origin.reasons && origin.reasons.length) {
                             colors.yellow(origin.reasons.join(' '));
@@ -727,7 +702,7 @@ class Stats {
                     });
                 }
                 if (chunk.modules) {
-                    chunk.modules.forEach(function (module) {
+                    chunk.modules.forEach(module => {
                         colors.normal(' ');
                         if (module.id < 1000) {
                             colors.normal(' ');
@@ -754,7 +729,7 @@ class Stats {
             });
         }
         if (obj.modules) {
-            obj.modules.forEach(function (module) {
+            obj.modules.forEach(module => {
                 if (module.id < 1000) {
                     colors.normal(' ');
                 }
@@ -778,21 +753,21 @@ class Stats {
             }
         }
         if (obj._showWarnings && obj.warnings) {
-            obj.warnings.forEach(function (warning) {
+            obj.warnings.forEach(warning => {
                 newline();
                 colors.yellow(`WARNING in ${warning}`);
                 newline();
             });
         }
         if (obj._showErrors && obj.errors) {
-            obj.errors.forEach(function (error) {
+            obj.errors.forEach(error => {
                 newline();
                 colors.red(`ERROR in ${error}`);
                 newline();
             });
         }
         if (obj.children) {
-            obj.children.forEach(function (child) {
+            obj.children.forEach(child => {
                 if (child.name) {
                     colors.normal('Child ');
                     colors.bold(child.name);
@@ -802,8 +777,8 @@ class Stats {
                     colors.normal('Child');
                 }
                 newline();
-                buf.push('    ');
-                buf.push(Stats.jsonToString(child, useColors).replace(/\n/g, '\n    '));
+                buffer.push('    ');
+                buffer.push(Stats.jsonToString(child, useColors).replace(/\n/g, '\n    '));
                 newline();
             });
         }
@@ -811,8 +786,8 @@ class Stats {
             colors.yellow('Compilation needs an additional pass and will compile again.');
         }
 
-        while (buf[buf.length - 1] === '\n') buf.pop();
-        return buf.join('');
+        while (buffer[buffer.length - 1] === '\n') buffer.pop();
+        return buffer.join('');
     }
 
     static presetToOptions(name) {

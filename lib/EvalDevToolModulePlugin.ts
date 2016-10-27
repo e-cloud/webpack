@@ -12,7 +12,7 @@ class EvalDevToolModulePlugin {
 
     apply(compiler) {
         const self = this;
-        compiler.plugin('compilation', function (compilation) {
+        compiler.plugin('compilation', compilation => {
             compilation.moduleTemplate.apply(new EvalDevToolModuleTemplatePlugin(self.sourceUrlComment, self.moduleFilenameTemplate));
         });
     }

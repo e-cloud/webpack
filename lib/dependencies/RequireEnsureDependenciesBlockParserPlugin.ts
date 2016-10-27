@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import AbstractPlugin = require('../AbstractPlugin');
-
 import RequireEnsureDependenciesBlock = require('./RequireEnsureDependenciesBlock');
 import RequireEnsureItemDependency = require('./RequireEnsureItemDependency');
 import getFunctionExpression = require('./getFunctionExpression');
@@ -38,8 +37,8 @@ export = AbstractPlugin.create({
                 this.state.current = dep;
                 try {
                     let failed = false;
-                    this.inScope([], function () {
-                        dependenciesItems.forEach(function (ee) {
+                    this.inScope([], () => {
+                        dependenciesItems.forEach(ee => {
                             if (ee.isString()) {
                                 const edep = new RequireEnsureItemDependency(ee.string, ee.range);
                                 edep.loc = dep.loc;

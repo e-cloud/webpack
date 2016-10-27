@@ -11,7 +11,8 @@ class CommonJsRequireDependency extends ModuleDependency {
     }
 }
 
-export = CommonJsRequireDependency;
 CommonJsRequireDependency.prototype.type = 'cjs require';
+
+export = CommonJsRequireDependency;
 
 CommonJsRequireDependency.Template = require('./ModuleDependencyTemplateAsId');

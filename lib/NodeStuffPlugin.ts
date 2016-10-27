@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import objectAssign = require('object-assign');
-
 import path = require('path');
 import ModuleParserHelpers = require('./ModuleParserHelpers');
 import ConstDependency = require('./dependencies/ConstDependency');
@@ -18,11 +17,11 @@ class NodeStuffPlugin {
 
     apply(compiler) {
         const options = this.options;
-        compiler.plugin('compilation', function (compilation, params) {
+        compiler.plugin('compilation', (compilation, params) => {
             compilation.dependencyFactories.set(ConstDependency, new NullFactory());
             compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', function (parser, parserOptions) {
+            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
 
                 if (parserOptions.node === false) {
                     return;
@@ -56,9 +55,7 @@ class NodeStuffPlugin {
                     setConstant('__filename', '/index.js');
                 }
                 else if (localOptions.__filename) {
-                    setModuleConstant('__filename', function (module) {
-                        return path.relative(context, module.resource);
-                    });
+                    setModuleConstant('__filename', module => path.relative(context, module.resource));
                 }
                 parser.plugin('evaluate Identifier __filename', function (expr) {
                     if (!this.state.module) {
@@ -75,9 +72,7 @@ class NodeStuffPlugin {
                     setConstant('__dirname', '/');
                 }
                 else if (localOptions.__dirname) {
-                    setModuleConstant('__dirname', function (module) {
-                        return path.relative(context, module.context);
-                    });
+                    setModuleConstant('__dirname', module => path.relative(context, module.context));
                 }
                 parser.plugin('evaluate Identifier __dirname', function (expr) {
                     if (!this.state.module) {
@@ -117,9 +112,8 @@ class NodeStuffPlugin {
                     return true;
                 });
                 parser.plugin('expression module.exports', ignore);
-                parser.plugin('evaluate Identifier module.hot', function (expr) {
-                    return new BasicEvaluatedExpression().setBoolean(false).setRange(expr.range);
-                });
+                parser.plugin('evaluate Identifier module.hot',
+                    expr => new BasicEvaluatedExpression().setBoolean(false).setRange(expr.range));
                 parser.plugin('expression module', function () {
                     let moduleJsPath = path.join(__dirname, '..', 'buildin', 'module.js');
                     if (this.state.module.context) {

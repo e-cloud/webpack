@@ -2,9 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-const ContextDependencyHelpers = exports;
-
-ContextDependencyHelpers.create = function (Dep, range, param, expr, options) {
+export function create(Dep, range, param, expr, options) {
     let dep;
     if (param.isWrapped() && (param.prefix && param.prefix.isString() || param.postfix && param.postfix.isString())) {
         let prefix = param.prefix && param.prefix.isString() ? param.prefix.string : '';
@@ -30,4 +28,4 @@ ContextDependencyHelpers.create = function (Dep, range, param, expr, options) {
         dep.critical = options.exprContextCritical && 'the request of a dependency is an expression';
         return dep;
     }
-};
+}

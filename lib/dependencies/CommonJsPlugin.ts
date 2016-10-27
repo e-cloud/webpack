@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import ConstDependency = require('./ConstDependency');
-
 import CommonJsRequireDependency = require('./CommonJsRequireDependency');
 import CommonJsRequireContextDependency = require('./CommonJsRequireContextDependency');
 import RequireResolveDependency = require('./RequireResolveDependency');
@@ -22,7 +21,7 @@ class CommonJsPlugin {
 
     apply(compiler) {
         const options = this.options;
-        compiler.plugin('compilation', function (compilation, params) {
+        compiler.plugin('compilation', (compilation, params) => {
             const normalModuleFactory = params.normalModuleFactory;
             const contextModuleFactory = params.contextModuleFactory;
 
@@ -44,16 +43,15 @@ class CommonJsPlugin {
             compilation.dependencyFactories.set(RequireHeaderDependency, new NullFactory());
             compilation.dependencyTemplates.set(RequireHeaderDependency, new RequireHeaderDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', function (parser, parserOptions) {
+            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
 
                 if (typeof parserOptions.commonjs !== 'undefined' && !parserOptions.commonjs) {
                     return;
                 }
 
                 function setTypeof(expr, value) {
-                    parser.plugin(`evaluate typeof ${expr}`, function (expr) {
-                        return new BasicEvaluatedExpression().setString(value).setRange(expr.range);
-                    });
+                    parser.plugin(`evaluate typeof ${expr}`,
+                        expr => new BasicEvaluatedExpression().setString(value).setRange(expr.range));
                     parser.plugin(`typeof ${expr}`, function (expr) {
                         const dep = new ConstDependency(JSON.stringify(value), expr.range);
                         dep.loc = expr.loc;
@@ -65,9 +63,8 @@ class CommonJsPlugin {
                 setTypeof('require', 'function');
                 setTypeof('require.resolve', 'function');
                 setTypeof('require.resolveWeak', 'function');
-                parser.plugin('evaluate typeof module', function (expr) {
-                    return new BasicEvaluatedExpression().setString('object').setRange(expr.range);
-                });
+                parser.plugin('evaluate typeof module',
+                    expr => new BasicEvaluatedExpression().setString('object').setRange(expr.range));
                 parser.plugin('assign require', function (expr) {
                     // to not leak to global "require", we need to define a local require here.
                     const dep = new ConstDependency('var require;', 0);
@@ -76,9 +73,7 @@ class CommonJsPlugin {
                     this.scope.definitions.push('require');
                     return true;
                 });
-                parser.plugin('can-rename require', function () {
-                    return true;
-                });
+                parser.plugin('can-rename require', () => true);
                 parser.plugin('rename require', function (expr) {
                     // define the require variable. It's still undefined, but not "not defined".
                     const dep = new ConstDependency('var require;', 0);
@@ -86,12 +81,9 @@ class CommonJsPlugin {
                     this.state.current.addDependency(dep);
                     return false;
                 });
-                parser.plugin('typeof module', function () {
-                    return true;
-                });
-                parser.plugin('evaluate typeof exports', function (expr) {
-                    return new BasicEvaluatedExpression().setString('object').setRange(expr.range);
-                });
+                parser.plugin('typeof module', () => true);
+                parser.plugin('evaluate typeof exports',
+                    expr => new BasicEvaluatedExpression().setString('object').setRange(expr.range));
                 parser.apply(new CommonJsRequireDependencyParserPlugin(options), new RequireResolveDependencyParserPlugin(options));
             });
         });

@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import RequireContextDependency = require('./RequireContextDependency');
-
 import ContextElementDependency = require('./ContextElementDependency');
 import RequireContextDependencyParserPlugin = require('./RequireContextDependencyParserPlugin');
 
@@ -22,7 +21,7 @@ class RequireContextPlugin {
     apply(compiler) {
         const modulesDirectories = this.modulesDirectories;
         const extensions = this.extensions;
-        compiler.plugin('compilation', function (compilation, params) {
+        compiler.plugin('compilation', (compilation, params) => {
             const contextModuleFactory = params.contextModuleFactory;
             const normalModuleFactory = params.normalModuleFactory;
 
@@ -31,7 +30,7 @@ class RequireContextPlugin {
 
             compilation.dependencyFactories.set(ContextElementDependency, normalModuleFactory);
 
-            params.normalModuleFactory.plugin('parser', function (parser, parserOptions) {
+            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
 
                 if (typeof parserOptions.requireContext !== 'undefined' && !parserOptions.requireContext) {
                     return;
@@ -40,33 +39,35 @@ class RequireContextPlugin {
                 parser.apply(new RequireContextDependencyParserPlugin());
             });
 
-            params.contextModuleFactory.plugin('alternatives', function (items, callback) {
+            params.contextModuleFactory.plugin('alternatives', (items, callback) => {
                 if (items.length === 0) {
                     return callback(null, items);
                 }
 
-                callback(null, items.map(function (obj) {
-                    return extensions.filter(function (ext) {
-                        const l = obj.request.length;
-                        return l > ext.length && obj.request.substr(l - ext.length, l) === ext;
-                    }).map(function (ext) {
-                        const l = obj.request.length;
-                        return {
-                            context: obj.context,
-                            request: obj.request.substr(0, l - ext.length)
-                        };
-                    }).concat(obj);
-                }).reduce(function (a, b) {
-                    return a.concat(b);
-                }, []));
+                callback(null,
+                    items.map(obj =>
+                            extensions.filter(ext => {
+                                    const l = obj.request.length;
+                                    return l > ext.length && obj.request.substr(l - ext.length, l) === ext;
+                                })
+                                .map(ext => {
+                                    const l = obj.request.length;
+                                    return {
+                                        context: obj.context,
+                                        request: obj.request.substr(0, l - ext.length)
+                                    };
+                                })
+                                .concat(obj))
+                        .reduce((a, b) => a.concat(b), [])
+                );
             });
 
-            params.contextModuleFactory.plugin('alternatives', function (items, callback) {
+            params.contextModuleFactory.plugin('alternatives', (items, callback) => {
                 if (items.length === 0) {
                     return callback(null, items);
                 }
 
-                callback(null, items.map(function (obj) {
+                callback(null, items.map(obj => {
                     for (let i = 0; i < modulesDirectories.length; i++) {
                         const dir = modulesDirectories[i];
                         const idx = obj.request.indexOf(`./${dir}/`);

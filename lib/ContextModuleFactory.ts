@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import async = require('async');
-
 import path = require('path');
 import Tapable = require('tapable');
 import ContextModule = require('./ContextModule');
@@ -27,7 +26,7 @@ class ContextModuleFactory extends Tapable {
             regExp: dependency.regExp,
             async: dependency.async,
             dependencies
-        }, function (err, result) {
+        }, (err, result) => {
             if (err) {
                 return callback(err);
             }
@@ -70,16 +69,17 @@ class ContextModuleFactory extends Tapable {
             const resolvers = module.resolvers;
 
             async.parallel([
-                function (callback) {
-                    resolvers.context.resolve({}, context, resource, function (err, result) {
+                callback => {
+                    resolvers.context.resolve({}, context, resource, (err, result) => {
                         if (err) {
                             return callback(err);
                         }
                         callback(null, result);
                     });
-                }, function (callback) {
-                    async.map(loaders, function (loader, callback) {
-                        resolvers.loader.resolve({}, context, loader, function (err, result) {
+                },
+                callback => {
+                    async.map(loaders, (loader, callback) => {
+                        resolvers.loader.resolve({}, context, loader, (err, result) => {
                             if (err) {
                                 return callback(err);
                             }
@@ -87,7 +87,7 @@ class ContextModuleFactory extends Tapable {
                         });
                     }, callback);
                 }
-            ], function (err, result) {
+            ], (err, result) => {
                 if (err) {
                     return callback(err);
                 }
@@ -100,7 +100,7 @@ class ContextModuleFactory extends Tapable {
                     async: asyncContext,
                     dependencies,
                     resolveDependencies: module.resolveDependencies.bind(module)
-                }, function (err, result) {
+                }, (err, result) => {
                     if (err) {
                         return callback(err);
                     }
@@ -121,72 +121,67 @@ class ContextModuleFactory extends Tapable {
             return callback(null, []);
         }
         (function addDirectory(directory, callback) {
-            fs.readdir(directory, function (err, files) {
+            fs.readdir(directory, (err, files) => {
                 if (err) {
                     return callback(err);
                 }
                 if (!files || files.length === 0) {
                     return callback(null, []);
                 }
-                async.map(files.filter(function (p) {
-                    return p.indexOf('.') !== 0;
-                }), function (seqment, callback) {
+                async.map(
+                    files.filter(p => p.indexOf('.') !== 0),
+                    (seqment, callback) => {
+                        const subResource = path.join(directory, seqment);
 
-                    const subResource = path.join(directory, seqment);
+                        fs.stat(subResource, (err, stat) => {
+                            if (err) {
+                                return callback(err);
+                            }
 
-                    fs.stat(subResource, function (err, stat) {
+                            if (stat.isDirectory()) {
+
+                                if (!recursive) {
+                                    return callback();
+                                }
+                                addDirectory.call(this, subResource, callback);
+                            }
+                            else if (stat.isFile()) {
+
+                                const obj = {
+                                    context: resource,
+                                    request: `.${subResource.substr(resource.length).replace(/\\/g, '/')}`
+                                };
+
+                                this.applyPluginsAsyncWaterfall('alternatives', [obj], (err, alternatives) => {
+                                    if (err) {
+                                        return callback(err);
+                                    }
+                                    alternatives = alternatives.filter(obj => regExp.test(obj.request)).map(obj => {
+                                        const dep = new ContextElementDependency(obj.request);
+                                        dep.optional = true;
+                                        return dep;
+                                    });
+                                    callback(null, alternatives);
+                                });
+                            }
+                            else {
+                                callback();
+                            }
+                        });
+                    },
+                    (err, result) => {
                         if (err) {
                             return callback(err);
                         }
 
-                        if (stat.isDirectory()) {
-
-                            if (!recursive) {
-                                return callback();
-                            }
-                            addDirectory.call(this, subResource, callback);
+                        if (!result) {
+                            return callback(null, []);
                         }
-                        else if (stat.isFile()) {
 
-                            const obj = {
-                                context: resource,
-                                request: `.${subResource.substr(resource.length).replace(/\\/g, '/')}`
-                            };
-
-                            this.applyPluginsAsyncWaterfall('alternatives', [obj], function (err, alternatives) {
-                                if (err) {
-                                    return callback(err);
-                                }
-                                alternatives = alternatives.filter(function (obj) {
-                                    return regExp.test(obj.request);
-                                }).map(function (obj) {
-                                    const dep = new ContextElementDependency(obj.request);
-                                    dep.optional = true;
-                                    return dep;
-                                });
-                                callback(null, alternatives);
-                            });
-                        }
-                        else {
-                            callback();
-                        }
-                    }.bind(this));
-                }.bind(this), function (err, result) {
-                    if (err) {
-                        return callback(err);
+                        callback(null, result.filter(i => !!i).reduce((a, i) => a.concat(i), []));
                     }
-
-                    if (!result) {
-                        return callback(null, []);
-                    }
-
-                    callback(null, result.filter(function (i) {
-                        return !!i;
-                    }).reduce(function (a, i) {
-                        return a.concat(i);
-                    }, []));
-                });
-            }.bind(this));
+                );
+            });
         }).call(this, resource, callback);
     }
 }

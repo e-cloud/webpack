@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import RequireEnsureItemDependency = require('./RequireEnsureItemDependency');
-
 import RequireEnsureDependency = require('./RequireEnsureDependency');
 import ConstDependency = require('./ConstDependency');
 import NullFactory = require('../NullFactory');
@@ -12,7 +11,7 @@ import BasicEvaluatedExpression = require('../BasicEvaluatedExpression');
 
 class RequireEnsurePlugin {
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation, params) {
+        compiler.plugin('compilation', (compilation, params) => {
             const normalModuleFactory = params.normalModuleFactory;
 
             compilation.dependencyFactories.set(RequireEnsureItemDependency, normalModuleFactory);
@@ -21,16 +20,16 @@ class RequireEnsurePlugin {
             compilation.dependencyFactories.set(RequireEnsureDependency, new NullFactory());
             compilation.dependencyTemplates.set(RequireEnsureDependency, new RequireEnsureDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', function (parser, parserOptions) {
+            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
 
                 if (typeof parserOptions.requireEnsure !== 'undefined' && !parserOptions.requireEnsure) {
                     return;
                 }
 
                 parser.apply(new RequireEnsureDependenciesBlockParserPlugin());
-                parser.plugin('evaluate typeof require.ensure', function (expr) {
-                    return new BasicEvaluatedExpression().setString('function').setRange(expr.range);
-                });
+                parser.plugin('evaluate typeof require.ensure',
+                    expr => new BasicEvaluatedExpression().setString('function').setRange(expr.range)
+                );
                 parser.plugin('typeof require.ensure', function (expr) {
                     const dep = new ConstDependency('\'function\'', expr.range);
                     dep.loc = expr.loc;

@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import SystemImportDependency = require('./SystemImportDependency');
-
 import SystemImportContextDependency = require('./SystemImportContextDependency');
 import UnsupportedFeatureWarning = require('../UnsupportedFeatureWarning');
 import ConstDependency = require('./ConstDependency');
@@ -17,7 +16,7 @@ class SystemPlugin {
 
     apply(compiler) {
         const options = this.options;
-        compiler.plugin('compilation', function (compilation, params) {
+        compiler.plugin('compilation', (compilation, params) => {
             const normalModuleFactory = params.normalModuleFactory;
             const contextModuleFactory = params.contextModuleFactory;
 
@@ -27,16 +26,15 @@ class SystemPlugin {
             compilation.dependencyFactories.set(SystemImportContextDependency, contextModuleFactory);
             compilation.dependencyTemplates.set(SystemImportContextDependency, new SystemImportContextDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', function (parser, parserOptions) {
+            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
 
                 if (typeof parserOptions.system !== 'undefined' && !parserOptions.system) {
                     return;
                 }
 
                 function setTypeof(expr, value) {
-                    parser.plugin(`evaluate typeof ${expr}`, function (expr) {
-                        return new BasicEvaluatedExpression().setString(value).setRange(expr.range);
-                    });
+                    parser.plugin(`evaluate typeof ${expr}`,
+                        expr => new BasicEvaluatedExpression().setString(value).setRange(expr.range));
                     parser.plugin(`typeof ${expr}`, function (expr) {
                         const dep = new ConstDependency(JSON.stringify(value), expr.range);
                         dep.loc = expr.loc;
@@ -46,9 +44,8 @@ class SystemPlugin {
                 }
 
                 function setNotSupported(name) {
-                    parser.plugin(`evaluate typeof ${name}`, function (expr) {
-                        return new BasicEvaluatedExpression().setString('undefined').setRange(expr.range);
-                    });
+                    parser.plugin(`evaluate typeof ${name}`,
+                        expr => new BasicEvaluatedExpression().setString('undefined').setRange(expr.range));
                     parser.plugin(`expression ${name}`, function (expr) {
                         const dep = new ConstDependency('(void 0)', expr.range);
                         dep.loc = expr.loc;

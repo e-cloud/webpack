@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import MultiEntryDependency = require('./dependencies/MultiEntryDependency');
-
 import SingleEntryDependency = require('./dependencies/SingleEntryDependency');
 import MultiModuleFactory = require('./MultiModuleFactory');
 
@@ -15,7 +14,7 @@ class MultiEntryPlugin {
     }
 
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation, params) {
+        compiler.plugin('compilation', (compilation, params) => {
             const multiModuleFactory = new MultiModuleFactory();
             const normalModuleFactory = params.normalModuleFactory;
 
@@ -23,13 +22,13 @@ class MultiEntryPlugin {
 
             compilation.dependencyFactories.set(SingleEntryDependency, normalModuleFactory);
         });
-        compiler.plugin('make', function (compilation, callback) {
+        compiler.plugin('make', (compilation, callback) => {
             compilation.addEntry(this.context, new MultiEntryDependency(this.entries.map(function (e, idx) {
                 const dep = new SingleEntryDependency(e);
                 dep.loc = `${this.name}:${100000 + idx}`;
                 return dep;
             }, this), this.name), this.name, callback);
-        }.bind(this));
+        });
     }
 }
 

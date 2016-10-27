@@ -13,5 +13,6 @@ class ContextElementDependency extends ModuleDependency {
     }
 }
 
-export = ContextElementDependency;
 ContextElementDependency.prototype.type = 'context element';
+
+export = ContextElementDependency;

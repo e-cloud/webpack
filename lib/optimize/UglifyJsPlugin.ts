@@ -4,9 +4,9 @@
  */
 import { SourceMapConsumer } from 'source-map'
 import { SourceMapSource, RawSource } from 'webpack-sources'
+import uglify = require('uglify-js');
 import RequestShortener = require('../RequestShortener');
 import ModuleFilenameHelpers = require('../ModuleFilenameHelpers');
-import uglify = require('uglify-js');
 
 class UglifyJsPlugin {
     constructor(options) {
@@ -24,25 +24,25 @@ class UglifyJsPlugin {
         options.test = options.test || /\.js($|\?)/i;
 
         const requestShortener = new RequestShortener(compiler.context);
-        compiler.plugin('compilation', function (compilation) {
+        compiler.plugin('compilation', compilation => {
             if (options.sourceMap) {
-                compilation.plugin('build-module', function (module) {
+                compilation.plugin('build-module', module => {
                     // to get detailed location info about errors
                     module.useSourceMap = true;
                 });
             }
-            compilation.plugin('optimize-chunk-assets', function (chunks, callback) {
+            compilation.plugin('optimize-chunk-assets', (chunks, callback) => {
                 let files = [];
-                chunks.forEach(function (chunk) {
-                    chunk.files.forEach(function (file) {
+                chunks.forEach(chunk => {
+                    chunk.files.forEach(file => {
                         files.push(file);
                     });
                 });
-                compilation.additionalChunkAssets.forEach(function (file) {
+                compilation.additionalChunkAssets.forEach(file => {
                     files.push(file);
                 });
                 files = files.filter(ModuleFilenameHelpers.matchObject.bind(undefined, options));
-                files.forEach(function (file) {
+                files.forEach(file => {
                     const oldWarnFunction = uglify.AST_Node.warn_function;
                     const warnings = [];
                     try {
@@ -64,7 +64,7 @@ class UglifyJsPlugin {
                                 input = asset.source();
                             }
                             var sourceMap = new SourceMapConsumer(inputSourceMap);
-                            uglify.AST_Node.warn_function = function (warning) {
+                            uglify.AST_Node.warn_function = warning => {
                                 // eslint-disable-line camelcase
                                 const match = /\[.+:([0-9]+),([0-9]+)\]/.exec(warning);
                                 const line = +match[1];
@@ -81,7 +81,7 @@ class UglifyJsPlugin {
                         }
                         else {
                             input = asset.source();
-                            uglify.AST_Node.warn_function = function (warning) {
+                            uglify.AST_Node.warn_function = warning => {
                                 // eslint-disable-line camelcase
                                 warnings.push(warning);
                             };

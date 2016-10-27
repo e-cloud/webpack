@@ -10,5 +10,6 @@ class SingleEntryDependency extends ModuleDependency {
     }
 }
 
-export = SingleEntryDependency;
 SingleEntryDependency.prototype.type = 'single entry';
+
+export = SingleEntryDependency;

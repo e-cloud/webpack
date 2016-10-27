@@ -2,6 +2,8 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import crypto = require('crypto')
+
 class HashedModuleIdsPlugin {
     constructor(options) {
         this.options = options || {};
@@ -12,15 +14,15 @@ class HashedModuleIdsPlugin {
 
     apply(compiler) {
         const options = this.options;
-        compiler.plugin('compilation', function (compilation) {
+        compiler.plugin('compilation', compilation => {
             const usedIds = {};
-            compilation.plugin('before-module-ids', function (modules) {
+            compilation.plugin('before-module-ids', modules => {
                 modules.forEach(function (module) {
                     if (module.id === null && module.libIdent) {
                         let id = module.libIdent({
                             context: this.options.context || compiler.options.context
                         });
-                        const hash = require('crypto').createHash(options.hashFunction);
+                        const hash = crypto.createHash(options.hashFunction);
                         hash.update(id);
                         id = hash.digest(options.hashDigest);
                         let len = options.hashDigestLength;
@@ -29,8 +31,8 @@ class HashedModuleIdsPlugin {
                         usedIds[module.id] = true;
                     }
                 }, this);
-            }.bind(this));
-        }.bind(this));
+            });
+        });
     }
 }
 

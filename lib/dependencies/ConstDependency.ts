@@ -4,6 +4,17 @@
  */
 import NullDependency = require('./NullDependency');
 
+class Template {
+    apply(dep, source) {
+        if (typeof dep.range === 'number') {
+            source.insert(dep.range, dep.expression);
+        }
+        else {
+            source.replace(dep.range[0], dep.range[1] - 1, dep.expression);
+        }
+    }
+}
+
 class ConstDependency extends NullDependency {
     constructor(expression, range) {
         super();
@@ -11,8 +22,7 @@ class ConstDependency extends NullDependency {
         this.range = range;
     }
 
-    static Template() {
-    }
+    static Template = Template
 
     updateHash(hash) {
         hash.update(`${this.range}`);
@@ -21,12 +31,3 @@ class ConstDependency extends NullDependency {
 }
 
 export = ConstDependency;
-
-ConstDependency.Template.prototype.apply = function (dep, source) {
-    if (typeof dep.range === 'number') {
-        source.insert(dep.range, dep.expression);
-    }
-    else {
-        source.replace(dep.range[0], dep.range[1] - 1, dep.expression);
-    }
-};

@@ -2,9 +2,9 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import Module = require('./Module');
-
 import { OriginalSource, RawSource } from 'webpack-sources'
+import Module = require('./Module');
+import crypto = require('crypto')
 
 class RawModule extends Module {
     constructor(source, identifier, readableIdentifier) {
@@ -47,7 +47,7 @@ class RawModule extends Module {
     }
 
     getSourceHash() {
-        const hash = require('crypto').createHash('md5');
+        const hash = crypto.createHash('md5');
         hash.update(this.sourceStr);
         return hash.digest('hex');
     }

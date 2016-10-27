@@ -3,20 +3,19 @@
  Author Tobias Koppers @sokra
  */
 import { ConcatSource } from 'webpack-sources'
-
 import TemplateArgumentDependency = require('../dependencies/TemplateArgumentDependency');
 
 class DedupePlugin {
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation) {
+        compiler.plugin('compilation', compilation => {
             compilation.notCacheable = 'DedupePlugin';
 
             compilation.dependencyTemplates.set(TemplateArgumentDependency, new TemplateArgumentDependency.Template());
 
-            compilation.plugin('after-optimize-tree', function (chunks, modules) {
+            compilation.plugin('after-optimize-tree', (chunks, modules) => {
                 const modulesByHash = {};
                 const allDups = [];
-                modules.forEach(function (module) {
+                modules.forEach(module => {
                     if (!module.getSourceHash || !module.getAllModuleDependencies || !module.createTemplate || !module.getTemplateArguments || module.blocks.length > 0) {
                         return;
                     }
@@ -35,16 +34,14 @@ class DedupePlugin {
                         modulesByHash[hash] = module;
                     }
                 });
-                const entryChunks = chunks.filter(function (c) {
-                    return c.hasRuntime();
-                });
-                entryChunks.forEach(function (chunk) {
+                const entryChunks = chunks.filter(c => c.hasRuntime());
+                entryChunks.forEach(chunk => {
                     // for each entry chunk
                     let hasDeduplicatedModules = false;
                     (function x(dups, roots, visited, chunk) {
                         let currentDups = [];
                         let currentRoots = [];
-                        chunk.modules.forEach(function (module) {
+                        chunk.modules.forEach(module => {
                             if (module.duplicates) {
                                 if (!module.rootDuplicatesChunks) {
                                     module.rootDuplicatesChunks = module.chunks.slice();
@@ -79,13 +76,13 @@ class DedupePlugin {
                                 }
                             }
                         });
-                        chunk.chunks.forEach(function (chunk) {
+                        chunk.chunks.forEach(chunk => {
                             if (!visited.includes(chunk)) {
                                 x(dups, roots, visited.concat(chunk), chunk);
                             }
                         });
 
-                        currentRoots.forEach(function (roots) {
+                        currentRoots.forEach(roots => {
                             const commonModules = roots.commonModules;
                             const initialLength = roots.initialCommonModulesLength;
                             if (initialLength !== commonModules.length) {
@@ -105,12 +102,10 @@ class DedupePlugin {
             });
 
             function mergeCommonModules(commonModules, newModules) {
-                return commonModules.filter(function (module) {
-                    return newModules.includes(module);
-                });
+                return commonModules.filter(module => newModules.includes(module));
             }
 
-            compilation.moduleTemplate.plugin('package', function (moduleSource, module, chunk) {
+            compilation.moduleTemplate.plugin('package', (moduleSource, module, chunk) => {
                 if (!module.rootDuplicatesChunks || !chunk) {
                     return moduleSource;
                 }
@@ -126,14 +121,14 @@ class DedupePlugin {
                         request: module.request,
                         templateModules: rootDuplicates.template.templateModules
                     });
-                    rootDuplicates.template.reasons.sort(function (a, b) {
+                    rootDuplicates.template.reasons.sort((a, b) => {
                         if (a.request === b.request) {
                             return 0;
                         }
                         return a.request < b.request ? -1 : 1;
                     });
                     const array = [JSON.stringify(rootDuplicates.template.id)].concat(module.getTemplateArguments(rootDuplicates.template.templateModules)
-                        .map(function (module) {
+                        .map(module => {
                             if (module.id === null || module.id === undefined) {
                                 return `(function webpackMissingModule() { throw new Error(${JSON.stringify('Cannot find module')}); }())`;
                             }
@@ -143,9 +138,7 @@ class DedupePlugin {
                     return source;
                 }
                 else {
-                    rootDuplicates.sort(function (a, b) {
-                        return a.id - b.id;
-                    });
+                    rootDuplicates.sort((a, b) => a.id - b.id);
                     if (module === rootDuplicates[0]) {
                         return moduleSource;
                     }
@@ -153,7 +146,7 @@ class DedupePlugin {
                     return source;
                 }
             });
-            compilation.plugin('chunk-hash', function (chunk, hash) {
+            compilation.plugin('chunk-hash', (chunk, hash) => {
                 if (chunk.__DedupePluginHasDeduplicatedModules) {
                     hash.update('DedupePlugin (deduplication code)');
                 }

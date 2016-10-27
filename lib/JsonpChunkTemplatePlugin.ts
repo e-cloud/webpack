@@ -13,9 +13,7 @@ class JsonpChunkTemplatePlugin {
             const source = new ConcatSource();
             source.add(`${jsonpFunction}(${JSON.stringify(chunk.ids)},`);
             source.add(modules);
-            const entries = [chunk.entryModule].filter(Boolean).map(function (m) {
-                return m.id;
-            });
+            const entries = [chunk.entryModule].filter(Boolean).map(m => m.id);
             if (entries.length > 0) {
                 source.add(`,${JSON.stringify(entries)}`);
             }

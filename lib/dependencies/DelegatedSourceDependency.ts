@@ -10,5 +10,6 @@ class DelegatedSourceDependency extends ModuleDependency {
     }
 }
 
-export = DelegatedSourceDependency;
 DelegatedSourceDependency.prototype.type = 'delegated source';
+
+export = DelegatedSourceDependency;

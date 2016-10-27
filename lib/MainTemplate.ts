@@ -166,7 +166,7 @@ class MainTemplate extends Template {
 
     entryPointInChildren(chunk) {
         function checkChildren(chunk, alreadyCheckedChunks) {
-            return chunk.chunks.some(function (child) {
+            return chunk.chunks.some(child => {
                 if (alreadyCheckedChunks.includes(child)) {
                     return;
                 }
@@ -198,7 +198,9 @@ class MainTemplate extends Template {
         const paths = this.applyPluginsWaterfall('global-hash-paths', []);
         return !this.applyPluginsBailResult('global-hash', chunk, paths);
     }
+
 }
 
-export = MainTemplate;
 MainTemplate.prototype.requireFn = '__webpack_require__';
+
+export = MainTemplate;

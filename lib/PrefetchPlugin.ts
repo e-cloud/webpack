@@ -16,14 +16,14 @@ class PrefetchPlugin {
     }
 
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation, params) {
+        compiler.plugin('compilation', (compilation, params) => {
             const normalModuleFactory = params.normalModuleFactory;
 
             compilation.dependencyFactories.set(PrefetchDependency, normalModuleFactory);
         });
-        compiler.plugin('make', function (compilation, callback) {
+        compiler.plugin('make', (compilation, callback) => {
             compilation.prefetch(this.context || compiler.context, new PrefetchDependency(this.request), callback);
-        }.bind(this));
+        });
     }
 }
 

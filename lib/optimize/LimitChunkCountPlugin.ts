@@ -12,8 +12,8 @@ class LimitChunkCountPlugin {
 
     apply(compiler) {
         const options = this.options;
-        compiler.plugin('compilation', function (compilation) {
-            compilation.plugin('optimize-chunks-advanced', function (chunks) {
+        compiler.plugin('compilation', compilation => {
+            compilation.plugin('optimize-chunks-advanced', chunks => {
                 const maxChunks = options.maxChunks;
                 if (!maxChunks) {
                     return;
@@ -27,24 +27,22 @@ class LimitChunkCountPlugin {
 
                 if (chunks.length > maxChunks) {
                     let combinations = [];
-                    chunks.forEach(function (a, idx) {
+                    chunks.forEach((a, idx) => {
                         for (let i = 0; i < idx; i++) {
                             const b = chunks[i];
                             combinations.push([b, a]);
                         }
                     });
 
-                    combinations.forEach(function (pair) {
+                    combinations.forEach(pair => {
                         const a = pair[0].size(options);
                         const b = pair[1].size(options);
                         const ab = pair[0].integratedSize(pair[1], options);
                         pair.unshift(a + b - ab, ab);
                         pair.push(a, b);
                     });
-                    combinations = combinations.filter(function (pair) {
-                        return pair[1] !== false;
-                    });
-                    combinations.sort(function (a, b) {
+                    combinations = combinations.filter(pair => pair[1] !== false);
+                    combinations.sort((a, b) => {
                         const diff = b[0] - a[0];
                         if (diff !== 0) {
                             return diff;

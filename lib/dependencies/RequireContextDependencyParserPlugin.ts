@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import AbstractPlugin = require('../AbstractPlugin');
-
 import RequireContextDependency = require('./RequireContextDependency');
 
 export = AbstractPlugin.create({

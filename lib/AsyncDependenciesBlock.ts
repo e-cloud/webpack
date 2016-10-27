@@ -24,9 +24,11 @@ class AsyncDependenciesBlock extends DependenciesBlock {
 
     updateHash(hash) {
         hash.update(this.chunkName || '');
-        hash.update(this.chunks && this.chunks.map(function (chunk) {
-                return typeof chunk.id === 'number' ? chunk.id : '';
-            }).join(',') || '');
+        hash.update(this.chunks
+            && this.chunks
+                .map(chunk => typeof chunk.id === 'number' ? chunk.id : '')
+                .join(',')
+            || '');
         super.updateHash(hash);
     }
 
@@ -43,7 +45,7 @@ class AsyncDependenciesBlock extends DependenciesBlock {
     sortItems() {
         super.sortItems();
         if (this.chunks) {
-            this.chunks.sort(function (a, b) {
+            this.chunks.sort((a, b) => {
                 let i = 0;
                 while (true) {
                     if (!a.modules[i] && !b.modules[i]) {

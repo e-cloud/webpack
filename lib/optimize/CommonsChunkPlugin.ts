@@ -7,7 +7,21 @@ let nextIdent = 0;
 class CommonsChunkPlugin {
     constructor(options) {
         if (arguments.length > 1) {
-            throw new Error('Deprecation notice: CommonsChunkPlugin now only takes a single argument. Either an options ' + 'object *or* the name of the chunk.\n' + 'Example: if your old code looked like this:\n' + '    new webpack.optimize.CommonsChunkPlugin(\'vendor\', \'vendor.bundle.js\')\n\n' + 'You would change it to:\n' + '    new webpack.optimize.CommonsChunkPlugin({ name: \'vendor\', filename: \'vendor.bundle.js\' })\n\n' + 'The available options are:\n' + '    name: string\n' + '    names: string[]\n' + '    filename: string\n' + '    minChunks: number\n' + '    async: boolean\n' + '    minSize: number\n');
+            throw new Error(`Deprecation notice: CommonsChunkPlugin now only takes a single argument. Either an options object *or* the name of the chunk.
+Example: if your old code looked like this:
+    new webpack.optimize.CommonsChunkPlugin('vendor', 'vendor.bundle.js')
+
+You would change it to:
+    new webpack.optimize.CommonsChunkPlugin({ name: 'vendor', filename: 'vendor.bundle.js' })
+
+The available options are:
+    name: string
+    names: string[]
+    filename: string
+    minChunks: number
+    async: boolean
+    minSize: number
+`);
         }
         if (Array.isArray(options) || typeof options === 'string') {
             options = {
@@ -34,7 +48,7 @@ class CommonsChunkPlugin {
         const async = this.async;
         const minSize = this.minSize;
         const ident = this.ident;
-        compiler.plugin('this-compilation', function (compilation) {
+        compiler.plugin('this-compilation', compilation => {
             compilation.plugin(['optimize-chunks', 'optimize-extracted-chunks'], function (chunks) {
                 // only optimize once
                 if (compilation[ident]) {
@@ -48,9 +62,7 @@ class CommonsChunkPlugin {
                 }
                 else if (Array.isArray(chunkNames) || typeof chunkNames === 'string') {
                     commonChunks = [].concat(chunkNames).map(function (chunkName) {
-                        let chunk = chunks.filter(function (chunk) {
-                            return chunk.name === chunkName;
-                        })[0];
+                        let chunk = chunks.filter(chunk => chunk.name === chunkName)[0];
                         if (!chunk) {
                             chunk = this.addChunk(chunkName);
                         }
@@ -63,7 +75,7 @@ class CommonsChunkPlugin {
                 commonChunks.forEach(function processCommonChunk(commonChunk, idx) {
                     let usedChunks;
                     if (Array.isArray(selectedChunks)) {
-                        usedChunks = chunks.filter(function (chunk) {
+                        usedChunks = chunks.filter(chunk => {
                             if (chunk === commonChunk) {
                                 return false;
                             }
@@ -71,17 +83,15 @@ class CommonsChunkPlugin {
                         });
                     }
                     else if (selectedChunks === false || async) {
-                        usedChunks = (commonChunk.chunks || []).filter(function (chunk) {
-                            // we can only move modules from this chunk if the "commonChunk" is the only parent
-                            return async || chunk.parents.length === 1;
-                        });
+                        usedChunks = (commonChunk.chunks || []).filter(chunk => // we can only move modules from this chunk if the "commonChunk" is the only parent
+                        async || chunk.parents.length === 1);
                     }
                     else {
                         if (commonChunk.parents.length > 0) {
                             compilation.errors.push(new Error(`CommonsChunkPlugin: While running in normal mode it's not allowed to use a non-entry chunk (${commonChunk.name})`));
                             return;
                         }
-                        usedChunks = chunks.filter(function (chunk) {
+                        usedChunks = chunks.filter(chunk => {
                             const found = commonChunks.indexOf(chunk);
                             if (found >= idx) {
                                 return false;
@@ -101,8 +111,8 @@ class CommonsChunkPlugin {
                     if (minChunks !== Infinity) {
                         const commonModulesCount = [];
                         const commonModules = [];
-                        usedChunks.forEach(function (chunk) {
-                            chunk.modules.forEach(function (module) {
+                        usedChunks.forEach(chunk => {
+                            chunk.modules.forEach(module => {
                                 const idx = commonModules.indexOf(module);
                                 if (idx < 0) {
                                     commonModules.push(module);
@@ -114,7 +124,7 @@ class CommonsChunkPlugin {
                             });
                         });
                         const _minChunks = minChunks || Math.max(2, usedChunks.length);
-                        commonModulesCount.forEach(function (count, idx) {
+                        commonModulesCount.forEach((count, idx) => {
                             const module = commonModules[idx];
                             if (typeof minChunks === 'function') {
                                 if (!minChunks(module, count)) {
@@ -128,16 +138,14 @@ class CommonsChunkPlugin {
                         });
                     }
                     if (minSize) {
-                        const size = reallyUsedModules.reduce(function (a, b) {
-                            return a + b.size();
-                        }, 0);
+                        const size = reallyUsedModules.reduce((a, b) => a + b.size(), 0);
                         if (size < minSize) {
                             return;
                         }
                     }
                     const reallyUsedChunks = [];
-                    reallyUsedModules.forEach(function (module) {
-                        usedChunks.forEach(function (chunk) {
+                    reallyUsedModules.forEach(module => {
+                        usedChunks.forEach(chunk => {
                             if (module.removeChunk(chunk)) {
                                 if (!reallyUsedChunks.includes(chunk)) {
                                     reallyUsedChunks.push(chunk);
@@ -148,31 +156,29 @@ class CommonsChunkPlugin {
                         module.addChunk(commonChunk);
                     });
                     if (async) {
-                        reallyUsedChunks.forEach(function (chunk) {
+                        reallyUsedChunks.forEach(chunk => {
                             if (chunk.isInitial()) {
                                 return;
                             }
-                            chunk.blocks.forEach(function (block) {
+                            chunk.blocks.forEach(block => {
                                 block.chunks.unshift(commonChunk);
                                 commonChunk.addBlock(block);
                             });
                         });
-                        asyncChunk.origins = reallyUsedChunks.map(function (chunk) {
-                            return chunk.origins.map(function (origin) {
-                                const newOrigin = Object.create(origin);
-                                newOrigin.reasons = (origin.reasons || []).slice();
-                                newOrigin.reasons.push('async commons');
-                                return newOrigin;
-                            });
-                        }).reduce(function (arr, a) {
+                        asyncChunk.origins = reallyUsedChunks.map(chunk => chunk.origins.map(origin => {
+                            const newOrigin = Object.create(origin);
+                            newOrigin.reasons = (origin.reasons || []).slice();
+                            newOrigin.reasons.push('async commons');
+                            return newOrigin;
+                        })).reduce((arr, a) => {
                             arr.push(...a);
                             return arr;
                         }, []);
                     }
                     else {
-                        usedChunks.forEach(function (chunk) {
+                        usedChunks.forEach(chunk => {
                             chunk.parents = [commonChunk];
-                            chunk.entrypoints.forEach(function (ep) {
+                            chunk.entrypoints.forEach(ep => {
                                 ep.insertChunk(commonChunk, chunk);
                             });
                             commonChunk.addChunk(chunk);

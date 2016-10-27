@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import { ConcatSource } from 'webpack-sources'
-
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
 
 function wrapComment(str) {
@@ -31,14 +30,14 @@ class BannerPlugin {
         const options = this.options;
         const banner = this.banner;
 
-        compiler.plugin('compilation', function (compilation) {
-            compilation.plugin('optimize-chunk-assets', function (chunks, callback) {
-                chunks.forEach(function (chunk) {
+        compiler.plugin('compilation', compilation => {
+            compilation.plugin('optimize-chunk-assets', (chunks, callback) => {
+                chunks.forEach(chunk => {
                     if (options.entryOnly && !chunk.isInitial()) {
                         return;
                     }
                     chunk.files.filter(ModuleFilenameHelpers.matchObject.bind(undefined, options))
-                        .forEach(function (file) {
+                        .forEach(file => {
                             compilation.assets[file] = new ConcatSource(banner, '\n', compilation.assets[file]);
                         });
                 });

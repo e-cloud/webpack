@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import { RawSource } from 'webpack-sources'
-
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
 
 class EvalDevToolModuleTemplatePlugin {
@@ -19,16 +18,19 @@ class EvalDevToolModuleTemplatePlugin {
             const str = ModuleFilenameHelpers.createFilename(module, self.moduleFilenameTemplate, this.requestShortener);
             const footer = [
                 '\n', ModuleFilenameHelpers.createFooter(module, this.requestShortener),
-                self.sourceUrlComment.replace(/\[url\]/g, encodeURI(str)
-                    .replace(/%2F/g, '/')
-                    .replace(/%20/g, '_')
-                    .replace(/%5E/g, '^')
-                    .replace(/%5C/g, '\\')
-                    .replace(/^\//, ''))
+                self.sourceUrlComment.replace(
+                    /\[url\]/g,
+                    encodeURI(str)
+                        .replace(/%2F/g, '/')
+                        .replace(/%20/g, '_')
+                        .replace(/%5E/g, '^')
+                        .replace(/%5C/g, '\\')
+                        .replace(/^\//, '')
+                )
             ].join('\n');
             return new RawSource(`eval(${JSON.stringify(content + footer)});`);
         });
-        moduleTemplate.plugin('hash', function (hash) {
+        moduleTemplate.plugin('hash', hash => {
             hash.update('EvalDevToolModuleTemplatePlugin');
             hash.update('2');
         });

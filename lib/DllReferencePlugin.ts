@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import DelegatedSourceDependency = require('./dependencies/DelegatedSourceDependency');
-
 import DelegatedModuleFactoryPlugin = require('./DelegatedModuleFactoryPlugin');
 import ExternalModuleFactoryPlugin = require('./ExternalModuleFactoryPlugin');
 
@@ -13,16 +12,16 @@ class DllReferencePlugin {
     }
 
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation, params) {
+        compiler.plugin('compilation', (compilation, params) => {
             const normalModuleFactory = params.normalModuleFactory;
 
             compilation.dependencyFactories.set(DelegatedSourceDependency, normalModuleFactory);
         });
-        compiler.plugin('before-compile', function (params, callback) {
+        compiler.plugin('before-compile', (params, callback) => {
             const manifest = this.options.manifest;
             if (typeof manifest === 'string') {
                 params.compilationDependencies.push(manifest);
-                compiler.inputFileSystem.readFile(manifest, function (err, result) {
+                compiler.inputFileSystem.readFile(manifest, (err, result) => {
                     if (err) {
                         return callback(err);
                     }
@@ -33,8 +32,8 @@ class DllReferencePlugin {
             else {
                 return callback();
             }
-        }.bind(this));
-        compiler.plugin('compile', function (params) {
+        });
+        compiler.plugin('compile', params => {
             let manifest = this.options.manifest;
             if (typeof manifest === 'string') {
                 manifest = params[`dll reference ${manifest}`];
@@ -53,7 +52,7 @@ class DllReferencePlugin {
                 content: this.options.content || manifest.content,
                 extensions: this.options.extensions
             }));
-        }.bind(this));
+        });
     }
 }
 

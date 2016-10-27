@@ -3,9 +3,22 @@
  Author Tobias Koppers @sokra
  */
 import acorn = require('acorn');
-
 import Tapable = require('tapable');
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
+
+const POSSIBLE_AST_OPTIONS = [
+    {
+        ranges: true,
+        locations: true,
+        ecmaVersion: 6,
+        sourceType: 'module'
+    }, {
+        ranges: true,
+        locations: true,
+        ecmaVersion: 6,
+        sourceType: 'script'
+    }
+];
 
 class Parser extends Tapable {
     constructor(options) {
@@ -25,7 +38,7 @@ class Parser extends Tapable {
             return [startRange[0], endRange[1]];
         }
 
-        this.plugin('evaluate Literal', function (expr) {
+        this.plugin('evaluate Literal', expr => {
             switch (typeof expr.value) {
                 case 'number':
                     return new BasicEvaluatedExpression().setNumber(expr.value).setRange(expr.range);
@@ -38,8 +51,7 @@ class Parser extends Tapable {
                 return new BasicEvaluatedExpression().setNull().setRange(expr.range);
             }
             if (expr.value instanceof RegExp) {
-                return new BasicEvaluatedExpression().setRegExp(expr.value)
-                    .setRange(expr.range);
+                return new BasicEvaluatedExpression().setRegExp(expr.value).setRange(expr.range);
             }
         });
         this.plugin('evaluate LogicalExpression', function (expr) {
@@ -234,8 +246,8 @@ class Parser extends Tapable {
                     if (expression.type === 'Identifier') {
                         exprName.unshift(this.scope.renames[`$${expression.name}`] || expression.name);
                         if (!this.scope.definitions.includes(name)) {
-                            exprName = exprName.join('.');
-                            res = this.applyPluginsBailResult(`evaluate typeof ${exprName}`, expr);
+                            const exprNameStr = exprName.join('.');
+                            res = this.applyPluginsBailResult(`evaluate typeof ${exprNameStr}`, expr);
                             if (res !== undefined) {
                                 return res;
                             }
@@ -247,19 +259,16 @@ class Parser extends Tapable {
                 }
                 const arg = this.evaluateExpression(expr.argument);
                 if (arg.isString() || arg.isWrapped()) {
-                    return new BasicEvaluatedExpression().setString('string')
-                        .setRange(expr.range);
+                    return new BasicEvaluatedExpression().setString('string').setRange(expr.range);
                 }
                 else if (arg.isNumber()) {
                     return new BasicEvaluatedExpression().setString('number').setRange(expr.range);
                 }
                 else if (arg.isBoolean()) {
-                    return new BasicEvaluatedExpression().setString('boolean')
-                        .setRange(expr.range);
+                    return new BasicEvaluatedExpression().setString('boolean').setRange(expr.range);
                 }
                 else if (arg.isArray() || arg.isConstArray() || arg.isRegExp()) {
-                    return new BasicEvaluatedExpression().setString('object')
-                        .setRange(expr.range);
+                    return new BasicEvaluatedExpression().setString('object').setRange(expr.range);
                 }
             }
             else if (expr.operator === '!') {
@@ -278,9 +287,8 @@ class Parser extends Tapable {
                 }
             }
         });
-        this.plugin('evaluate typeof undefined', function (expr) {
-            return new BasicEvaluatedExpression().setString('undefined').setRange(expr.range);
-        });
+        this.plugin('evaluate typeof undefined',
+            expr => new BasicEvaluatedExpression().setString('undefined').setRange(expr.range));
         this.plugin('evaluate Identifier', function (expr) {
             const name = this.scope.renames[`$${expr.name}`] || expr.name;
             if (!this.scope.definitions.includes(expr.name)) {
@@ -307,16 +315,16 @@ class Parser extends Tapable {
                 const name = this.scope.renames[`$${expr.name}`] || expr.name;
                 if (!this.scope.definitions.includes(name)) {
                     exprName.unshift(name);
-                    exprName = exprName.join('.');
+                    const exprNameStr = exprName.join('.');
                     if (!this.scope.definitions.includes(expr.name)) {
-                        const result = this.applyPluginsBailResult(`evaluate Identifier ${exprName}`, expression);
+                        const result = this.applyPluginsBailResult(`evaluate Identifier ${exprNameStr}`, expression);
                         if (result) {
                             return result;
                         }
-                        return new BasicEvaluatedExpression().setIdentifier(exprName).setRange(expression.range);
+                        return new BasicEvaluatedExpression().setIdentifier(exprNameStr).setRange(expression.range);
                     }
                     else {
-                        return this.applyPluginsBailResult(`evaluate defined Identifier ${exprName}`, expression);
+                        return this.applyPluginsBailResult(`evaluate defined Identifier ${exprNameStr}`, expression);
                     }
                 }
             }
@@ -617,14 +625,14 @@ class Parser extends Tapable {
     walkFunctionDeclaration(statement) {
         this.scope.renames[`$${statement.id.name}`] = undefined;
         this.scope.definitions.push(statement.id.name);
-        this.inScope(statement.params, function () {
+        this.inScope(statement.params, () => {
             if (statement.body.type === 'BlockStatement') {
                 this.walkStatement(statement.body);
             }
             else {
                 this.walkExpression(statement.body);
             }
-        }.bind(this));
+        });
     }
 
     walkImportDeclaration(statement) {
@@ -739,9 +747,9 @@ class Parser extends Tapable {
         if (catchClause.guard) {
             this.walkExpression(catchClause.guard);
         }
-        this.inScope([catchClause.param], function () {
+        this.inScope([catchClause.param], () => {
             this.walkStatement(catchClause.body);
-        }.bind(this));
+        });
     }
 
     walkVariableDeclarators(declarators) {
@@ -819,25 +827,25 @@ class Parser extends Tapable {
     }
 
     walkFunctionExpression(expression) {
-        this.inScope(expression.params, function () {
+        this.inScope(expression.params, () => {
             if (expression.body.type === 'BlockStatement') {
                 this.walkStatement(expression.body);
             }
             else {
                 this.walkExpression(expression.body);
             }
-        }.bind(this));
+        });
     }
 
     walkArrowFunctionExpression(expression) {
-        this.inScope(expression.params, function () {
+        this.inScope(expression.params, () => {
             if (expression.body.type === 'BlockStatement') {
                 this.walkStatement(expression.body);
             }
             else {
                 this.walkExpression(expression.body);
             }
-        }.bind(this));
+        });
     }
 
     walkSequenceExpression(expression) {
@@ -862,8 +870,8 @@ class Parser extends Tapable {
             }
             if (expr.type === 'Identifier' && !this.scope.definitions.includes(expr.name)) {
                 exprName.unshift(this.scope.renames[`$${expr.name}`] || expr.name);
-                exprName = exprName.join('.');
-                const result = this.applyPluginsBailResult(`typeof ${exprName}`, expression);
+                const exprNameStr = exprName.join('.');
+                const result = this.applyPluginsBailResult(`typeof ${exprNameStr}`, expression);
                 if (result === true) {
                     return;
                 }
@@ -963,9 +971,7 @@ class Parser extends Tapable {
                 }
                 this.walkExpression(arg);
             }, this);
-            this.inScope(params.filter(function (identifier, idx) {
-                return !args[idx];
-            }), function () {
+            this.inScope(params.filter((identifier, idx) => !args[idx]), () => {
                 args.forEach(function (arg, idx) {
                     if (!arg) {
                         return;
@@ -981,7 +987,7 @@ class Parser extends Tapable {
                 else {
                     this.walkExpression(functionExpression.body);
                 }
-            }.bind(this));
+            });
         }
 
         if (expression.callee.type === 'MemberExpression' && expression.callee.object.type === 'FunctionExpression' && !expression.callee.computed && [
@@ -1058,9 +1064,9 @@ class Parser extends Tapable {
             definitions: oldScope.definitions.slice(),
             renames: Object.create(oldScope.renames)
         };
-        params.forEach(function (param) {
+        params.forEach(param => {
             if (typeof param !== 'string') {
-                param = _this.enterPattern(param, function (param) {
+                param = _this.enterPattern(param, param => {
                     _this.scope.renames[`$${param}`] = undefined;
                     _this.scope.definitions.push(param);
                 });
@@ -1231,7 +1237,7 @@ class Parser extends Tapable {
         }
         const oldScope = this.scope;
         const oldState = this.state;
-        this.scope = {
+        this.scope = <ParserScope>{
             inTry: false,
             definitions: [],
             renames: {}
@@ -1262,8 +1268,6 @@ class Parser extends Tapable {
     }
 }
 
-export = Parser;
-
 Parser.prototype.walkReturnStatement = Parser.prototype.walkThrowStatement = function walkArgumentStatement(statement) {
     if (statement.argument) {
         this.walkExpression(statement.argument);
@@ -1280,7 +1284,7 @@ Parser.prototype.walkBinaryExpression = Parser.prototype.walkLogicalExpression =
     this.walkExpression(expression.right);
 };
 
-['parseString', 'parseCalculatedString'].forEach(function (fn) {
+['parseString', 'parseCalculatedString'].forEach(fn => {
     Parser.prototype[`${fn}Array`] = function parseXXXArray(expression) {
         switch (expression.type) {
             case 'ArrayExpression':
@@ -1296,16 +1300,4 @@ Parser.prototype.walkBinaryExpression = Parser.prototype.walkLogicalExpression =
     };
 });
 
-const POSSIBLE_AST_OPTIONS = [
-    {
-        ranges: true,
-        locations: true,
-        ecmaVersion: 6,
-        sourceType: 'module'
-    }, {
-        ranges: true,
-        locations: true,
-        ecmaVersion: 6,
-        sourceType: 'script'
-    }
-];
+export = Parser;

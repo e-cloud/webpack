@@ -4,6 +4,16 @@
  */
 import NullDependency = require('./NullDependency');
 
+class Template {
+    apply(dep, source, outputOptions, requestShortener) {
+        source.replace(dep.range[0], dep.range[1] - 1, '/*require.resolve*/');
+    }
+
+    applyAsTemplateArgument(name, dep, source) {
+        source.replace(dep.range[0], dep.range[1] - 1, '/*require.resolve*/');
+    }
+}
+
 class RequireResolveHeaderDependency extends NullDependency {
     constructor(range) {
         if (!Array.isArray(range)) {
@@ -13,16 +23,7 @@ class RequireResolveHeaderDependency extends NullDependency {
         this.range = range;
     }
 
-    static Template() {
-    }
+    static Template = Template
 }
 
 export = RequireResolveHeaderDependency;
-
-RequireResolveHeaderDependency.Template.prototype.apply = function (dep, source) {
-    source.replace(dep.range[0], dep.range[1] - 1, '/*require.resolve*/');
-};
-
-RequireResolveHeaderDependency.Template.prototype.applyAsTemplateArgument = function (name, dep, source) {
-    source.replace(dep.range[0], dep.range[1] - 1, '/*require.resolve*/');
-};

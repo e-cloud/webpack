@@ -12,30 +12,27 @@ class RequestShortener {
             directory = directory.substr(0, directory.length - 1);
         }
         if (directory) {
-            var currentDirectoryRegExp = directory.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-            currentDirectoryRegExp = new RegExp(`^${currentDirectoryRegExp}|(!)${currentDirectoryRegExp}`, 'g');
+            const currentDirectoryRegExp = directory.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 
-            this.currentDirectoryRegExp = currentDirectoryRegExp;
+            this.currentDirectoryRegExp = new RegExp(`^${currentDirectoryRegExp}|(!)${currentDirectoryRegExp}`, 'g');
         }
 
         if (/[\/\\]$/.test(parentDirectory)) {
             parentDirectory = parentDirectory.substr(0, parentDirectory.length - 1);
         }
         if (parentDirectory && parentDirectory !== directory) {
-            let parentDirectoryRegExp = parentDirectory.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-            parentDirectoryRegExp = new RegExp(`^${parentDirectoryRegExp}|(!)${parentDirectoryRegExp}`, 'g');
+            const parentDirectoryRegExp = parentDirectory.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 
-            this.parentDirectoryRegExp = parentDirectoryRegExp;
+            this.parentDirectoryRegExp = new RegExp(`^${parentDirectoryRegExp}|(!)${parentDirectoryRegExp}`, 'g');
         }
 
         if (__dirname.length >= 2) {
             const buildins = path.join(__dirname, '..').replace(/\\/g, '/');
-            const buildinsAsModule = currentDirectoryRegExp && currentDirectoryRegExp.test(buildins);
-            let buildinsRegExp = buildins.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-            buildinsRegExp = new RegExp(`^${buildinsRegExp}|(!)${buildinsRegExp}`, 'g');
+            const buildinsAsModule = this.currentDirectoryRegExp && this.currentDirectoryRegExp.test(buildins);
+            const buildinsRegExp = buildins.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 
             this.buildinsAsModule = buildinsAsModule;
-            this.buildinsRegExp = buildinsRegExp;
+            this.buildinsRegExp = new RegExp(`^${buildinsRegExp}|(!)${buildinsRegExp}`, 'g');
         }
 
         this.nodeModulesRegExp = /\/node_modules\//g;

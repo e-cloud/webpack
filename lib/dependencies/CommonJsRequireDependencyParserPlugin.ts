@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import ConstDependency = require('./ConstDependency');
-
 import CommonJsRequireDependency = require('./CommonJsRequireDependency');
 import CommonJsRequireContextDependency = require('./CommonJsRequireContextDependency');
 import RequireHeaderDependency = require('./RequireHeaderDependency');

@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import ConstDependency = require('./dependencies/ConstDependency');
-
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import NullFactory = require('./NullFactory');
 
@@ -14,11 +13,11 @@ function getQuery(request) {
 
 class ConstPlugin {
     apply(compiler) {
-        compiler.plugin('compilation', function (compilation, params) {
+        compiler.plugin('compilation', (compilation, params) => {
             compilation.dependencyFactories.set(ConstDependency, new NullFactory());
             compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', function (parser) {
+            params.normalModuleFactory.plugin('parser', parser => {
                 parser.plugin('statement if', function (statement) {
                     const param = this.evaluateExpression(statement.test);
                     const bool = param.asBool();
