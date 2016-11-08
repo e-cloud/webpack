@@ -2,25 +2,35 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { RawSource } from 'webpack-sources'
+import { Source, RawSource } from 'webpack-sources'
+import { RawSourceMap } from 'source-map'
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
+import Compilation = require('./Compilation');
+import ModuleTemplate = require('./ModuleTemplate')
 
 class EvalSourceMapDevToolModuleTemplatePlugin {
-    constructor(compilation, options) {
-        this.compilation = compilation;
+    sourceMapComment: string
+    moduleFilenameTemplate: string
+
+    constructor(
+        public compilation: Compilation, public options: {
+            append: string
+            moduleFilenameTemplate: string
+            sourceRoot: string
+        }
+    ) {
         this.sourceMapComment = options.append || '//# sourceMappingURL=[url]';
         this.moduleFilenameTemplate = options.moduleFilenameTemplate || 'webpack:///[resource-path]?[hash]';
-        this.options = options;
     }
 
-    apply(moduleTemplate) {
+    apply(moduleTemplate: ModuleTemplate) {
         const self = this;
         const options = this.options;
-        moduleTemplate.plugin('module', function (source, module) {
+        moduleTemplate.plugin('module', function (source: Source, module) {
             if (source.__EvalSourceMapDevToolData) {
                 return source.__EvalSourceMapDevToolData;
             }
-            let sourceMap;
+            let sourceMap: RawSourceMap;
             let content;
             if (source.sourceAndMap) {
                 const sourceAndMap = source.sourceAndMap(options);
@@ -36,10 +46,11 @@ class EvalSourceMapDevToolModuleTemplatePlugin {
             }
 
             // Clone (flat) the sourcemap to ensure that the mutations below do not persist.
-            sourceMap = Object.keys(sourceMap).reduce((obj, key) => {
-                obj[key] = sourceMap[key];
-                return obj;
-            }, {});
+            sourceMap = Object.keys(sourceMap)
+                .reduce((obj, key) => {
+                    obj[key] = sourceMap[key];
+                    return obj;
+                }, {}) as RawSourceMap;
             const modules = sourceMap.sources.map(source => {
                 const module = self.compilation.findModule(source);
                 return module || source;
@@ -63,7 +74,7 @@ class EvalSourceMapDevToolModuleTemplatePlugin {
             source.__EvalSourceMapDevToolData = new RawSource(`eval(${JSON.stringify(content + footer)});`);
             return source.__EvalSourceMapDevToolData;
         });
-        moduleTemplate.plugin('hash', hash => {
+        moduleTemplate.plugin('hash', function (hash) {
             hash.update('eval-source-map');
             hash.update('1');
         });

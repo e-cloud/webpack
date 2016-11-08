@@ -29,10 +29,10 @@ class Template {
 }
 
 class AMDRequireArrayDependency extends Dependency {
-    constructor(depsArray, range) {
+    optional: boolean
+
+    constructor(public depsArray, public range) {
         super();
-        this.depsArray = depsArray;
-        this.range = range;
     }
 
     static Template = Template

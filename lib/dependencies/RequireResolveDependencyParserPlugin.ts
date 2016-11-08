@@ -6,15 +6,15 @@ import RequireResolveDependency = require('./RequireResolveDependency');
 import RequireResolveContextDependency = require('./RequireResolveContextDependency');
 import RequireResolveHeaderDependency = require('./RequireResolveHeaderDependency');
 import ContextDependencyHelpers = require('./ContextDependencyHelpers');
+import Parser = require('../Parser')
 
 class RequireResolveDependencyParserPlugin {
-    constructor(options) {
-        this.options = options;
+    constructor(public options) {
     }
 
-    apply(parser) {
+    apply(parser: Parser) {
         const options = this.options;
-        parser.plugin('call require.resolve', function (expr) {
+        parser.plugin('call require.resolve', function (this: Parser, expr) {
             return this.applyPluginsBailResult('call require.resolve(Weak)', expr, false);
         });
         parser.plugin('call require.resolveWeak', function (expr) {

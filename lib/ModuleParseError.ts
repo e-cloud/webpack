@@ -2,7 +2,12 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Module = require('./Module')
+
 class ModuleParseError extends Error {
+    module: Module
+    error: Error
+
     constructor(module, source, err) {
         super();
         Error.captureStackTrace(this, ModuleParseError);

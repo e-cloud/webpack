@@ -2,14 +2,18 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
 class ChunkModuleIdRangePlugin {
+    options
+
     constructor(options) {
         this.options = options;
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const options = this.options;
-        compiler.plugin('compilation', compilation => {
+        compiler.plugin('compilation', function (compilation: Compilation) {
             compilation.plugin('module-ids', function (modules) {
                 const chunk = this.chunks.filter(chunk => chunk.name === options.name)[0];
                 if (!chunk) {

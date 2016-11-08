@@ -3,14 +3,13 @@
  Author Tobias Koppers @sokra
  */
 import ExternalModuleFactoryPlugin = require('./ExternalModuleFactoryPlugin');
+import Compiler = require('./Compiler')
 
 class ExternalsPlugin {
-    constructor(type, externals) {
-        this.type = type;
-        this.externals = externals;
+    constructor(public type: string, public externals: string[]) {
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         compiler.plugin('compile', params => {
             params.normalModuleFactory.apply(new ExternalModuleFactoryPlugin(this.type, this.externals));
         });

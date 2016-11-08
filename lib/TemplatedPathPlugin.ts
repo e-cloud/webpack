@@ -3,6 +3,8 @@
  Author Jason Anderson @diurnalist
  */
 import Template = require('./Template');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
 
 const REGEXP_HASH = /\[hash(?::(\d+))?\]/gi;
 const REGEXP_CHUNKHASH = /\[chunkhash(?::(\d+))?\]/gi;
@@ -30,8 +32,8 @@ Template.REGEXP_QUERY = REGEXP_QUERY;
 Template.REGEXP_FILEBASE = REGEXP_FILEBASE;
 
 class TemplatedPathPlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', compilation => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation) {
             const mainTemplate = compilation.mainTemplate;
 
             mainTemplate.plugin('asset-path', replacePathVariables);

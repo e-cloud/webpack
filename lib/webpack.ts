@@ -10,11 +10,15 @@ import WebpackOptionsDefaulter = require('./WebpackOptionsDefaulter');
 import validateWebpackOptions = require('./validateWebpackOptions');
 import WebpackOptionsValidationError = require('./WebpackOptionsValidationError');
 
-function webpack(options, callback) {
+function webpack(options, callback): Watching
+function webpack(options): MultiCompiler | Compiler
+
+function webpack(options, callback?) {
     const webpackOptionsValidationErrors = validateWebpackOptions(options);
     if (webpackOptionsValidationErrors.length) {
         throw new WebpackOptionsValidationError(webpackOptionsValidationErrors);
     }
+
     let compiler;
     if (Array.isArray(options)) {
         compiler = new MultiCompiler(options.map(options => webpack(options)));
@@ -32,6 +36,7 @@ function webpack(options, callback) {
     else {
         throw new Error('Invalid argument: options');
     }
+
     if (callback) {
         if (typeof callback !== 'function') {
             throw new Error('Invalid argument: callback');
@@ -66,7 +71,7 @@ function exportPlugins(exports, path, plugins) {
     });
 }
 
-exportPlugins(exports, '.', [
+exportPlugins(webpack, '.', [
     'AutomaticPrefetchPlugin',
     'BannerPlugin',
     'CachePlugin',
@@ -100,7 +105,7 @@ exportPlugins(exports, '.', [
     'UmdMainTemplatePlugin',
     'WatchIgnorePlugin'
 ]);
-exportPlugins(exports.optimize = {}, './optimize', [
+exportPlugins(webpack.optimize = {}, './optimize', [
     'AggressiveMergingPlugin',
     'AggressiveSplittingPlugin',
     'ChunkModuleIdRangePlugin',
@@ -111,4 +116,4 @@ exportPlugins(exports.optimize = {}, './optimize', [
     'OccurrenceOrderPlugin',
     'UglifyJsPlugin'
 ]);
-exportPlugins(exports.dependencies = {}, './dependencies', []);
+exportPlugins(webpack.dependencies = {}, './dependencies', []);

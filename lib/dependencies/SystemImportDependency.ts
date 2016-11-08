@@ -27,9 +27,8 @@ class Template {
 }
 
 class SystemImportDependency extends ModuleDependency {
-    constructor(request, block) {
+    constructor(request, public block) {
         super(request);
-        this.block = block;
     }
 
     static Template = Template

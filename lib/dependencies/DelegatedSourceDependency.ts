@@ -5,9 +5,6 @@
 import ModuleDependency = require('./ModuleDependency');
 
 class DelegatedSourceDependency extends ModuleDependency {
-    constructor(request) {
-        super(request);
-    }
 }
 
 DelegatedSourceDependency.prototype.type = 'delegated source';

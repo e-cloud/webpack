@@ -5,17 +5,19 @@
 import DllEntryDependency = require('./dependencies/DllEntryDependency');
 import SingleEntryDependency = require('./dependencies/SingleEntryDependency');
 import DllModuleFactory = require('./DllModuleFactory');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
+import NormalModuleFactory = require('./NormalModuleFactory')
 
 class DllEntryPlugin {
-    constructor(context, entries, name, type) {
-        this.context = context;
-        this.entries = entries;
-        this.name = name;
-        this.type = type;
+    constructor(public context: string, public entries: string[], public name: string, public type?: string) {
     }
 
-    apply(compiler) {
-        compiler.plugin('compilation', (compilation, params) => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', (
+            compilation: Compilation,
+            params: {normalModuleFactory: NormalModuleFactory}
+        ) => {
             const dllModuleFactory = new DllModuleFactory();
             const normalModuleFactory = params.normalModuleFactory;
 
@@ -23,12 +25,21 @@ class DllEntryPlugin {
 
             compilation.dependencyFactories.set(SingleEntryDependency, normalModuleFactory);
         });
-        compiler.plugin('make', (compilation, callback) => {
-            compilation.addEntry(this.context, new DllEntryDependency(this.entries.map(function (e, idx) {
-                const dep = new SingleEntryDependency(e);
-                dep.loc = `${this.name}:${idx}`;
-                return dep;
-            }, this), this.name, this.type), this.name, callback);
+        compiler.plugin('make', (compilation: Compilation, callback) => {
+            compilation.addEntry(
+                this.context,
+                new DllEntryDependency(
+                    this.entries.map((e, idx) => {
+                        const dep = new SingleEntryDependency(e);
+                        dep.loc = `${this.name}:${idx}`;
+                        return dep;
+                    }),
+                    this.name,
+                    this.type
+                ),
+                this.name,
+                callback
+            );
         });
     }
 }

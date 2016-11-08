@@ -5,10 +5,8 @@
 import Dependency = require('../Dependency');
 
 class MultiEntryDependency extends Dependency {
-    constructor(dependencies, name) {
+    constructor(public dependencies, public name) {
         super();
-        this.dependencies = dependencies;
-        this.name = name;
     }
 }
 

@@ -5,11 +5,13 @@
 import WebWorkerMainTemplatePlugin = require('./WebWorkerMainTemplatePlugin');
 import WebWorkerChunkTemplatePlugin = require('./WebWorkerChunkTemplatePlugin');
 import WebWorkerHotUpdateChunkTemplatePlugin = require('./WebWorkerHotUpdateChunkTemplatePlugin');
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
 
 class WebWorkerTemplatePlugin {
-    apply(compiler) {
+    apply(compiler: Compiler) {
         compiler.plugin(
-            'this-compilation', compilation => {
+            'this-compilation', (compilation: Compilation) => {
                 compilation.mainTemplate.apply(new WebWorkerMainTemplatePlugin());
                 compilation.chunkTemplate.apply(new WebWorkerChunkTemplatePlugin());
                 compilation.hotUpdateChunkTemplate.apply(new WebWorkerHotUpdateChunkTemplatePlugin());

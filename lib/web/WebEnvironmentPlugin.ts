@@ -2,13 +2,13 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Compiler = require('../Compiler')
+
 class WebEnvironmentPlugin {
-    constructor(inputFileSystem, outputFileSystem) {
-        this.inputFileSystem = inputFileSystem;
-        this.outputFileSystem = outputFileSystem;
+    constructor(public inputFileSystem, public outputFileSystem) {
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const inputFileSystem = compiler.inputFileSystem = this.inputFileSystem;
         compiler.resolvers.normal.fileSystem = inputFileSystem;
         compiler.resolvers.context.fileSystem = inputFileSystem;

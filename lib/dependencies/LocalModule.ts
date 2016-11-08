@@ -3,10 +3,9 @@
  Author Tobias Koppers @sokra
  */
 class LocalModule {
-    constructor(module, name, idx) {
-        this.module = module;
-        this.name = name;
-        this.idx = idx;
+    used: boolean
+
+    constructor(public module, public name, public idx) {
         this.used = false;
     }
 

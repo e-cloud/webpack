@@ -5,8 +5,12 @@
 import Watchpack = require('watchpack');
 
 class NodeWatchFileSystem {
-    constructor(inputFileSystem) {
-        this.inputFileSystem = inputFileSystem;
+    watcherOptions: {
+        aggregateTimeout: number
+    }
+    watcher: Watchpack
+
+    constructor(public inputFileSystem) {
         this.watcherOptions = {
             aggregateTimeout: 0
         };

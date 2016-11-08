@@ -10,10 +10,6 @@ class Template {
 }
 
 class HarmonyAcceptImportDependency extends HarmonyImportDependency {
-    constructor(request, importedVar, range) {
-        super(request, importedVar, range);
-    }
-
     static Template = Template
 }
 

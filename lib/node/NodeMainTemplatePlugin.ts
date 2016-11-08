@@ -5,8 +5,7 @@
 import Template = require('../Template');
 
 class NodeMainTemplatePlugin {
-    constructor(asyncChunkLoading) {
-        this.asyncChunkLoading = asyncChunkLoading;
+    constructor(public asyncChunkLoading) {
     }
 
     apply(mainTemplate) {

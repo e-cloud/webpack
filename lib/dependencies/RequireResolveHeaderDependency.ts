@@ -15,6 +15,8 @@ class Template {
 }
 
 class RequireResolveHeaderDependency extends NullDependency {
+    range
+
     constructor(range) {
         if (!Array.isArray(range)) {
             throw new Error('range must be valid');

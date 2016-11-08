@@ -2,8 +2,10 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import Tapable = require('tapable');
 import { ConcatSource } from 'webpack-sources'
+import Tapable = require('tapable');
+import Module = require('./Module')
+
 const A_CODE = 'a'.charCodeAt(0);
 const Z_CODE = 'z'.charCodeAt(0);
 const AZ_COUNT = Z_CODE - A_CODE + 1;
@@ -16,16 +18,15 @@ function moduleIdIsNumber(module) {
 }
 
 class Template extends Tapable {
-    constructor(outputOptions) {
-        super();
-        this.outputOptions = outputOptions || {};
+    constructor(public outputOptions: {} = {}) {
+        super()
     }
 
-    static getFunctionContent(fn) {
+    static getFunctionContent(fn: Function) {
         return fn.toString().replace(/^function\s?\(\)\s?\{\n?|\n?\}$/g, '').replace(/^\t/mg, '');
     }
 
-    static toIdentifier(str) {
+    static toIdentifier(str: string) {
         if (typeof str !== 'string') {
             return '';
         }
@@ -33,7 +34,7 @@ class Template extends Tapable {
     }
 
     // todo: to be renamed
-    static numberToIdentifer(n) {
+    static numberToIdentifer(n: number) {
         if (n < AZ_COUNT) {
             return String.fromCharCode(A_CODE + n);
         }
@@ -43,9 +44,9 @@ class Template extends Tapable {
         return `_${n - AZ_COUNT - AZ2_COUNT}`;
     }
 
-    indent(str) {
+    indent(str: string) {
         if (Array.isArray(str)) {
-            return str.map(this.indent).join('\n');
+            return str.map(this.indent.bind(this)).join('\n');
         }
         else {
             str = str.trimRight();
@@ -57,7 +58,7 @@ class Template extends Tapable {
         }
     }
 
-    prefix(str, prefix) {
+    prefix(str: string | string[], prefix: string) {
         if (Array.isArray(str)) {
             str = str.join('\n');
         }
@@ -73,14 +74,14 @@ class Template extends Tapable {
         return ind + str.replace(/\n([^\n])/g, '\n' + prefix + '$1');
     }
 
-    asString(str) {
+    asString(str: string | string[]) {
         if (Array.isArray(str)) {
             return str.join('\n');
         }
         return str;
     }
 
-    getModulesArrayBounds(modules) {
+    getModulesArrayBounds(modules: Module[]) {
         if (!modules.every(moduleIdIsNumber)) {
             return false;
         }
@@ -112,7 +113,7 @@ class Template extends Tapable {
         return arrayOverhead < objectOverhead ? [minId, maxId] : false;
     }
 
-    renderChunkModules(chunk, moduleTemplate, dependencyTemplates, prefix) {
+    renderChunkModules(chunk, moduleTemplate, dependencyTemplates, prefix?) {
         if (!prefix) {
             prefix = '';
         }

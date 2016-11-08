@@ -13,7 +13,7 @@ export function addLocalModule(state, name) {
     return m;
 }
 
-export function getLocalModule(state, name, namedModule) {
+export function getLocalModule(state, name, namedModule?): LocalModule {
     if (!state.localModules) {
         return null;
     }

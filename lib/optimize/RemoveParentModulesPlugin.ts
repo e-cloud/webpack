@@ -2,6 +2,10 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Chunk = require('../Chunk')
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
+
 function chunkContainsModule(chunk, module) {
     const chunks = module.chunks;
     const modules = chunk.modules;
@@ -13,7 +17,7 @@ function chunkContainsModule(chunk, module) {
     }
 }
 
-function hasModule(chunk, module, checkedChunks) {
+function hasModule(chunk, module, checkedChunks): boolean | Chunk[] {
     if (chunkContainsModule(chunk, module)) {
         return [chunk];
     }
@@ -23,10 +27,7 @@ function hasModule(chunk, module, checkedChunks) {
     return allHaveModule(chunk.parents.filter(c => !checkedChunks.includes(c)), module, checkedChunks);
 }
 
-function allHaveModule(someChunks, module, checkedChunks) {
-    if (!checkedChunks) {
-        checkedChunks = [];
-    }
+function allHaveModule(someChunks, module, checkedChunks = []): boolean | Chunk[] {
     const chunks = [];
     for (let i = 0; i < someChunks.length; i++) {
         checkedChunks.push(someChunks[i]);
@@ -58,8 +59,8 @@ function debugIds(chunks) {
 }
 
 class RemoveParentModulesPlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', compilation => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation) {
             compilation.plugin(['optimize-chunks-basic', 'optimize-extracted-chunks-basic'], chunks => {
                 chunks.forEach(chunk => {
                     const cache = {};

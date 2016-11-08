@@ -5,6 +5,9 @@
 import ConstDependency = require('./dependencies/ConstDependency');
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import NullFactory = require('./NullFactory');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
+import Parser = require('./Parser')
 
 const REPLACEMENTS = {
     __webpack_hash__: '__webpack_require__.h' // eslint-disable-line camelcase
@@ -14,8 +17,8 @@ const REPLACEMENT_TYPES = {
 };
 
 class ExtendedAPIPlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', (compilation, params) => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
             compilation.dependencyFactories.set(ConstDependency, new NullFactory());
             compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
             compilation.mainTemplate.plugin('require-extensions', function (source, chunk, hash) {
@@ -27,7 +30,7 @@ class ExtendedAPIPlugin {
             });
             compilation.mainTemplate.plugin('global-hash', () => true);
 
-            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
                 Object.keys(REPLACEMENTS).forEach(key => {
                     parser.plugin(`expression ${key}`, function (expr) {
                         const dep = new ConstDependency(REPLACEMENTS[key], expr.range);
@@ -35,10 +38,11 @@ class ExtendedAPIPlugin {
                         this.state.current.addDependency(dep);
                         return true;
                     });
-                    parser.plugin(`evaluate typeof ${key}`, expr =>
-                        new BasicEvaluatedExpression()
+                    parser.plugin(`evaluate typeof ${key}`, function (expr) {
+                        return new BasicEvaluatedExpression()
                             .setString(REPLACEMENT_TYPES[key])
-                            .setRange(expr.range));
+                            .setRange(expr.range)
+                    });
                 });
             });
         });

@@ -3,6 +3,8 @@
  Author Tobias Koppers @sokra
  */
 import NullDependency = require('./NullDependency');
+import LocalModule = require('./LocalModule')
+
 class Template {
     apply(dep, source) {
         if (!dep.range) {
@@ -13,7 +15,9 @@ class Template {
 }
 
 class LocalModuleDependency extends NullDependency {
-    constructor(localModule, range) {
+    optional: boolean
+
+    constructor(public localModule: LocalModule, public range?) {
         super();
         localModule.flagUsed();
     }

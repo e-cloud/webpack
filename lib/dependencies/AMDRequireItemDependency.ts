@@ -5,14 +5,15 @@
 import ModuleDependency = require('./ModuleDependency');
 
 class AMDRequireItemDependency extends ModuleDependency {
-    constructor(request, range) {
+    optional: boolean
+
+    constructor(request, public range?) {
         super(request);
-        this.range = range;
     }
+
+    static Template = require('./ModuleDependencyTemplateAsRequireId')
 }
 
 AMDRequireItemDependency.prototype.type = 'amd require';
 
 export = AMDRequireItemDependency;
-
-AMDRequireItemDependency.Template = require('./ModuleDependencyTemplateAsRequireId');

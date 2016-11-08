@@ -17,7 +17,7 @@ export = function () {
         if (!me) {
             return $require$;
         }
-        const fn = function (request) {
+        const fn = request => {
             if (me.hot.active) {
                 if (installedModules[request]) {
                     if (!installedModules[request].parents.includes(moduleId)) {
@@ -40,18 +40,18 @@ export = function () {
         };
         for (const name in $require$) {
             if (Object.prototype.hasOwnProperty.call($require$, name)) {
-                Object.defineProperty(fn, name, function (name) {
-                    return {
-                        configurable: true,
-                        enumerable: true,
-                        get() {
-                            return $require$[name];
-                        },
-                        set(value) {
-                            $require$[name] = value;
-                        }
-                    };
-                }(name));
+                Object.defineProperty(fn, name, (name => ({
+                    configurable: true,
+                    enumerable: true,
+
+                    get() {
+                        return $require$[name];
+                    },
+
+                    set(value) {
+                        $require$[name] = value;
+                    }
+                }))(name));
             }
         }
         Object.defineProperty(fn, 'e', {
@@ -61,10 +61,11 @@ export = function () {
                     hotSetStatus('prepare');
                 }
                 hotChunksLoading++;
-                return $require$.e(chunkId).then(finishChunkLoading, function (err) {
-                    finishChunkLoading();
-                    throw err;
-                });
+                return $require$.e(chunkId)
+                    .then(finishChunkLoading, err => {
+                        finishChunkLoading();
+                        throw err;
+                    });
 
                 function finishChunkLoading() {
                     hotChunksLoading--;
@@ -103,12 +104,11 @@ export = function () {
                     hot._selfAccepted = dep;
                 }
                 else if (typeof dep === 'object') {
-                    for (let i = 0; i < dep.length; i++) hot._acceptedDependencies[dep[i]] = callback || function () {
-                        };
+                    for (let i = 0; i < dep.length; i++)
+                        hot._acceptedDependencies[dep[i]] = callback || (() => {});
                 }
                 else {
-                    hot._acceptedDependencies[dep] = callback || function () {
-                        };
+                    hot._acceptedDependencies[dep] = callback || (() => {});
                 }
             },
             decline(dep) {
@@ -193,7 +193,7 @@ export = function () {
         }
         hotApplyOnUpdate = apply;
         hotSetStatus('check');
-        return hotDownloadManifest().then(function (update) {
+        return hotDownloadManifest().then(update => {
             if (!update) {
                 hotSetStatus('idle');
                 return null;
@@ -205,7 +205,7 @@ export = function () {
             hotUpdateNewHash = update.h;
 
             hotSetStatus('prepare');
-            const promise = new Promise(function (resolve, reject) {
+            const promise = new Promise((resolve, reject) => {
                 hotDeferred = {
                     resolve,
                     reject
@@ -260,9 +260,9 @@ export = function () {
             return;
         }
         if (hotApplyOnUpdate) {
-            hotApply(hotApplyOnUpdate).then(function (result) {
+            hotApply(hotApplyOnUpdate).then(result => {
                 deferred.resolve(result);
-            }, function (err) {
+            }, err => {
                 deferred.reject(err);
             });
         }
@@ -293,12 +293,10 @@ export = function () {
             const outdatedModules = [updateModuleId];
             const outdatedDependencies = {};
 
-            const queue = outdatedModules.slice().map(function (id) {
-                return {
-                    chain: [id],
-                    id
-                };
-            });
+            const queue = outdatedModules.slice().map(id => ({
+                chain: [id],
+                id
+            }));
             while (queue.length > 0) {
                 const queueItem = queue.pop();
                 const moduleId = queueItem.id;
@@ -454,7 +452,7 @@ export = function () {
                 }
                 if (doDispose) {
                     addAllToSet(outdatedModules, [result.moduleId]);
-                    appliedUpdate[moduleId] = function () {
+                    appliedUpdate[moduleId] = () => {
                         console.warn(`[HMR] unexpected require(${result.moduleId}) to disposed module`);
                     };
                 }
@@ -475,7 +473,7 @@ export = function () {
 
         // Now in "dispose" phase
         hotSetStatus('dispose');
-        Object.keys(hotAvailableFilesMap).forEach(function (chunkId) {
+        Object.keys(hotAvailableFilesMap).forEach(chunkId => {
             if (hotAvailableFilesMap[chunkId] === false) {
                 hotDisposeChunk(chunkId);
             }

@@ -5,9 +5,12 @@
 import Dependency = require('../Dependency');
 
 class ModuleDependency extends Dependency {
-    constructor(request) {
+    userRequest: string
+    type: string
+    optional: boolean
+
+    constructor(public request: string) {
         super();
-        this.request = request;
         this.userRequest = request;
     }
 

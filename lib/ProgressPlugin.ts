@@ -2,24 +2,29 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
+
 class ProgressPlugin {
-    constructor(options) {
+    profile: boolean
+    handler: (percentage, msg, ...details: string[]) => void
+
+    constructor(options = {}) {
         if (typeof options === 'function') {
             options = {
                 handler: options
             };
         }
-        options = options || {};
         this.profile = options.profile;
         this.handler = options.handler;
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const handler = this.handler || defaultHandler;
         const profile = this.profile;
         if (compiler.compilers) {
             const states = new Array(compiler.compilers.length);
-            compiler.compilers.forEach((compiler, idx) => {
+            compiler.compilers.forEach((compiler: Compiler, idx) => {
                 compiler.apply(new ProgressPlugin(function (p, msg, ...rest) {
                     states[idx] = Array.prototype.slice.apply(arguments);
                     handler(
@@ -58,7 +63,7 @@ class ProgressPlugin {
                 update();
             }
 
-            compiler.plugin('compilation', compilation => {
+            compiler.plugin('compilation', function (compilation: Compilation) {
                 if (compilation.compiler.isChild()) {
                     return;
                 }
@@ -101,7 +106,7 @@ class ProgressPlugin {
                 Object.keys(syncHooks).forEach(name => {
                     let pass = 0;
                     const settings = syncHooks[name];
-                    compilation.plugin(name, () => {
+                    compilation.plugin(name, function () {
                         if (pass++ > 0) {
                             handler(settings[0], settings[1], `pass ${pass}`);
                         }
@@ -110,11 +115,11 @@ class ProgressPlugin {
                         }
                     });
                 });
-                compilation.plugin('optimize-tree', (chunks, modules, callback) => {
+                compilation.plugin('optimize-tree', function (chunks, modules, callback) {
                     handler(0.79, 'module and chunk tree optimization');
                     callback();
                 });
-                compilation.plugin('additional-assets', callback => {
+                compilation.plugin('additional-assets', function (callback) {
                     handler(0.91, 'additional asset processing');
                     callback();
                 });
@@ -122,16 +127,16 @@ class ProgressPlugin {
                     handler(0.92, 'chunk asset optimization');
                     callback();
                 });
-                compilation.plugin('optimize-assets', (assets, callback) => {
+                compilation.plugin('optimize-assets', function (assets, callback) {
                     handler(0.94, 'asset optimization');
                     callback();
                 });
             });
-            compiler.plugin('emit', (compilation, callback) => {
+            compiler.plugin('emit', (compilation: Compilation, callback) => {
                 handler(0.95, 'emitting');
                 callback();
             });
-            compiler.plugin('done', () => {
+            compiler.plugin('done', function () {
                 handler(1, '');
             });
         }
@@ -140,8 +145,8 @@ class ProgressPlugin {
         let lastState;
         let lastStateTime;
 
+        function defaultHandler(percentage, msg, ...details: string[]) {
             let state = msg;
-            const details = Array.prototype.slice.call(arguments, 2);
             if (percentage < 1) {
                 percentage = Math.floor(percentage * 100);
                 msg = `${percentage}% ${msg}`;

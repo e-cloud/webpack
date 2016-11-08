@@ -13,10 +13,13 @@ import HarmonyAcceptImportDependency = require('./HarmonyAcceptImportDependency'
 import NullFactory = require('../NullFactory');
 import HarmonyImportDependencyParserPlugin = require('./HarmonyImportDependencyParserPlugin');
 import HarmonyExportDependencyParserPlugin = require('./HarmonyExportDependencyParserPlugin');
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
+import Parser = require('../Parser')
 
 class HarmonyModulesPlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', function (compilation, params) {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
             const normalModuleFactory = params.normalModuleFactory;
 
             compilation.dependencyFactories.set(HarmonyImportDependency, normalModuleFactory);
@@ -43,7 +46,7 @@ class HarmonyModulesPlugin {
             compilation.dependencyFactories.set(HarmonyAcceptImportDependency, normalModuleFactory);
             compilation.dependencyTemplates.set(HarmonyAcceptImportDependency, new HarmonyAcceptImportDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
 
                 if (typeof parserOptions.harmony !== 'undefined' && !parserOptions.harmony) {
                     return;

@@ -6,9 +6,11 @@ import ModuleDependency = require('./ModuleDependency');
 import ModuleDependencyTemplateAsId = require('./ModuleDependencyTemplateAsId')
 
 class ModuleHotAcceptDependency extends ModuleDependency {
-    constructor(request, range) {
+    type: string
+    weak: boolean
+
+    constructor(request, public range: string) {
         super(request);
-        this.range = range;
         this.weak = true;
     }
 

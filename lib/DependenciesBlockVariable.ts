@@ -3,15 +3,15 @@
  Author Tobias Koppers @sokra
  */
 import { ReplaceSource, RawSource } from 'webpack-sources'
+import { Hash } from 'crypto'
+import Dependency = require('./Dependency')
+import RequestShortener = require('./RequestShortener')
 
 class DependenciesBlockVariable {
-    constructor(name, expression, dependencies) {
-        this.name = name;
-        this.expression = expression;
-        this.dependencies = dependencies || [];
+    constructor(public name: string, public expression: string, public dependencies: Dependency[] = []) {
     }
 
-    updateHash(hash) {
+    updateHash(hash: Hash) {
         hash.update(this.name);
         hash.update(this.expression);
         this.dependencies.forEach(d => {
@@ -19,8 +19,8 @@ class DependenciesBlockVariable {
         });
     }
 
-    expressionSource(dependencyTemplates, outputOptions, requestShortener) {
-        const source = new ReplaceSource(new RawSource(this.expression));
+    expressionSource(dependencyTemplates, outputOptions, requestShortener: RequestShortener) {
+        const source = new ReplaceSource(new RawSource(this.expression), undefined);
         this.dependencies.forEach(dep => {
             const template = dependencyTemplates.get(dep.constructor);
             if (!template) {

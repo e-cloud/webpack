@@ -5,14 +5,14 @@
 import DllEntryPlugin = require('./DllEntryPlugin');
 import LibManifestPlugin = require('./LibManifestPlugin');
 import FlagInitialModulesAsUsedPlugin = require('./FlagInitialModulesAsUsedPlugin');
+import Compiler = require('./Compiler')
 
 class DllPlugin {
-    constructor(options) {
-        this.options = options;
+    constructor(public options) {
     }
 
-    apply(compiler) {
-        compiler.plugin('entry-option', (context, entry) => {
+    apply(compiler: Compiler) {
+        compiler.plugin('entry-option', function (context, entry) {
             function itemToPlugin(item, name) {
                 if (Array.isArray(item)) {
                     return new DllEntryPlugin(context, item, name);

@@ -5,14 +5,13 @@
 import ModuleDependency = require('./ModuleDependency');
 
 class CommonJsRequireDependency extends ModuleDependency {
-    constructor(request, range) {
+    constructor(request, public range) {
         super(request);
-        this.range = range;
     }
+
+    static Template = require('./ModuleDependencyTemplateAsId')
 }
 
 CommonJsRequireDependency.prototype.type = 'cjs require';
 
 export = CommonJsRequireDependency;
-
-CommonJsRequireDependency.Template = require('./ModuleDependencyTemplateAsId');

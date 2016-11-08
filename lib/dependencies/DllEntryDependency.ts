@@ -3,13 +3,11 @@
  Author Tobias Koppers @sokra
  */
 import Dependency = require('../Dependency');
+import ModuleDependency = require('./ModuleDependency')
 
 class DllEntryDependency extends Dependency {
-    constructor(dependencies, name, type) {
+    constructor(public dependencies: ModuleDependency[], public name: string, public type: string) {
         super();
-        this.dependencies = dependencies;
-        this.name = name;
-        this.type = type;
     }
 }
 

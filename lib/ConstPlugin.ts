@@ -5,6 +5,8 @@
 import ConstDependency = require('./dependencies/ConstDependency');
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import NullFactory = require('./NullFactory');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
 
 function getQuery(request) {
     const i = request.indexOf('?');
@@ -12,12 +14,12 @@ function getQuery(request) {
 }
 
 class ConstPlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', (compilation, params) => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
             compilation.dependencyFactories.set(ConstDependency, new NullFactory());
             compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', parser => {
+            params.normalModuleFactory.plugin('parser', function (parser) {
                 parser.plugin('statement if', function (statement) {
                     const param = this.evaluateExpression(statement.test);
                     const bool = param.asBool();

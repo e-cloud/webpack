@@ -4,16 +4,19 @@
  */
 import Module = require('./Module');
 import { RawSource } from 'webpack-sources'
+import ModuleDependency = require('./dependencies/ModuleDependency')
 
 class DllModule extends Module {
-    constructor(context, dependencies, name, type) {
+    built: boolean
+    cacheable: boolean
+
+    constructor(
+        public context: string,
+        public dependencies: ModuleDependency[],
+        public name: string,
+        public type: string
+    ) {
         super();
-        this.context = context;
-        this.dependencies = dependencies;
-        this.name = name;
-        this.built = false;
-        this.cacheable = true;
-        this.type = type;
     }
 
     identifier() {

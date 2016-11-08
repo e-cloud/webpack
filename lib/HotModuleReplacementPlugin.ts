@@ -11,21 +11,33 @@ import { RawSource } from 'webpack-sources'
 import ConstDependency = require('./dependencies/ConstDependency');
 import NullFactory = require('./NullFactory');
 import crypto = require('crypto')
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
+import Parser = require('./Parser')
+import MainTemplate = require('./MainTemplate')
 
 const hotInitCode = Template.getFunctionContent(require('./HotModuleReplacement.runtime.js'));
 
 class HotModuleReplacementPlugin {
-    constructor(options = {}) {
+    multiStep: boolean
+    fullBuildTimeout: number
+
+    constructor(
+        options: {
+            multiStep: boolean
+            fullBuildTimeout: number
+        } = {}
+    ) {
         this.multiStep = options.multiStep;
         this.fullBuildTimeout = options.fullBuildTimeout || 200;
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const multiStep = this.multiStep;
         const fullBuildTimeout = this.fullBuildTimeout;
         const hotUpdateChunkFilename = compiler.options.output.hotUpdateChunkFilename;
         const hotUpdateMainFilename = compiler.options.output.hotUpdateMainFilename;
-        compiler.plugin('compilation', (compilation, params) => {
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
             const hotUpdateChunkTemplate = compilation.hotUpdateChunkTemplate;
             if (!hotUpdateChunkTemplate) {
                 return;
@@ -42,7 +54,7 @@ class HotModuleReplacementPlugin {
             compilation.dependencyFactories.set(ModuleHotDeclineDependency, normalModuleFactory);
             compilation.dependencyTemplates.set(ModuleHotDeclineDependency, new ModuleHotDeclineDependency.Template());
 
-            compilation.plugin('record', function (compilation, records) {
+            compilation.plugin('record', function (compilation: Compilation, records) {
                 if (records.hash === this.hash) {
                     return;
                 }
@@ -85,17 +97,17 @@ class HotModuleReplacementPlugin {
                 records.preHash = this.hash;
                 this.modifyHash(records.prepreHash);
             });
-            compilation.plugin('should-generate-chunk-assets', () => {
+            compilation.plugin('should-generate-chunk-assets', function () {
                 if (multiStep && !recompilation && !initialPass) {
                     return false;
                 }
             });
-            compilation.plugin('need-additional-pass', () => {
+            compilation.plugin('need-additional-pass', function () {
                 if (multiStep && !recompilation && !initialPass) {
                     return true;
                 }
             });
-            compiler.plugin('additional-pass', callback => {
+            compiler.plugin('additional-pass', function (callback) {
                 if (multiStep) {
                     return setTimeout(callback, fullBuildTimeout);
                 }
@@ -113,8 +125,8 @@ class HotModuleReplacementPlugin {
                     const identifier = module.identifier();
                     let hash = crypto.createHash('md5');
                     module.updateHash(hash);
-                    hash = hash.digest('hex');
-                    module.hotUpdate = records.moduleHashs[identifier] !== hash;
+                    const hashStr = hash.digest('hex');
+                    module.hotUpdate = records.moduleHashs[identifier] !== hashStr;
                 });
                 const hotUpdateMainContent = {
                     h: this.hash,
@@ -147,6 +159,7 @@ class HotModuleReplacementPlugin {
                         hotUpdateMainContent.c[chunkId] = false;
                     }
                 }, this);
+
                 const source = new RawSource(JSON.stringify(hotUpdateMainContent));
                 const filename = this.getPath(hotUpdateMainFilename, {
                     hash: records.hash
@@ -154,7 +167,7 @@ class HotModuleReplacementPlugin {
                 this.assets[filename] = source;
             });
 
-            compilation.mainTemplate.plugin('hash', hash => {
+            compilation.mainTemplate.plugin('hash', function (hash) {
                 hash.update('HotMainTemplateDecorator');
             });
 
@@ -163,7 +176,7 @@ class HotModuleReplacementPlugin {
                 (_, chunk, hash, varModuleId) => `hotCreateRequire(${varModuleId})`
             );
 
-            compilation.mainTemplate.plugin('require-extensions', function (source) {
+            compilation.mainTemplate.plugin('require-extensions', function (this: MainTemplate, source) {
                 const buf = [source];
                 buf.push('');
                 buf.push('// __webpack_hash__');
@@ -186,7 +199,7 @@ class HotModuleReplacementPlugin {
 
             compilation.mainTemplate.plugin('global-hash', () => true);
 
-            compilation.mainTemplate.plugin('current-hash', (_, length) => {
+            compilation.mainTemplate.plugin('current-hash', function (_, length) {
                 if (isFinite(length)) {
                     return `hotCurrentHash.substr(0, ${length})`;
                 }
@@ -204,7 +217,7 @@ class HotModuleReplacementPlugin {
                 ]);
             });
 
-            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
                 parser.plugin('expression __webpack_hash__', function (expr) {
                     const dep = new ConstDependency('__webpack_require__.h()', expr.range);
                     dep.loc = expr.loc;

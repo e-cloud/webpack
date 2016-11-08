@@ -13,10 +13,8 @@ class Template {
 }
 
 class HarmonyExportHeaderDependency extends NullDependency {
-    constructor(range, rangeStatement) {
+    constructor(public range, public rangeStatement) {
         super();
-        this.range = range;
-        this.rangeStatement = rangeStatement;
     }
 
     static Template = Template

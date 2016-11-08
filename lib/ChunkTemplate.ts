@@ -3,14 +3,18 @@
  Author Tobias Koppers @sokra
  */
 import { ConcatSource } from 'webpack-sources'
+import { Hash } from 'crypto'
 import Template = require('./Template');
+import Chunk = require('./Chunk')
+import ModuleTemplate = require('./ModuleTemplate')
+import ArrayMap = require('./ArrayMap')
 
 class ChunkTemplate extends Template {
     constructor(outputOptions) {
         super(outputOptions);
     }
 
-    render(chunk, moduleTemplate, dependencyTemplates) {
+    render(chunk: Chunk, moduleTemplate: ModuleTemplate, dependencyTemplates: ArrayMap) {
         const modules = this.renderChunkModules(chunk, moduleTemplate, dependencyTemplates);
         const core = this.applyPluginsWaterfall('modules', modules, chunk, moduleTemplate, dependencyTemplates);
         let source = this.applyPluginsWaterfall('render', core, chunk, moduleTemplate, dependencyTemplates);
@@ -21,13 +25,13 @@ class ChunkTemplate extends Template {
         return new ConcatSource(source, ';');
     }
 
-    updateHash(hash) {
+    updateHash(hash: Hash) {
         hash.update('ChunkTemplate');
         hash.update('2');
         this.applyPlugins('hash', hash);
     }
 
-    updateHashForChunk(hash, chunk) {
+    updateHashForChunk(hash: Hash, chunk?: Chunk) {
         this.updateHash(hash);
         this.applyPlugins('hash-for-chunk', hash, chunk);
     }

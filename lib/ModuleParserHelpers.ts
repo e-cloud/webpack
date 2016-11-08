@@ -2,7 +2,9 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-export function addParsedVariable(parser, name, expression) {
+import Parser = require('./Parser')
+
+export function addParsedVariable(parser: Parser, name, expression) {
     if (!parser.state.current.addVariable) {
         return false;
     }

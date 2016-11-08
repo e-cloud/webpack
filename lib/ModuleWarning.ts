@@ -3,13 +3,11 @@
  Author Tobias Koppers @sokra
  */
 class ModuleWarning extends Error {
-    constructor(module, warning) {
+    constructor(public module, public warning) {
         super();
         Error.captureStackTrace(this, ModuleWarning);
         this.name = 'ModuleWarning';
-        this.module = module;
         this.message = warning;
-        this.warning = warning;
     }
 }
 

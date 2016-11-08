@@ -15,9 +15,8 @@ class Template {
 }
 
 class RequireIncludeDependency extends ModuleDependency {
-    constructor(request, range) {
+    constructor(request, public range) {
         super(request);
-        this.range = range;
     }
 
     static Template = Template

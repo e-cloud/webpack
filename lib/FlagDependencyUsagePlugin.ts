@@ -2,10 +2,13 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
+
 class FlagDependencyUsagePlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', compilation => {
-            compilation.plugin('optimize-modules-advanced', modules => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation) {
+            compilation.plugin('optimize-modules-advanced', function (modules) {
 
                 modules.forEach(module => {
                     module.used = false;
@@ -27,6 +30,7 @@ class FlagDependencyUsagePlugin {
                     module.usedExports = addToSet(module.usedExports || [], usedExports);
                 }
                 else if (Array.isArray(module.usedExports)) {
+                    // todo: what?
                     module.usedExports = module.usedExports;
                 }
                 else {

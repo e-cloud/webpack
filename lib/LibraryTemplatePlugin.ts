@@ -4,12 +4,17 @@
  */
 import SetVarMainTemplatePlugin = require('./SetVarMainTemplatePlugin');
 import CommonJsHarmonyMainTemplatePlugin = require('./CommonJsHarmonyMainTemplatePlugin');
+import AmdMainTemplatePlugin = require('./AmdMainTemplatePlugin')
+import UmdMainTemplatePlugin = require('./UmdMainTemplatePlugin');
+import JsonpExportMainTemplatePlugin = require('./JsonpExportMainTemplatePlugin');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
 
 function accessorToObjectAccess(accessor) {
     return accessor.map(a => `[${JSON.stringify(a)}]`).join('');
 }
 
-function accessorAccess(base, accessor, joinWith) {
+function accessorAccess(base, accessor, joinWith = '; ') {
     accessor = [].concat(accessor);
     return accessor.map((a, idx) => {
         a = base
@@ -22,19 +27,20 @@ function accessorAccess(base, accessor, joinWith) {
             return `${a} = typeof ${a} === "object" ? ${a} : {}`;
         }
         return `${a} = ${a} || {}`;
-    }).join(joinWith || '; ');
+    }).join(joinWith);
 }
 
 class LibraryTemplatePlugin {
-    constructor(name, target, umdNamedDefine, auxiliaryComment) {
-        this.name = name;
-        this.target = target;
-        this.umdNamedDefine = umdNamedDefine;
-        this.auxiliaryComment = auxiliaryComment;
+    constructor(
+        public name: string,
+        public target: string,
+        public umdNamedDefine: boolean,
+        public auxiliaryComment: {}
+    ) {
     }
 
-    apply(compiler) {
-        compiler.plugin('this-compilation', compilation => {
+    apply(compiler: Compiler) {
+        compiler.plugin('this-compilation', (compilation: Compilation) => {
             switch (this.target) {
                 case 'var':
                     compilation.apply(new SetVarMainTemplatePlugin(`var ${accessorAccess(false, this.name)}`));
@@ -67,12 +73,10 @@ class LibraryTemplatePlugin {
                     compilation.apply(new CommonJsHarmonyMainTemplatePlugin());
                     break;
                 case 'amd':
-                    const AmdMainTemplatePlugin = require('./AmdMainTemplatePlugin');
                     compilation.apply(new AmdMainTemplatePlugin(this.name));
                     break;
                 case 'umd':
                 case 'umd2':
-                    const UmdMainTemplatePlugin = require('./UmdMainTemplatePlugin');
                     compilation.apply(new UmdMainTemplatePlugin(this.name, {
                         optionalAmdExternalAsGlobal: this.target === 'umd2',
                         namedDefine: this.umdNamedDefine,
@@ -80,7 +84,6 @@ class LibraryTemplatePlugin {
                     }));
                     break;
                 case 'jsonp':
-                    const JsonpExportMainTemplatePlugin = require('./JsonpExportMainTemplatePlugin');
                     compilation.apply(new JsonpExportMainTemplatePlugin(this.name));
                     break;
                 default:

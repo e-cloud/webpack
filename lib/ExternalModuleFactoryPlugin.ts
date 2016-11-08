@@ -3,19 +3,27 @@
  Author Tobias Koppers @sokra
  */
 import ExternalModule = require('./ExternalModule');
+import Module = require('./Module')
+import NormalModuleFactory = require('./NormalModuleFactory')
 
 class ExternalModuleFactoryPlugin {
-    constructor(type, externals) {
-        this.type = type;
-        this.externals = externals;
+    constructor(
+        public type: string,
+        public externals: string | string[] | RegExp | ((context, request, callback) => any) | {}
+    ) {
     }
 
-    apply(normalModuleFactory) {
+    apply(normalModuleFactory: NormalModuleFactory) {
         const globalType = this.type;
         normalModuleFactory.plugin('factory', factory =>
             (data, outterCallback) => {
                 const context = data.context;
                 const dependency = data.dependencies[0];
+
+                type ExternalCallback = (something, module: Module) => void
+
+                function handleExternal(value, type, callback: ExternalCallback): boolean
+                function handleExternal(value, callback: ExternalCallback, fake?): boolean
 
                 function handleExternal(value, type, externalCallback) {
                     if (typeof type === 'function') {
@@ -38,7 +46,10 @@ class ExternalModuleFactoryPlugin {
                 }
 
                 // todo: need to be refactor
-                (function handleExternals(externals, innerCallback) {
+                (function handleExternals(
+                    externals: string | string[] | RegExp | ((context, request, callback) => any) | {},
+                    innerCallback
+                ) {
                     if (typeof externals === 'string') {
                         if (externals === dependency.request) {
                             return handleExternal(dependency.request, innerCallback);
@@ -47,8 +58,9 @@ class ExternalModuleFactoryPlugin {
                     else if (Array.isArray(externals)) {
                         let i = 0;
                         (function next() {
+                            let async
                             do {
-                                var async = true;
+                                async = true;
                                 if (i >= externals.length) {
                                     return innerCallback();
                                 }
@@ -93,7 +105,7 @@ class ExternalModuleFactoryPlugin {
                         return handleExternal(externals[dependency.request], innerCallback);
                     }
                     innerCallback();
-                })(this.externals, (err, module) => {
+                })(this.externals, (err?, module?) => {
                     if (err) {
                         return outterCallback(err);
                     }

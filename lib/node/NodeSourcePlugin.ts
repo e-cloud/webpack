@@ -6,13 +6,15 @@ import objectAssign = require('object-assign');
 import nodeLibsBrowser = require('node-libs-browser');
 import AliasPlugin = require('enhanced-resolve/lib/AliasPlugin');
 import ModuleParserHelpers = require('../ModuleParserHelpers');
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
+import Parser = require('../Parser')
 
 class NodeSourcePlugin {
-    constructor(options) {
-        this.options = options;
+    constructor(public options) {
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const options = this.options;
 
         function getPathToModule(module, type) {
@@ -33,9 +35,8 @@ class NodeSourcePlugin {
             }
         }
 
-        compiler.plugin('compilation', (compilation, params) => {
-            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
-
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
                 if (parserOptions.node === false) {
                     return;
                 }
@@ -79,7 +80,7 @@ class NodeSourcePlugin {
                 }
             });
         });
-        compiler.plugin('after-resolvers', compiler => {
+        compiler.plugin('after-resolvers', function (compiler) {
             const alias = {};
             Object.keys(nodeLibsBrowser).forEach(lib => {
                 if (options[lib] !== false) {

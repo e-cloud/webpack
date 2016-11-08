@@ -4,6 +4,8 @@
  */
 import NullDependency = require('./NullDependency');
 import HarmonyModulesHelpers = require('./HarmonyModulesHelpers');
+import ModuleDependency = require('./ModuleDependency')
+import { Expression } from 'estree'
 
 class Template {
     apply(dep, source) {
@@ -36,13 +38,13 @@ class Template {
 }
 
 class HarmonyImportSpecifierDependency extends NullDependency {
-    constructor(importDependency, importedVar, id, name, range) {
+    shorthand: boolean
+    directImport: boolean
+    callArgs: any[]
+    call: Expression
+
+    constructor(public importDependency: ModuleDependency, public importedVar, public id, public name, public range) {
         super();
-        this.importDependency = importDependency;
-        this.importedVar = importedVar;
-        this.id = id;
-        this.name = name;
-        this.range = range;
     }
 
     getReference() {

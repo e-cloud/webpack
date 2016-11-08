@@ -2,21 +2,37 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import DependenciesBlockVariable = require('./DependenciesBlockVariable');
+import DependenciesBlockVariable = require('./DependenciesBlockVariable')
+import Chunk = require('./Chunk')
+import ModuleDependency = require('./dependencies/ModuleDependency')
+import Dependency = require('./Dependency')
+import { Hash } from 'crypto'
 
-class DependenciesBlock {
+interface IHasDependencies {
+    hasDependencies(): boolean
+}
+
+abstract class DependenciesBlock {
+    dependencies: Dependency[]
+    // todo: what is blocks?
+    blocks: DependenciesBlock[]
+    variables: DependenciesBlockVariable[]
+    chunks: Chunk[]
+    chunkReason: string
+    parent?: DependenciesBlock
+
     constructor() {
         this.dependencies = [];
         this.blocks = [];
         this.variables = [];
     }
 
-    addBlock(block) {
+    addBlock(block: DependenciesBlock) {
         this.blocks.push(block);
         block.parent = this;
     }
 
-    addVariable(name, expression, dependencies) {
+    addVariable(name: string, expression: string, dependencies: Dependency[]) {
         for (let v of this.variables) {
             if (v.name === name && v.expression === expression) {
                 return;
@@ -25,11 +41,11 @@ class DependenciesBlock {
         this.variables.push(new DependenciesBlockVariable(name, expression, dependencies));
     }
 
-    addDependency(dependency) {
+    addDependency(dependency: Dependency) {
         this.dependencies.push(dependency);
     }
 
-    updateHash(hash) {
+    updateHash(hash: Hash) {
         this.dependencies.forEach(d => {
             d.updateHash(hash);
         });
@@ -60,7 +76,8 @@ class DependenciesBlock {
     }
 
     hasDependencies() {
-        return this.dependencies.length > 0 || this.blocks.concat(this.variables).some(item => item.hasDependencies());
+        return this.dependencies.length > 0 || (<IHasDependencies[]>this.blocks).concat(<IHasDependencies[]>this.variables)
+                .some(item => item.hasDependencies());
     }
 
     sortItems() {

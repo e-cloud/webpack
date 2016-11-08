@@ -6,10 +6,10 @@ import ContextDependency = require('./ContextDependency');
 import CriticalDependencyWarning = require('./CriticalDependencyWarning');
 
 class RequireResolveContextDependency extends ContextDependency {
-    constructor(request, recursive, regExp, range, valueRange) {
+    critical: string
+
+    constructor(request, recursive, regExp, public range, public valueRange) {
         super(request, recursive, regExp);
-        this.range = range;
-        this.valueRange = valueRange;
     }
 
     getWarnings() {
@@ -17,10 +17,10 @@ class RequireResolveContextDependency extends ContextDependency {
             return [new CriticalDependencyWarning(this.critical)];
         }
     }
+
+    static Template = require('./ContextDependencyTemplateAsId')
 }
 
 RequireResolveContextDependency.prototype.type = 'amd require context';
 
 export = RequireResolveContextDependency;
-
-RequireResolveContextDependency.Template = require('./ContextDependencyTemplateAsId');

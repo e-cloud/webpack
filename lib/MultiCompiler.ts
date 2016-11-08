@@ -5,10 +5,10 @@
 import Tapable = require('tapable');
 import async = require('async');
 import Stats = require('./Stats');
+import Compiler = require('./Compiler')
 
 class MultiWatching {
-    constructor(watchings) {
-        this.watchings = watchings;
+    constructor(public watchings: Watching[]) {
     }
 
     invalidate() {
@@ -25,7 +25,7 @@ class MultiWatching {
 }
 
 class MultiCompiler extends Tapable {
-    constructor(compilers) {
+    constructor(public compilers: Compiler[]) {
         super();
         if (!Array.isArray(compilers)) {
             compilers = Object.keys(compilers).map(name => {
@@ -33,7 +33,6 @@ class MultiCompiler extends Tapable {
                 return compilers[name];
             });
         }
-        this.compilers = compilers;
 
         function delegateProperty(name) {
             Object.defineProperty(this, name, {
@@ -92,7 +91,7 @@ class MultiCompiler extends Tapable {
         }, this);
     }
 
-    watch(watchOptions, handler) {
+    watch(watchOptions: WatchOption, handler) {
         const watchings = [];
         const allStats = this.compilers.map(() => null);
         const compilerStatus = this.compilers.map(() => false);
@@ -200,8 +199,9 @@ function runWithDependencies(compilers, fn, callback) {
 }
 
 class MultiStats {
-    constructor(stats) {
-        this.stats = stats;
+    hash: string
+
+    constructor(public stats: Stats[]) {
         this.hash = stats.map(stat => stat.hash).join('');
     }
 

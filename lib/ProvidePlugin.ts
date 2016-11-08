@@ -5,19 +5,21 @@
 import ModuleParserHelpers = require('./ModuleParserHelpers');
 import ConstDependency = require('./dependencies/ConstDependency');
 import NullFactory = require('./NullFactory');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
+import Parser = require('./Parser')
 
 class ProvidePlugin {
-    constructor(definitions) {
-        this.definitions = definitions;
+    constructor(public definitions: {}) {
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const definitions = this.definitions;
-        compiler.plugin('compilation', (compilation, params) => {
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
             compilation.dependencyFactories.set(ConstDependency, new NullFactory());
             compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
                 Object.keys(definitions)
                     .forEach(name => {
                         const request = definitions[name];

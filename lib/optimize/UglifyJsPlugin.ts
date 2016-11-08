@@ -7,8 +7,23 @@ import { SourceMapSource, RawSource } from 'webpack-sources'
 import uglify = require('uglify-js');
 import RequestShortener = require('../RequestShortener');
 import ModuleFilenameHelpers = require('../ModuleFilenameHelpers');
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
 
 class UglifyJsPlugin {
+    options: {
+        compress: boolean
+        compressor?: boolean
+        test: RegExp
+        sourceMap: boolean
+        mangle: {
+            props: any
+        } | false
+        comments: RegExp
+        beautify: boolean
+        output: {}
+    }
+
     constructor(options) {
         if (typeof options !== 'object') {
             options = {};
@@ -19,19 +34,19 @@ class UglifyJsPlugin {
         this.options = options;
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const options = this.options;
         options.test = options.test || /\.js($|\?)/i;
 
         const requestShortener = new RequestShortener(compiler.context);
-        compiler.plugin('compilation', compilation => {
+        compiler.plugin('compilation', function (compilation: Compilation) {
             if (options.sourceMap) {
                 compilation.plugin('build-module', module => {
                     // to get detailed location info about errors
                     module.useSourceMap = true;
                 });
             }
-            compilation.plugin('optimize-chunk-assets', (chunks, callback) => {
+            compilation.plugin('optimize-chunk-assets', function (chunks, callback) {
                 let files = [];
                 chunks.forEach(chunk => {
                     chunk.files.forEach(file => {
@@ -105,7 +120,7 @@ class UglifyJsPlugin {
                                 uglify.mangle_properties(ast, options.mangle.props);
                             }
                         }
-                        const output = {};
+                        const output: any = {};
                         output.comments = Object.prototype.hasOwnProperty.call(options, 'comments')
                             ? options.comments
                             : /^\**!|@preserve|@license/;

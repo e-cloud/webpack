@@ -3,6 +3,7 @@
  Author Tobias Koppers @sokra
  */
 import {
+    Source,
     SourceMapSource,
     OriginalSource,
     RawSource,
@@ -11,6 +12,7 @@ import {
     LineToLineMappedSource
 } from 'webpack-sources'
 import { runLoaders, getContext } from 'loader-runner'
+import { Hash } from 'crypto'
 import crypto = require('crypto')
 import path = require('path');
 import ModuleParseError = require('./ModuleParseError');
@@ -20,8 +22,9 @@ import ModuleBuildError = require('./ModuleBuildError');
 import ModuleError = require('./ModuleError');
 import ModuleWarning = require('./ModuleWarning');
 import Module = require('./Module');
+import RequestShortener = require('./RequestShortener')
 
-function asString(buf) {
+function asString(buf: string | Buffer) {
     if (Buffer.isBuffer(buf)) {
         return buf.toString('utf-8');
     }
@@ -29,15 +32,34 @@ function asString(buf) {
 }
 
 class NormalModule extends Module {
-    constructor(request, userRequest, rawRequest, loaders, resource, parser) {
+    fileDependencies: string[]
+    contextDependencies: string[]
+    error: Error
+    assets
+    _source: Source
+    built: boolean
+    _cachedSource: {
+        source: Source
+        hash: string
+    }
+    cacheable: boolean
+    useSourceMap: boolean
+    lineToLine: boolean
+    buildTimestamp: number
+    templateModules: Module[]
+    _templateOrigin: NormalModule
+    arguments: string[]
+
+    constructor(
+        public request: string,
+        public userRequest: string,
+        public rawRequest: string,
+        public loaders,
+        public resource,
+        public parser
+    ) {
         super();
-        this.request = request;
-        this.userRequest = userRequest;
-        this.rawRequest = rawRequest;
-        this.parser = parser;
-        this.resource = resource;
         this.context = getContext(resource);
-        this.loaders = loaders;
         this.fileDependencies = [];
         this.contextDependencies = [];
         this.warnings = [];
@@ -53,7 +75,7 @@ class NormalModule extends Module {
         return this.request;
     }
 
-    readableIdentifier(requestShortener) {
+    readableIdentifier(requestShortener: RequestShortener) {
         return requestShortener.shorten(this.userRequest);
     }
 
@@ -71,19 +93,19 @@ class NormalModule extends Module {
 
     doBuild(options, compilation, resolver, fs, callback) {
         this.cacheable = false;
-        const module = this;
-        const loaderContext = {
+        const self = this;
+        const loaderContext: any = {
             version: 2,
             emitWarning(warning) {
-                module.warnings.push(new ModuleWarning(module, warning));
+                self.warnings.push(new ModuleWarning(self, warning));
             },
             emitError(error) {
-                module.errors.push(new ModuleError(module, error));
+                self.errors.push(new ModuleError(self, error));
             },
             exec(code, filename) {
                 const Module = require('module');
-                const m = new Module(filename, module);
-                m.paths = Module._nodeModulePaths(module.context);
+                const m = new Module(filename, self);
+                m.paths = Module._nodeModulePaths(self.context);
                 m.filename = filename;
                 m._compile(code, filename);
                 return m.exports;
@@ -125,12 +147,12 @@ class NormalModule extends Module {
             readResource: fs.readFile.bind(fs)
         }, (err, result) => {
             if (result) {
-                module.cacheable = result.cacheable;
-                module.fileDependencies = result.fileDependencies;
-                module.contextDependencies = result.contextDependencies;
+                self.cacheable = result.cacheable;
+                self.fileDependencies = result.fileDependencies;
+                self.contextDependencies = result.contextDependencies;
             }
             if (err) {
-                return callback(module.error = new ModuleBuildError(module, err));
+                return callback(self.error = new ModuleBuildError(self, err));
             }
 
             const resourceBuffer = result.resourceBuffer;
@@ -138,20 +160,20 @@ class NormalModule extends Module {
             const sourceMap = result.result[1];
 
             if (!Buffer.isBuffer(source) && typeof source !== 'string') {
-                return callback(module.error = new ModuleBuildError(module, new Error('Final loader didn\'t return a Buffer or String')));
+                return callback(self.error = new ModuleBuildError(self, new Error('Final loader didn\'t return a Buffer or String')));
             }
             source = asString(source);
-            if (module.identifier && module.lineToLine && resourceBuffer) {
-                module._source = new LineToLineMappedSource(source, module.identifier(), asString(resourceBuffer));
+            if (self.identifier && self.lineToLine && resourceBuffer) {
+                self._source = new LineToLineMappedSource(source, self.identifier(), asString(resourceBuffer));
             }
-            else if (module.identifier && module.useSourceMap && sourceMap) {
-                module._source = new SourceMapSource(source, module.identifier(), sourceMap);
+            else if (self.identifier && self.useSourceMap && sourceMap) {
+                self._source = new SourceMapSource(source, self.identifier(), sourceMap);
             }
-            else if (module.identifier) {
-                module._source = new OriginalSource(source, module.identifier());
+            else if (self.identifier) {
+                self._source = new OriginalSource(source, self.identifier());
             }
             else {
-                module._source = new RawSource(source);
+                self._source = new RawSource(source);
             }
             return callback();
         });
@@ -163,64 +185,64 @@ class NormalModule extends Module {
     }
 
     build(options, compilation, resolver, fs, callback) {
-        const _this = this;
-        _this.buildTimestamp = new Date().getTime();
-        _this.built = true;
-        _this._source = null;
-        _this.error = null;
-        return _this.doBuild(options, compilation, resolver, fs, err => {
-            _this.dependencies.length = 0;
-            _this.variables.length = 0;
-            _this.blocks.length = 0;
-            _this._cachedSource = null;
+        const self = this;
+        self.buildTimestamp = new Date().getTime();
+        self.built = true;
+        self._source = null;
+        self.error = null;
+        return self.doBuild(options, compilation, resolver, fs, err => {
+            self.dependencies.length = 0;
+            self.variables.length = 0;
+            self.blocks.length = 0;
+            self._cachedSource = null;
             if (err) {
                 return setError(err);
             }
             if (options.module && options.module.noParse) {
                 function testRegExp(regExp) {
                     return typeof regExp === 'string'
-                        ? _this.request.indexOf(regExp) === 0
-                        : regExp.test(_this.request);
+                        ? self.request.indexOf(regExp) === 0
+                        : regExp.test(self.request);
                 }
 
                 if (Array.isArray(options.module.noParse)) {
-                    if (options.module.noParse.some(testRegExp, _this)) {
+                    if (options.module.noParse.some(testRegExp, self)) {
                         return callback();
                     }
                 }
-                else if (testRegExp.call(_this, options.module.noParse)) {
+                else if (testRegExp.call(self, options.module.noParse)) {
                     return callback();
                 }
             }
             try {
-                _this.parser.parse(_this._source.source(), {
-                    current: _this,
-                    module: _this,
+                self.parser.parse(self._source.source(), {
+                    current: self,
+                    module: self,
                     compilation,
                     options
                 });
             } catch (e) {
-                const source = _this._source.source();
-                return setError(_this.error = new ModuleParseError(_this, source, e));
+                const source = self._source.source();
+                return setError(self.error = new ModuleParseError(self, source, e));
             }
             return callback();
         });
 
         function setError(err) {
-            _this.meta = null;
-            if (_this.error) {
-                _this.errors.push(_this.error);
-                _this._source = new RawSource(`throw new Error(${JSON.stringify(_this.error.message)});`);
+            self.meta = null;
+            if (self.error) {
+                self.errors.push(self.error);
+                self._source = new RawSource(`throw new Error(${JSON.stringify(self.error.message)});`);
             }
             else {
-                _this._source = new RawSource('throw new Error(\'Module build failed\');');
+                self._source = new RawSource('throw new Error(\'Module build failed\');');
             }
             callback();
         }
     }
 
     source(dependencyTemplates, outputOptions, requestShortener) {
-        let hash = crypto.createHash('md5');
+        let hash: Hash | string = crypto.createHash('md5');
         this.updateHash(hash);
         hash = hash.digest('hex');
         if (this._cachedSource && this._cachedSource.hash === hash) {
@@ -272,16 +294,17 @@ class NormalModule extends Module {
                 let varStartCode = '';
                 let varEndCode = '';
 
-                function emitFunction() {
+                const emitFunction = function () {
                     if (varNames.length === 0) {
                         return;
                     }
 
                     varStartCode += `/* WEBPACK VAR INJECTION */(function(${varNames.join(', ')}) {`;
                     // exports === this in the topLevelBlock, but exports do compress better...
-                    varEndCode = `${(topLevelBlock === block
-                        ? '}.call(exports, '
-                        : '}.call(this, ') + varExpressions.map(e => e.source()).join(', ')}))${varEndCode}`;
+                    varEndCode = `${
+                    (topLevelBlock === block ? '}.call(exports, ' : '}.call(this, ') +
+                    varExpressions.map(e => e.source()).join(', ')
+                        }))${varEndCode}`;
 
                     varNames.length = 0;
                     varExpressions.length = 0;
@@ -294,7 +317,9 @@ class NormalModule extends Module {
                     varNames.push(v.name);
                     varExpressions.push(v.expression);
                 });
+
                 emitFunction();
+
                 const start = block.range ? block.range[0] : -10;
                 const end = block.range ? block.range[1] : _source.size() + 1;
                 if (varStartCode) {
@@ -401,14 +426,15 @@ class NormalModule extends Module {
         template.templateModules = keepModules;
         template._templateOrigin = this;
         template.readableIdentifier = function () {
-            return `template of ${this._templateOrigin.id} referencing ${keepModules.map(m => m.id).join(', ')}`;
+            return `template of ${this._templateOrigin.id} referencing ${keepModules.map(
+                m => m.id).join(', ')}`;
         };
         template.identifier = () => {
             const array = roots.map(m => m.identifier());
             array.sort();
             return array.join('|');
         };
-        var args = template.arguments = [];
+        const args = template.arguments = [];
 
         function doDeps(deps) {
             return deps.map(dep => {

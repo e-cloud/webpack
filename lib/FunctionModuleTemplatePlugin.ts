@@ -3,9 +3,10 @@
  Author Tobias Koppers @sokra
  */
 import { ConcatSource, PrefixSource } from 'webpack-sources'
+import ModuleTemplate = require('./ModuleTemplate')
 
 class FunctionModuleTemplatePlugin {
-    apply(moduleTemplate) {
+    apply(moduleTemplate: ModuleTemplate) {
         moduleTemplate.plugin('render', function (moduleSource, module) {
             const source = new ConcatSource();
             const defaultArguments = ['module', 'exports'];
@@ -44,7 +45,7 @@ class FunctionModuleTemplatePlugin {
             }
             return moduleSource;
         });
-        moduleTemplate.plugin('hash', hash => {
+        moduleTemplate.plugin('hash', function (hash) {
             hash.update('FunctionModuleTemplatePlugin');
             hash.update('2');
         });

@@ -4,11 +4,12 @@
  */
 import SingleEntryPlugin = require('./SingleEntryPlugin');
 import MultiEntryPlugin = require('./MultiEntryPlugin');
+import Compiler = require('./Compiler')
 
 class EntryOptionPlugin {
-    apply(compiler) {
-        compiler.plugin('entry-option', (context, entry) => {
-            function itemToPlugin(item, name): {} {
+    apply(compiler: Compiler) {
+        compiler.plugin('entry-option', function (context, entry) {
+            function itemToPlugin(item, name) {
                 if (Array.isArray(item)) {
                     return new MultiEntryPlugin(context, item, name);
                 }

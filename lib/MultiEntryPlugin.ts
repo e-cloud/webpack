@@ -5,16 +5,15 @@
 import MultiEntryDependency = require('./dependencies/MultiEntryDependency');
 import SingleEntryDependency = require('./dependencies/SingleEntryDependency');
 import MultiModuleFactory = require('./MultiModuleFactory');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
 
 class MultiEntryPlugin {
-    constructor(context, entries, name) {
-        this.context = context;
-        this.entries = entries;
-        this.name = name;
+    constructor(public context, public entries, public name) {
     }
 
-    apply(compiler) {
-        compiler.plugin('compilation', (compilation, params) => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
             const multiModuleFactory = new MultiModuleFactory();
             const normalModuleFactory = params.normalModuleFactory;
 
@@ -22,7 +21,7 @@ class MultiEntryPlugin {
 
             compilation.dependencyFactories.set(SingleEntryDependency, normalModuleFactory);
         });
-        compiler.plugin('make', (compilation, callback) => {
+        compiler.plugin('make', (compilation: Compilation, callback) => {
             compilation.addEntry(this.context, new MultiEntryDependency(this.entries.map(function (e, idx) {
                 const dep = new SingleEntryDependency(e);
                 dep.loc = `${this.name}:${100000 + idx}`;

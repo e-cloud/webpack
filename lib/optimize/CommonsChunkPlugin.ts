@@ -2,9 +2,22 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Chunk = require('../Chunk')
+import Module = require('../Module')
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
+
 let nextIdent = 0;
 
 class CommonsChunkPlugin {
+    chunkNames: string
+    filenameTemplate: string
+    minChunks: number | ((module: Module, count: number) => boolean)
+    selectedChunks: Chunk[] | boolean
+    async: boolean
+    minSize: number
+    ident: string
+
     constructor(options) {
         if (arguments.length > 1) {
             throw new Error(`Deprecation notice: CommonsChunkPlugin now only takes a single argument. Either an options object *or* the name of the chunk.
@@ -40,7 +53,7 @@ The available options are:
         this.ident = __filename + nextIdent++;
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const chunkNames = this.chunkNames;
         const filenameTemplate = this.filenameTemplate;
         const minChunks = this.minChunks;
@@ -48,7 +61,7 @@ The available options are:
         const async = this.async;
         const minSize = this.minSize;
         const ident = this.ident;
-        compiler.plugin('this-compilation', compilation => {
+        compiler.plugin('this-compilation', function (compilation: Compilation) {
             compilation.plugin(['optimize-chunks', 'optimize-extracted-chunks'], function (chunks) {
                 // only optimize once
                 if (compilation[ident]) {
@@ -165,15 +178,18 @@ The available options are:
                                 commonChunk.addBlock(block);
                             });
                         });
-                        asyncChunk.origins = reallyUsedChunks.map(chunk => chunk.origins.map(origin => {
-                            const newOrigin = Object.create(origin);
-                            newOrigin.reasons = (origin.reasons || []).slice();
-                            newOrigin.reasons.push('async commons');
-                            return newOrigin;
-                        })).reduce((arr, a) => {
-                            arr.push(...a);
-                            return arr;
-                        }, []);
+                        asyncChunk.origins = reallyUsedChunks.map(chunk =>
+                                chunk.origins.map(origin => {
+                                    const newOrigin = Object.create(origin);
+                                    newOrigin.reasons = (origin.reasons || []).slice();
+                                    newOrigin.reasons.push('async commons');
+                                    return newOrigin;
+                                })
+                            )
+                            .reduce((arr, a) => {
+                                arr.push(...a);
+                                return arr;
+                            }, []);
                     }
                     else {
                         usedChunks.forEach(chunk => {

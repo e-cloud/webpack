@@ -10,6 +10,7 @@ import AMDRequireArrayDependency = require('./AMDRequireArrayDependency');
 import LocalModuleDependency = require('./LocalModuleDependency');
 import ContextDependencyHelpers = require('./ContextDependencyHelpers');
 import LocalModulesHelpers = require('./LocalModulesHelpers');
+import Parser = require('../Parser')
 
 function isBoundFunctionExpression(expr) {
     if (expr.type !== 'CallExpression') {
@@ -34,13 +35,12 @@ function isBoundFunctionExpression(expr) {
 }
 
 class AMDDefineDependencyParserPlugin {
-    constructor(options) {
-        this.options = options;
+    constructor(public options) {
     }
 
-    apply(parser) {
+    apply(parser: Parser) {
         const options = this.options;
-        parser.plugin('call define', function (expr) {
+        parser.plugin('call define', function (this: Parser, expr) {
             let array;
             let fn;
             let obj;

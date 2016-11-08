@@ -2,16 +2,18 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Chunk = require('./Chunk')
+
 class ChunkRenderError extends Error {
-    constructor(chunk, file, error) {
+    message: string
+    details: string
+    name = 'ChunkRenderError'
+
+    constructor(public chunk: Chunk, public file, public error: Error) {
         super();
         Error.captureStackTrace(this, ChunkRenderError);
-        this.name = 'ChunkRenderError';
-        this.error = error;
         this.message = error.message;
         this.details = error.stack;
-        this.file = file;
-        this.chunk = chunk;
     }
 }
 

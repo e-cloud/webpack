@@ -26,11 +26,8 @@ class Template {
 }
 
 class HarmonyExportExpressionDependency extends NullDependency {
-    constructor(originModule, range, rangeStatement) {
+    constructor(public originModule, public range, public rangeStatement) {
         super();
-        this.originModule = originModule;
-        this.range = range;
-        this.rangeStatement = rangeStatement;
     }
 
     getExports() {

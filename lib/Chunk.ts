@@ -3,12 +3,43 @@
  Author Tobias Koppers @sokra
  */
 import compareLocations = require('./compareLocations');
+import Module = require('./Module')
+import DependenciesBlock = require('./DependenciesBlock')
+import Entrypoint = require('./Entrypoint')
 import removeAndDo = require('./removeAndDo')
 
 let debugId = 1000;
 
-class Chunk {
-    constructor(name, module, loc) {
+interface ChunkOrigin {
+    module: Module
+    loc: any
+    name: string
+    reasons?
+}
+
+class Chunk implements IRemoveAndDo {
+    id: number
+    ids: string[]
+    debugId: number
+    modules: Module[]
+    entrypoints: Entrypoint[]
+    chunks: Chunk[]
+    parents: Chunk[]
+    blocks: DependenciesBlock[]
+    origins: ChunkOrigin[]
+    files: string[]
+    rendered: boolean
+    entryModule: Module
+    hash: string
+    renderedHash: string
+    filenameTemplate
+    recorded: boolean
+    extraAsync: boolean
+    _fromAggressiveSplitting: boolean
+    _fromAggressiveSplittingIndex: number
+    _aggressiveSplittingInvalid: boolean
+
+    constructor(public name: string, module: Module, loc) {
         this.id = null;
         this.ids = null;
         this.debugId = debugId++;
@@ -166,15 +197,15 @@ class Chunk {
             });
         }
 
-        moveChunks(other.parents, 'chunks', c => {
-            if (c !== this && this.addParent(c)) {
-                c.addChunk(this);
+        moveChunks(other.parents, 'chunks', chunk => {
+            if (chunk !== this && this.addParent(chunk)) {
+                chunk.addChunk(this);
             }
         });
         other.parents.length = 0;
-        moveChunks(other.chunks, 'parents', c => {
-            if (c !== this && this.addChunk(c)) {
-                c.addParent(this);
+        moveChunks(other.chunks, 'parents', chunk => {
+            if (chunk !== this && this.addChunk(chunk)) {
+                chunk.addParent(this);
             }
         });
         other.chunks.length = 0;

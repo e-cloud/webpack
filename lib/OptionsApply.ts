@@ -3,7 +3,8 @@
  Author Tobias Koppers @sokra
  */
 class OptionsApply {
-    process() /* options, compiler */ {
+    process(options, compiler) {
+        /* options, compiler */
     }
 }
 

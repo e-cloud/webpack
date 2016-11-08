@@ -5,23 +5,24 @@
 import RequireContextDependency = require('./RequireContextDependency');
 import ContextElementDependency = require('./ContextElementDependency');
 import RequireContextDependencyParserPlugin = require('./RequireContextDependencyParserPlugin');
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
+import Parser = require('../Parser')
 
 class RequireContextPlugin {
-    constructor(modulesDirectories, extensions) {
+    constructor(public modulesDirectories, public extensions) {
         if (!Array.isArray(modulesDirectories)) {
             throw new Error('modulesDirectories must be an array');
         }
         if (!Array.isArray(extensions)) {
             throw new Error('extensions must be an array');
         }
-        this.modulesDirectories = modulesDirectories;
-        this.extensions = extensions;
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const modulesDirectories = this.modulesDirectories;
         const extensions = this.extensions;
-        compiler.plugin('compilation', (compilation, params) => {
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
             const contextModuleFactory = params.contextModuleFactory;
             const normalModuleFactory = params.normalModuleFactory;
 
@@ -30,7 +31,7 @@ class RequireContextPlugin {
 
             compilation.dependencyFactories.set(ContextElementDependency, normalModuleFactory);
 
-            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
 
                 if (typeof parserOptions.requireContext !== 'undefined' && !parserOptions.requireContext) {
                     return;
@@ -39,7 +40,7 @@ class RequireContextPlugin {
                 parser.apply(new RequireContextDependencyParserPlugin());
             });
 
-            params.contextModuleFactory.plugin('alternatives', (items, callback) => {
+            params.contextModuleFactory.plugin('alternatives', function (items, callback) {
                 if (items.length === 0) {
                     return callback(null, items);
                 }
@@ -62,7 +63,7 @@ class RequireContextPlugin {
                 );
             });
 
-            params.contextModuleFactory.plugin('alternatives', (items, callback) => {
+            params.contextModuleFactory.plugin('alternatives', function (items, callback) {
                 if (items.length === 0) {
                     return callback(null, items);
                 }

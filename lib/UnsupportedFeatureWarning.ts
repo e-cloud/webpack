@@ -2,13 +2,16 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Module = require('./Module')
+
 class UnsupportedFeatureWarning extends Error {
-    constructor(module, message) {
+    origin: Module
+    name = 'UnsupportedFeatureWarning'
+
+    constructor(public module: Module, public message: string) {
         super();
         Error.captureStackTrace(this, UnsupportedFeatureWarning);
-        this.name = 'UnsupportedFeatureWarning';
-        this.message = message;
-        this.origin = this.module = module;
+        this.origin = module;
     }
 }
 

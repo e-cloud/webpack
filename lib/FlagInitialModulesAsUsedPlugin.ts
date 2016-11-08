@@ -4,11 +4,13 @@
  */
 import path = require('path');
 import async = require('async');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
 
 class FlagInitialModulesAsUsedPlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', compilation => {
-            compilation.plugin('after-optimize-chunks', chunks => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation) {
+            compilation.plugin('after-optimize-chunks', function (chunks) {
                 chunks.forEach(chunk => {
                     if (!chunk.isInitial()) {
                         return;

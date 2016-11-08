@@ -3,6 +3,7 @@
  Author Tobias Koppers @sokra
  */
 import DelegatedModule = require('./DelegatedModule');
+import NormalModuleFactory = require('./NormalModuleFactory')
 
 // options.source
 // options.type
@@ -10,30 +11,40 @@ import DelegatedModule = require('./DelegatedModule');
 // options.scope
 // options.content
 class DelegatedModuleFactoryPlugin {
-    constructor(options) {
-        this.options = options;
+    constructor(
+        public options: {
+            type: string
+            extensions: string[]
+            scope: string
+            content: {}
+            context: string
+            source: string
+        }
+    ) {
         options.type = options.type || 'require';
         options.extensions = options.extensions || ['', '.js'];
     }
 
-    apply(normalModuleFactory) {
+    apply(normalModuleFactory: NormalModuleFactory) {
         const scope = this.options.scope;
         if (scope) {
-            normalModuleFactory.plugin('factory', factory => (data, callback) => {
-                const dependency = data.dependencies[0];
-                const request = dependency.request;
-                if (request && request.indexOf(`${scope}/`) === 0) {
-                    const innerRequest = `.${request.substr(scope.length)}`;
-                    for (let i = 0; i < this.options.extensions.length; i++) {
-                        const requestPlusExt = innerRequest + this.options.extensions[i];
-                        if (requestPlusExt in this.options.content) {
-                            const resolved = this.options.content[requestPlusExt];
-                            return callback(null, new DelegatedModule(this.options.source, resolved, this.options.type, requestPlusExt));
+            normalModuleFactory.plugin('factory', factory =>
+                (data, callback) => {
+                    const dependency = data.dependencies[0];
+                    const request = dependency.request;
+                    if (request && request.indexOf(`${scope}/`) === 0) {
+                        const innerRequest = `.${request.substr(scope.length)}`;
+                        for (let i = 0; i < this.options.extensions.length; i++) {
+                            const requestPlusExt = innerRequest + this.options.extensions[i];
+                            if (requestPlusExt in this.options.content) {
+                                const resolved = this.options.content[requestPlusExt];
+                                return callback(null, new DelegatedModule(this.options.source, resolved, this.options.type, requestPlusExt));
+                            }
                         }
                     }
+                    return factory(data, callback);
                 }
-                return factory(data, callback);
-            });
+            );
         }
         else {
             normalModuleFactory.plugin('module', module => {

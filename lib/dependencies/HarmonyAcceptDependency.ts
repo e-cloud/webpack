@@ -21,11 +21,8 @@ class Template {
 }
 
 class HarmonyAcceptDependency extends NullDependency {
-    constructor(range, dependencies, hasCallback) {
+    constructor(public range, public dependencies, public hasCallback) {
         super();
-        this.range = range;
-        this.dependencies = dependencies;
-        this.hasCallback = hasCallback;
     }
 
     static Template = Template

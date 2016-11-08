@@ -73,7 +73,57 @@
 
  */
 
+type ConditionFunc = (arg) => boolean
+type AndCondition = {
+    and: Condition[]
+}
+type OrCondition = {
+    or: Condition[]
+}
+type NotCondition = {
+    not: Condition[]
+}
+type DetailCondition = {
+    test: Condition
+    include: Condition
+    exclude: Condition
+}
+type Condition = RegExp | string | ConditionFunc | Condition[] | AndCondition | OrCondition | NotCondition | DetailCondition
+
+type Loader = {
+    loader: string
+    options: {}
+}
+
+type UseItem = Loader[]
+
+interface Rule {
+    resource: {
+        test: Condition
+        include: Condition
+        exclude: Condition
+    } | Condition,// -> resource.test
+    test: Condition // -> resource.test
+    include: Condition // -> resource.include
+    exclude: Condition // -> resource.exclude
+    issuer: {
+        test: Condition
+        include: Condition
+        exclude: Condition
+    } | Condition,// -> issuer.test
+    use: UseItem // -> use[0].loader
+    loader: Loader // -> use[0].loader
+    loaders: UseItem // -> use
+    options: {} // -> use[0].options,
+    query: {} // -> options
+    parser: {}
+    rules: Rule[]
+    oneOf: Rule[]
+}
+
 class RuleSet {
+    rules
+
     constructor(rules) {
         this.rules = RuleSet.normalizeRules(rules);
     }
@@ -107,7 +157,7 @@ class RuleSet {
             throw new Error(`Unexcepted ${typeof rule} when object was expected as rule (${rule})`);
         }
 
-        const newRule = {};
+        const newRule = {} as Rule;
         let useSource;
         let resourceSource;
 
@@ -160,11 +210,11 @@ class RuleSet {
         }
 
         if (rule.rules) {
-            newRule.rules = RuleSet.normalizeRules(rule.rules);
+            newRule.rules = RuleSet.normalizeRules(rule.rules) as Rule[];
         }
 
         if (rule.oneOf) {
-            newRule.oneOf = RuleSet.normalizeRules(rule.oneOf);
+            newRule.oneOf = RuleSet.normalizeRules(rule.oneOf) as Rule[];
         }
 
         const keys = Object.keys(rule)
@@ -221,7 +271,7 @@ class RuleSet {
             };
         }
 
-        const newItem = {};
+        const newItem = <Loader>{};
 
         if (item.options && item.query) {
             throw new Error('Provided options and query in use');

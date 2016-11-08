@@ -4,14 +4,15 @@
  */
 import DelegatedModuleFactoryPlugin = require('./DelegatedModuleFactoryPlugin');
 import DelegatedSourceDependency = require('./dependencies/DelegatedSourceDependency');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
 
 class DelegatedPlugin {
-    constructor(options) {
-        this.options = options;
+    constructor(public options) {
     }
 
-    apply(compiler) {
-        compiler.plugin('compilation', (compilation, params) => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
             const normalModuleFactory = params.normalModuleFactory;
 
             compilation.dependencyFactories.set(DelegatedSourceDependency, normalModuleFactory);

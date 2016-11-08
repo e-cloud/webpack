@@ -15,9 +15,8 @@ class Template {
 }
 
 class RequireEnsureDependency extends NullDependency {
-    constructor(block) {
+    constructor(public block) {
         super();
-        this.block = block;
     }
 
     static Template = Template

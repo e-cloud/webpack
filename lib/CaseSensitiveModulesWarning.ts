@@ -2,20 +2,25 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Module = require('./Module')
+
 class CaseSensitiveModulesWarning extends Error {
-    constructor(modules) {
+    origin: Module
+    module: Module
+    name = 'CaseSensitiveModulesWarning'
+
+    constructor(modules: Module[]) {
         super();
         Error.captureStackTrace(this, CaseSensitiveModulesWarning);
-        this.name = 'CaseSensitiveModulesWarning';
         const modulesList = modules
             .slice()
             .sort((a, b) => {
-                a = a.identifier();
-                b = b.identifier();
-                if (a < b) {
+                const aId = a.identifier();
+                const bId = b.identifier();
+                if (aId < bId) {
                     return -1;
                 }
-                if (a > b) {
+                if (aId > bId) {
                     return 1;
                 }
                 return 0;

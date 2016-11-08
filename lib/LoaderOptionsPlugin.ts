@@ -3,8 +3,12 @@
  Author Tobias Koppers @sokra
  */
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
 
 class LoaderOptionsPlugin {
+    options: {}
+
     constructor(options) {
         if (typeof options !== 'object') {
             options = {};
@@ -19,10 +23,10 @@ class LoaderOptionsPlugin {
         this.options = options;
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const options = this.options;
-        compiler.plugin('compilation', compilation => {
-            compilation.plugin('normal-module-loader', (context, module) => {
+        compiler.plugin('compilation', function (compilation: Compilation) {
+            compilation.plugin('normal-module-loader', function (context, module) {
                 const resource = module.resource;
                 if (!resource) {
                     return;

@@ -8,15 +8,17 @@ import UnsupportedFeatureWarning = require('../UnsupportedFeatureWarning');
 import ConstDependency = require('./ConstDependency');
 import BasicEvaluatedExpression = require('../BasicEvaluatedExpression');
 import SystemImportParserPlugin = require('./SystemImportParserPlugin');
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
+import Parser = require('../Parser')
 
 class SystemPlugin {
-    constructor(options) {
-        this.options = options;
+    constructor(public options) {
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const options = this.options;
-        compiler.plugin('compilation', (compilation, params) => {
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
             const normalModuleFactory = params.normalModuleFactory;
             const contextModuleFactory = params.contextModuleFactory;
 
@@ -26,8 +28,7 @@ class SystemPlugin {
             compilation.dependencyFactories.set(SystemImportContextDependency, contextModuleFactory);
             compilation.dependencyTemplates.set(SystemImportContextDependency, new SystemImportContextDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
-
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
                 if (typeof parserOptions.system !== 'undefined' && !parserOptions.system) {
                     return;
                 }

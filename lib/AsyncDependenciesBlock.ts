@@ -3,14 +3,16 @@
  Author Tobias Koppers @sokra
  */
 import DependenciesBlock = require('./DependenciesBlock');
+import Chunk = require('./Chunk')
+import Module = require('./Module')
+import { Hash } from 'crypto'
 
 class AsyncDependenciesBlock extends DependenciesBlock {
-    constructor(name, module, loc) {
+    chunks: Chunk[]
+
+    constructor(public chunkName: string, public module: Module, public loc) {
         super();
-        this.chunkName = name;
         this.chunks = null;
-        this.module = module;
-        this.loc = loc;
 
         Object.defineProperty(this, 'chunk', {
             get() {
@@ -22,7 +24,7 @@ class AsyncDependenciesBlock extends DependenciesBlock {
         });
     }
 
-    updateHash(hash) {
+    updateHash(hash: Hash) {
         hash.update(this.chunkName || '');
         hash.update(this.chunks
             && this.chunks

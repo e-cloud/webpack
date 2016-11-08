@@ -3,17 +3,16 @@
  Author Tobias Koppers @sokra
  */
 import EvalDevToolModuleTemplatePlugin = require('./EvalDevToolModuleTemplatePlugin');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
 
 class EvalDevToolModulePlugin {
-    constructor(sourceUrlComment, moduleFilenameTemplate) {
-        this.sourceUrlComment = sourceUrlComment;
-        this.moduleFilenameTemplate = moduleFilenameTemplate;
+    constructor(public sourceUrlComment: string, public moduleFilenameTemplate: string) {
     }
 
-    apply(compiler) {
-        const self = this;
-        compiler.plugin('compilation', compilation => {
-            compilation.moduleTemplate.apply(new EvalDevToolModuleTemplatePlugin(self.sourceUrlComment, self.moduleFilenameTemplate));
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation',  (compilation: Compilation) => {
+            compilation.moduleTemplate.apply(new EvalDevToolModuleTemplatePlugin(this.sourceUrlComment, this.moduleFilenameTemplate));
         });
     }
 }

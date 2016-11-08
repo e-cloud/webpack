@@ -5,15 +5,34 @@
 import { OriginalSource, RawSource } from 'webpack-sources'
 import Module = require('./Module');
 import AsyncDependenciesBlock = require('./AsyncDependenciesBlock');
+import ModuleDependency = require('./dependencies/ModuleDependency');
+import RequestShortener = require('./RequestShortener')
+import Compilation = require('./Compilation')
 
 class ContextModule extends Module {
-    constructor(resolveDependencies, context, recursive, regExp, addon, async) {
+    async: boolean
+    cacheable: boolean
+    contextDependencies: string[]
+    built: boolean
+    builtTime: number
+    dependencies: ModuleDependency[]
+    useSourceMap: boolean
+
+    constructor(
+        public resolveDependencies: (
+            fs,
+            context: string,
+            recursive: boolean,
+            regExp: RegExp,
+            callback: (err: Error, dependencies: ModuleDependency[]) => void
+        ) => void,
+        public context: string,
+        public recursive: boolean,
+        public regExp: RegExp,
+        public addon: string,
+        async: boolean
+    ) {
         super();
-        this.resolveDependencies = resolveDependencies;
-        this.context = context;
-        this.recursive = recursive;
-        this.regExp = regExp;
-        this.addon = addon;
         this.async = !!async;
         this.cacheable = true;
         this.contextDependencies = [context];
@@ -38,7 +57,7 @@ class ContextModule extends Module {
         return identifier.replace(/ $/, '');
     }
 
-    readableIdentifier(requestShortener) {
+    readableIdentifier(requestShortener: RequestShortener) {
         let identifier = '';
         identifier += `${requestShortener.shorten(this.context)} `;
         if (this.async) {
@@ -69,7 +88,7 @@ class ContextModule extends Module {
         super.disconnect();
     }
 
-    build(options, compilation, resolver, fs, callback) {
+    build(options, compilation: Compilation, resolver, fs, callback) {
         this.built = true;
         this.builtTime = new Date().getTime();
         const addon = this.addon;
@@ -205,6 +224,6 @@ class ContextModule extends Module {
 
 export = ContextModule;
 
-function prettyRegExp(str) {
+function prettyRegExp(str: string) {
     return str.substring(1, str.length - 1);
 }

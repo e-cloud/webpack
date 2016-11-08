@@ -5,15 +5,15 @@
 import SystemImportContextDependency = require('./SystemImportContextDependency');
 import SystemImportDependenciesBlock = require('./SystemImportDependenciesBlock');
 import ContextDependencyHelpers = require('./ContextDependencyHelpers');
+import Parser = require('../Parser')
 
 class SystemImportParserPlugin {
-    constructor(options) {
-        this.options = options;
+    constructor(public options) {
     }
 
-    apply(parser) {
+    apply(parser: Parser) {
         const options = this.options;
-        parser.plugin('call System.import', function (expr) {
+        parser.plugin('call System.import', function (this: Parser, expr) {
             if (expr.arguments.length !== 1) {
                 throw new Error('Incorrect number of arguments provided to \'System.import(module: string) -> Promise\'.');
             }

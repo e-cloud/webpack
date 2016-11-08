@@ -2,10 +2,13 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Module = require('./Module')
+import Chunk = require('./Chunk')
+
 class ModuleReason {
-    constructor(module, dependency) {
-        this.module = module;
-        this.dependency = dependency;
+    chunks: Chunk[]
+
+    constructor(public module: Module, public dependency) {
     }
 }
 export = ModuleReason;

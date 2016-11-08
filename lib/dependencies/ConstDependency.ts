@@ -16,10 +16,10 @@ class Template {
 }
 
 class ConstDependency extends NullDependency {
-    constructor(expression, range) {
+    optional: boolean
+
+    constructor(public expression, public range) {
         super();
-        this.expression = expression;
-        this.range = range;
     }
 
     static Template = Template

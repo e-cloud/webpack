@@ -2,17 +2,19 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Compiler = require('./Compiler')
+import NormalModuleFactory = require('./NormalModuleFactory')
+import ContextModuleFactory = require('./ContextModuleFactory')
+
 class IgnorePlugin {
-    constructor(resourceRegExp, contextRegExp) {
-        this.resourceRegExp = resourceRegExp;
-        this.contextRegExp = contextRegExp;
+    constructor(public resourceRegExp: RegExp, public contextRegExp: RegExp) {
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const resourceRegExp = this.resourceRegExp;
         const contextRegExp = this.contextRegExp;
-        compiler.plugin('normal-module-factory', nmf => {
-            nmf.plugin('before-resolve', (result, callback) => {
+        compiler.plugin('normal-module-factory', function (nmf: NormalModuleFactory) {
+            nmf.plugin('before-resolve', function (result, callback) {
                 if (!result) {
                     return callback();
                 }
@@ -22,8 +24,8 @@ class IgnorePlugin {
                 return callback(null, result);
             });
         });
-        compiler.plugin('context-module-factory', cmf => {
-            cmf.plugin('before-resolve', (result, callback) => {
+        compiler.plugin('context-module-factory', function (cmf: ContextModuleFactory) {
+            cmf.plugin('before-resolve', function (result, callback) {
                 if (!result) {
                     return callback();
                 }

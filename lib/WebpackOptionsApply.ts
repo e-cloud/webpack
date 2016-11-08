@@ -37,13 +37,10 @@ import OccurrenceOrderPlugin = require('./optimize/OccurrenceOrderPlugin');
 import FlagDependencyUsagePlugin = require('./FlagDependencyUsagePlugin');
 import FlagDependencyExportsPlugin = require('./FlagDependencyExportsPlugin');
 import { ResolverFactory } from 'enhanced-resolve'
+import Compiler = require('./Compiler')
 
 class WebpackOptionsApply extends OptionsApply {
-    constructor() {
-        super();
-    }
-
-    process(options, compiler) {
+    process(options, compiler: Compiler) {
         let ExternalsPlugin;
         compiler.context = options.context;
 
@@ -199,9 +196,6 @@ class WebpackOptionsApply extends OptionsApply {
             compiler.apply(new ExternalsPlugin(options.output.libraryTarget, options.externals));
         }
 
-        let legacy;
-        let modern;
-        let comment;
         if (options.devtool && (options.devtool.includes('sourcemap') || options.devtool.includes('source-map'))) {
             const hidden = options.devtool.includes('hidden');
             const inline = options.devtool.includes('inline');
@@ -209,15 +203,15 @@ class WebpackOptionsApply extends OptionsApply {
             const cheap = options.devtool.includes('cheap');
             const moduleMaps = options.devtool.includes('module');
             let noSources = options.devtool.includes('nosources');
-            legacy = options.devtool.includes('@');
-            modern = options.devtool.includes('#');
-            comment = legacy && modern
+            let legacy = options.devtool.includes('@');
+            let modern = options.devtool.includes('#');
+            let comment = legacy && modern
                 ? '\n/*\n//@ sourceMappingURL=[url]\n//# sourceMappingURL=[url]\n*/'
                 : legacy
                 ? '\n/*\n//@ sourceMappingURL=[url]\n*/'
                 : modern
                 ? '\n//# sourceMappingURL=[url]'
-                : null;
+                : undefined;
             const Plugin = evalWrapped ? EvalSourceMapDevToolPlugin : SourceMapDevToolPlugin;
             compiler.apply(
                 new Plugin(
@@ -235,15 +229,15 @@ class WebpackOptionsApply extends OptionsApply {
             );
         }
         else if (options.devtool && options.devtool.includes('eval')) {
-            legacy = options.devtool.includes('@');
-            modern = options.devtool.includes('#');
-            comment = legacy && modern
+            let legacy = options.devtool.includes('@');
+            let modern = options.devtool.includes('#');
+            let comment = legacy && modern
                 ? '\n//@ sourceURL=[url]\n//# sourceURL=[url]'
                 : legacy
                 ? '\n//@ sourceURL=[url]'
                 : modern
                 ? '\n//# sourceURL=[url]'
-                : null;
+                : undefined;
             compiler.apply(new EvalDevToolModulePlugin(comment, options.output.devtoolModuleFilenameTemplate));
         }
 
@@ -286,7 +280,7 @@ class WebpackOptionsApply extends OptionsApply {
 
         if (options.cache === undefined ? options.watch : options.cache) {
             const CachePlugin = require('./CachePlugin');
-            compiler.apply(new CachePlugin(typeof options.cache === 'object' ? options.cache : null));
+            compiler.apply(new CachePlugin(typeof options.cache === 'object' ? options.cache : undefined));
         }
 
         compiler.applyPlugins('after-plugins', compiler);

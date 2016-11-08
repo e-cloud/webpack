@@ -2,10 +2,13 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Compilation = require('./Compilation')
+import Compiler = require('./Compiler')
+
 class FlagDependencyExportsPlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', compilation => {
-            compilation.plugin('finish-modules', modules => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation) {
+            compilation.plugin('finish-modules', function (modules) {
                 const dependencies = {};
 
                 let module;
@@ -73,7 +76,6 @@ class FlagDependencyExportsPlugin {
                                 changed = true;
                             }
                         }
-                        ;
                     }
                     if (changed) {
                         notifyDependencies();

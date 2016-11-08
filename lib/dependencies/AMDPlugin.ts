@@ -17,17 +17,18 @@ import AMDRequireDependenciesBlockParserPlugin = require('./AMDRequireDependenci
 import AMDDefineDependencyParserPlugin = require('./AMDDefineDependencyParserPlugin');
 import AliasPlugin = require('enhanced-resolve/lib/AliasPlugin');
 import BasicEvaluatedExpression = require('../BasicEvaluatedExpression');
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
+import Parser = require('../Parser')
 
 class AMDPlugin {
-    constructor(options, amdOptions) {
-        this.amdOptions = amdOptions;
-        this.options = options;
+    constructor(public options, public  amdOptions) {
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const options = this.options;
         const amdOptions = this.amdOptions;
-        compiler.plugin('compilation', (compilation, params) => {
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
             const normalModuleFactory = params.normalModuleFactory;
             const contextModuleFactory = params.contextModuleFactory;
 
@@ -52,8 +53,7 @@ class AMDPlugin {
             compilation.dependencyFactories.set(LocalModuleDependency, new NullFactory());
             compilation.dependencyTemplates.set(LocalModuleDependency, new LocalModuleDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
-
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
                 if (typeof parserOptions.amd !== 'undefined' && !parserOptions.amd) {
                     return;
                 }
@@ -106,16 +106,20 @@ class AMDPlugin {
                 setTypeof('require', 'function');
             });
         });
-        compiler.resolvers.normal.apply(new AliasPlugin('described-resolve', {
-            name: 'amdefine',
-            alias: path.join(__dirname, '..', '..', 'buildin', 'amd-define.js')
-        }, 'resolve'), new AliasPlugin('described-resolve', {
-            name: 'webpack amd options',
-            alias: path.join(__dirname, '..', '..', 'buildin', 'amd-options.js')
-        }, 'resolve'), new AliasPlugin('described-resolve', {
-            name: 'webpack amd define',
-            alias: path.join(__dirname, '..', '..', 'buildin', 'amd-define.js')
-        }, 'resolve'));
+        compiler.resolvers.normal.apply(
+            new AliasPlugin('described-resolve', {
+                name: 'amdefine',
+                alias: path.join(__dirname, '..', '..', 'buildin', 'amd-define.js')
+            }, 'resolve'),
+            new AliasPlugin('described-resolve', {
+                name: 'webpack amd options',
+                alias: path.join(__dirname, '..', '..', 'buildin', 'amd-options.js')
+            }, 'resolve'),
+            new AliasPlugin('described-resolve', {
+                name: 'webpack amd define',
+                alias: path.join(__dirname, '..', '..', 'buildin', 'amd-define.js')
+            }, 'resolve')
+        );
     }
 }
 

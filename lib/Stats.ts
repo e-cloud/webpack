@@ -3,9 +3,25 @@
  Author Tobias Koppers @sokra
  */
 import RequestShortener = require('./RequestShortener');
+import Compilation = require('./Compilation')
+
+interface Colors {
+    bold(str: string): void
+    yellow(str: string): void
+    red(str: string): void
+    green(str: string): void
+    cyan(str: string): void
+    magenta(str: string): void
+    normal(str: string): void
+}
 
 class Stats {
-    constructor(compilation) {
+    compilation: Compilation
+    hash: string
+    startTime: number
+    endTime: number
+
+    constructor(compilation: Compilation) {
         this.compilation = compilation;
         this.hash = compilation.hash;
     }
@@ -18,7 +34,7 @@ class Stats {
         return this.compilation.errors.length > 0;
     }
 
-    toJson(options, forToString) {
+    toJson(options, forToString: boolean) {
         if (typeof options === 'boolean' || typeof options === 'string') {
             options = Stats.presetToOptions(options);
         }
@@ -149,7 +165,8 @@ class Stats {
             return text;
         }
 
-        const obj = {
+        // todo: remove any type
+        const obj: any = {
             errors: compilation.errors.map(formatError),
             warnings: compilation.warnings.map(formatError)
         };
@@ -231,7 +248,8 @@ class Stats {
         }
 
         function fnModule(module) {
-            const obj = {
+            // todo: remove any type
+            const obj: any = {
                 id: module.id,
                 identifier: module.identifier(),
                 name: module.readableIdentifier(requestShortener),
@@ -254,6 +272,8 @@ class Stats {
             };
             if (showReasons) {
                 obj.reasons = module.reasons.filter(reason => reason.dependency && reason.module).map(reason => {
+                    // todo: remove any type
+                    const obj: any = {
                         moduleId: reason.module.id,
                         moduleIdentifier: reason.module.identifier(),
                         module: reason.module.readableIdentifier(requestShortener),
@@ -287,7 +307,7 @@ class Stats {
 
         if (showChunks) {
             obj.chunks = compilation.chunks.map(chunk => {
-                const obj = {
+                const obj: any = {
                     id: chunk.id,
                     rendered: chunk.rendered,
                     initial: chunk.isInitial(),
@@ -341,7 +361,7 @@ class Stats {
         return obj;
     }
 
-    toString(options) {
+    toString(options?) {
         if (typeof options === 'boolean' || typeof options === 'string') {
             options = Stats.presetToOptions(options);
         }
@@ -372,7 +392,7 @@ class Stats {
             magenta: '\x1B[1m\x1B[35m'
         };
 
-        const colors = Object.keys(defaultColors)
+        const colors = <Colors>Object.keys(defaultColors)
             .reduce((obj, color) => {
                 obj[color] = str => {
                     if (useColors) {
@@ -418,7 +438,7 @@ class Stats {
             buffer.push('\n');
         }
 
-        function table(array, formats, align, splitter) {
+        function table(array, formats, align, splitter = '  ') {
             let row;
             const rows = array.length;
             let col;
@@ -445,11 +465,12 @@ class Stats {
                     }
                     for (; l < colSizes[col] && col !== cols - 1; l++)
                         colors.normal(' ');
+
                     if (align[col] === 'r') {
                         format(value);
                     }
                     if (col + 1 < cols) {
-                        colors.normal(splitter || '  ');
+                        colors.normal(splitter);
                     }
                 }
                 newline();

@@ -4,18 +4,17 @@
  */
 
 import path = require('path');
+import Compiler = require('./Compiler')
 
 class NormalModuleReplacementPlugin {
-    constructor(resourceRegExp, newResource) {
-        this.resourceRegExp = resourceRegExp;
-        this.newResource = newResource;
+    constructor(public resourceRegExp: RegExp, public newResource: string) {
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const resourceRegExp = this.resourceRegExp;
         const newResource = this.newResource;
-        compiler.plugin('normal-module-factory', nmf => {
-            nmf.plugin('before-resolve', (result, callback) => {
+        compiler.plugin('normal-module-factory', function (nmf) {
+            nmf.plugin('before-resolve', function (result, callback) {
                 if (!result) {
                     return callback();
                 }
@@ -29,7 +28,7 @@ class NormalModuleReplacementPlugin {
                 }
                 return callback(null, result);
             });
-            nmf.plugin('after-resolve', (result, callback) => {
+            nmf.plugin('after-resolve', function (result, callback) {
                 if (!result) {
                     return callback();
                 }

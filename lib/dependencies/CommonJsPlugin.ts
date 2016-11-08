@@ -13,15 +13,17 @@ import NullFactory = require('../NullFactory');
 import RequireResolveDependencyParserPlugin = require('./RequireResolveDependencyParserPlugin');
 import CommonJsRequireDependencyParserPlugin = require('./CommonJsRequireDependencyParserPlugin');
 import BasicEvaluatedExpression = require('../BasicEvaluatedExpression');
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
+import Parser = require('../Parser')
 
 class CommonJsPlugin {
-    constructor(options) {
-        this.options = options;
+    constructor(public options) {
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const options = this.options;
-        compiler.plugin('compilation', (compilation, params) => {
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
             const normalModuleFactory = params.normalModuleFactory;
             const contextModuleFactory = params.contextModuleFactory;
 
@@ -43,8 +45,7 @@ class CommonJsPlugin {
             compilation.dependencyFactories.set(RequireHeaderDependency, new NullFactory());
             compilation.dependencyTemplates.set(RequireHeaderDependency, new RequireHeaderDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
-
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
                 if (typeof parserOptions.commonjs !== 'undefined' && !parserOptions.commonjs) {
                     return;
                 }

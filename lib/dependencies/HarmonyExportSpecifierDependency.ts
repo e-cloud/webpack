@@ -30,13 +30,8 @@ class Template {
 }
 
 class HarmonyExportSpecifierDependency extends NullDependency {
-    constructor(originModule, id, name, position, immutable) {
+    constructor(public originModule, public id, public  name, public position, public immutable) {
         super();
-        this.originModule = originModule;
-        this.id = id;
-        this.name = name;
-        this.position = position;
-        this.immutable = immutable;
     }
 
     getExports() {

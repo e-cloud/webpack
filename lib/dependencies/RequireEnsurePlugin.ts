@@ -8,10 +8,13 @@ import ConstDependency = require('./ConstDependency');
 import NullFactory = require('../NullFactory');
 import RequireEnsureDependenciesBlockParserPlugin = require('./RequireEnsureDependenciesBlockParserPlugin');
 import BasicEvaluatedExpression = require('../BasicEvaluatedExpression');
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
+import Parser = require('../Parser')
 
 class RequireEnsurePlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', (compilation, params) => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
             const normalModuleFactory = params.normalModuleFactory;
 
             compilation.dependencyFactories.set(RequireEnsureItemDependency, normalModuleFactory);
@@ -20,8 +23,7 @@ class RequireEnsurePlugin {
             compilation.dependencyFactories.set(RequireEnsureDependency, new NullFactory());
             compilation.dependencyTemplates.set(RequireEnsureDependency, new RequireEnsureDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
-
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
                 if (typeof parserOptions.requireEnsure !== 'undefined' && !parserOptions.requireEnsure) {
                     return;
                 }

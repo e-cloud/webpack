@@ -2,10 +2,13 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
+
 class MergeDuplicateChunksPlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', compilation => {
-            compilation.plugin('optimize-chunks-basic', chunks => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation) {
+            compilation.plugin('optimize-chunks-basic', function (chunks) {
                 const map = {};
                 chunks.slice().forEach(chunk => {
                     if (chunk.hasRuntime() || chunk.hasEntryModule()) {

@@ -2,18 +2,19 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Compilation = require('../Compilation')
+import Compiler = require('../Compiler')
 class OccurrenceOrderPlugin {
-    constructor(preferEntry) {
+    constructor(public preferEntry: boolean) {
         if (preferEntry !== undefined && typeof preferEntry !== 'boolean') {
             throw new Error('Argument should be a boolean.\nFor more info on this plugin, see https://webpack.github.io/docs/list-of-plugins.html');
         }
-        this.preferEntry = preferEntry;
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const preferEntry = this.preferEntry;
-        compiler.plugin('compilation', compilation => {
-            compilation.plugin('optimize-module-order', modules => {
+        compiler.plugin('compilation', function (compilation: Compilation) {
+            compilation.plugin('optimize-module-order', function (modules) {
                 function entryChunks(m) {
                     return m.chunks.map(c => {
                         const sum = (c.isInitial() ? 1 : 0) + (c.entryModule === m ? 1 : 0);

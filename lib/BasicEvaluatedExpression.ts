@@ -3,6 +3,23 @@
  Author Tobias Koppers @sokra
  */
 class BasicEvaluatedExpression {
+    range: {}
+    null: boolean
+    bool: boolean
+    string: boolean
+    number: boolean
+    regExp: boolean
+    identifier: boolean
+    prefix: {
+        asBool(): boolean
+    }
+    postfix: {
+        asBool(): boolean
+    }
+    options: {}
+    items: string[]
+    array: boolean
+
     constructor() {
         this.range = null;
     }

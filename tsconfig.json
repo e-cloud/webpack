@@ -2,12 +2,13 @@
   "compileOnSave": true,
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es6",
-    "noEmit": true,
+    "target": "es5",
+    "noEmit": false,
+    "sourceMap": true,
     "lib": [
       "es2016"
     ],
-    "declaration": true
+    "declaration": false
   },
   "exclude": [
     "node_modules"

@@ -2,15 +2,16 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import Module = require('./Module');
 import { RawSource } from 'webpack-sources'
+import Module = require('./Module');
+import ModuleDependency = require('./dependencies/ModuleDependency')
 
 class MultiModule extends Module {
-    constructor(context, dependencies, name) {
+    built: boolean
+    cacheable: boolean
+
+    constructor(public context: string, public dependencies: ModuleDependency[], public name: string) {
         super();
-        this.context = context;
-        this.dependencies = dependencies;
-        this.name = name;
         this.built = false;
         this.cacheable = true;
     }

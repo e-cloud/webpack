@@ -3,17 +3,28 @@
  Author Tobias Koppers @sokra
  */
 import compareLocations = require('./compareLocations')
-class Dependency {
+import Module = require('./Module')
+import { Hash } from 'crypto'
+
+abstract class Dependency {
+    module: Module
+    loc: any
+    userRequest: string
+    type: string
+
     constructor() {
         this.module = null;
     }
 
-    isEqualResource() /* other */ {
+    isEqualResource(other) {
         return false;
     }
 
     // Returns the referenced module and export
-    getReference() {
+    getReference(): {
+        module: Module
+        importedNames: any[] | boolean
+    } {
         if (!this.module) {
             return null;
         }
@@ -32,7 +43,7 @@ class Dependency {
         return null;
     }
 
-    updateHash(hash) {
+    updateHash(hash: Hash) {
         hash.update(`${this.module && this.module.id}`);
     }
 
@@ -40,7 +51,7 @@ class Dependency {
         this.module = null;
     }
 
-    static compare(a, b) {
+    static compare(a: Dependency, b: Dependency) {
         return Dependency.compareLocations(a.loc, b.loc);
     }
 

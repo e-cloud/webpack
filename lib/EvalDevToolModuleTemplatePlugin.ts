@@ -4,14 +4,16 @@
  */
 import { RawSource } from 'webpack-sources'
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
+import ModuleTemplate = require('./ModuleTemplate')
 
 class EvalDevToolModuleTemplatePlugin {
-    constructor(sourceUrlComment, moduleFilenameTemplate) {
-        this.sourceUrlComment = sourceUrlComment || '\n//# sourceURL=[url]';
-        this.moduleFilenameTemplate = moduleFilenameTemplate || 'webpack:///[resourcePath]?[loaders]';
+    constructor(
+        public sourceUrlComment = '\n//# sourceURL=[url]',
+        public moduleFilenameTemplate = 'webpack:///[resourcePath]?[loaders]'
+    ) {
     }
 
-    apply(moduleTemplate) {
+    apply(moduleTemplate: ModuleTemplate) {
         const self = this;
         moduleTemplate.plugin('module', function (source, module) {
             const content = source.source();
@@ -30,7 +32,7 @@ class EvalDevToolModuleTemplatePlugin {
             ].join('\n');
             return new RawSource(`eval(${JSON.stringify(content + footer)});`);
         });
-        moduleTemplate.plugin('hash', hash => {
+        moduleTemplate.plugin('hash', function (hash) {
             hash.update('EvalDevToolModuleTemplatePlugin');
             hash.update('2');
         });

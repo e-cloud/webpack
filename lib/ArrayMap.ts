@@ -3,6 +3,9 @@
  Author Tobias Koppers @sokra
  */
 class ArrayMap {
+    keys: any[]
+    values: any[]
+
     constructor() {
         this.keys = [];
         this.values = [];

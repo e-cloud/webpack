@@ -7,7 +7,15 @@ import Module = require('./Module');
 import crypto = require('crypto')
 
 class RawModule extends Module {
-    constructor(source, identifier, readableIdentifier) {
+    sourceStr: string
+    identifierStr: string
+    readableIdentifierStr: string
+    cacheable: boolean
+    built: boolean
+    builtTime: number
+    useSourceMap: boolean
+
+    constructor(source: string, identifier?: string, readableIdentifier?: string) {
         super();
         this.sourceStr = source;
         this.identifierStr = identifier || this.sourceStr;
@@ -22,10 +30,6 @@ class RawModule extends Module {
 
     readableIdentifier(requestShortener) {
         return requestShortener.shorten(this.readableIdentifierStr);
-    }
-
-    needRebuild() {
-        return false;
     }
 
     build(options, compilation, resolver, fs, callback) {
@@ -52,17 +56,15 @@ class RawModule extends Module {
         return hash.digest('hex');
     }
 
-    getAllModuleDependencies() {
-        return [];
-    }
-
     createTemplate() {
         return new RawModule(this.sourceStr, `template of ${this.id}`);
     }
 
-    getTemplateArguments() {
-        return [];
-    }
+    needRebuild() { return false }
+
+    getAllModuleDependencies() { return [] }
+
+    getTemplateArguments() { return [] }
 }
 
 export = RawModule;

@@ -12,10 +12,8 @@ class Template {
 }
 
 class UnsupportedDependency extends NullDependency {
-    constructor(request, range) {
+    constructor(public request, public range) {
         super();
-        this.request = request;
-        this.range = range;
     }
 
     static Template = Template

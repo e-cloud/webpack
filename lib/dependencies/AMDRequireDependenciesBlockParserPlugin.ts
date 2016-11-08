@@ -13,15 +13,15 @@ import LocalModulesHelpers = require('./LocalModulesHelpers');
 import ConstDependency = require('./ConstDependency');
 import getFunctionExpression = require('./getFunctionExpression');
 import UnsupportedFeatureWarning = require('../UnsupportedFeatureWarning');
+import Parser = require('../Parser')
 
 class AMDRequireDependenciesBlockParserPlugin {
-    constructor(options) {
-        this.options = options;
+    constructor(public options) {
     }
 
-    apply(parser) {
+    apply(parser: Parser) {
         const options = this.options;
-        parser.plugin('call require', function (expr) {
+        parser.plugin('call require', function (this: Parser, expr) {
             let param;
             let dep;
             let old;
@@ -63,7 +63,9 @@ class AMDRequireDependenciesBlockParserPlugin {
                         const fnData = getFunctionExpression(expr.arguments[1]);
                         if (fnData) {
                             this.inScope(
-                                fnData.fn.params.filter(i =>!['require', 'module', 'exports'].includes(i.name)),
+                                fnData.fn.params.filter(
+                                    i => !['require', 'module', 'exports'].includes(i.name)
+                                ),
                                 () => {
                                     if (fnData.fn.body.type === 'BlockStatement') {
                                         this.walkStatement(fnData.fn.body);

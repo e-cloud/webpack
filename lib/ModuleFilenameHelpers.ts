@@ -3,6 +3,7 @@
  Author Tobias Koppers @sokra
  */
 import crypto = require('crypto')
+import Module = require('./Module')
 
 const ModuleFilenameHelpers: any = {};
 
@@ -43,14 +44,18 @@ function getHash(str) {
     return hash.digest('hex').substr(0, 4);
 }
 
-function asRegExp(test) {
+function asRegExp(test): RegExp {
     if (typeof test === 'string') {
-        test = new RegExp(`^${test.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}`);
+        return new RegExp(`^${test.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}`);
     }
-    return test;
+    return test
 }
 
-ModuleFilenameHelpers.createFilename = function createFilename(module, moduleFilenameTemplate, requestShortener) {
+ModuleFilenameHelpers.createFilename = function createFilename(
+    module: string | Module,
+    moduleFilenameTemplate: string,
+    requestShortener
+) {
     let absoluteResourcePath;
     let hash;
     let identifier;
@@ -70,6 +75,7 @@ ModuleFilenameHelpers.createFilename = function createFilename(module, moduleFil
         shortIdentifier = module.readableIdentifier(requestShortener);
         identifier = requestShortener.shorten(module.identifier());
         moduleId = module.id;
+        // todo: no resourcePath on module
         absoluteResourcePath = module.resourcePath || module.identifier().split('!').pop();
         hash = getHash(identifier);
     }
@@ -100,7 +106,7 @@ ModuleFilenameHelpers.createFilename = function createFilename(module, moduleFil
         .replace(ModuleFilenameHelpers.REGEXP_ALL_LOADERS, allLoaders)
         .replace(ModuleFilenameHelpers.REGEXP_LOADERS, loaders)
         .replace(ModuleFilenameHelpers.REGEXP_QUERY, query)
-        .replace(ModuleFilenameHelpers.REGEXP_ID, moduleId)
+        .replace(ModuleFilenameHelpers.REGEXP_ID, moduleId as string)
         .replace(ModuleFilenameHelpers.REGEXP_HASH, hash);
 };
 
@@ -119,7 +125,7 @@ ModuleFilenameHelpers.createFooter = function createFooter(module, requestShorte
     }
 };
 
-ModuleFilenameHelpers.replaceDuplicates = function replaceDuplicates(array, fn, comparator) {
+ModuleFilenameHelpers.replaceDuplicates = function replaceDuplicates(array, fn, comparator?) {
     const countMap = {};
     const posMap = {};
     array.forEach((item, idx) => {

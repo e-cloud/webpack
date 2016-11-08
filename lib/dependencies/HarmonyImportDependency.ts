@@ -3,6 +3,7 @@
  Author Tobias Koppers @sokra
  */
 import ModuleDependency = require('./ModuleDependency');
+import Module = require('../Module')
 
 class Template {
     apply(dep, source, outputOptions, requestShortener) {
@@ -13,10 +14,8 @@ class Template {
 }
 
 class HarmonyImportDependency extends ModuleDependency {
-    constructor(request, importedVar, range) {
+    constructor(request, public importedVar, public range) {
         super(request);
-        this.range = range;
-        this.importedVar = importedVar;
     }
 
     getReference() {

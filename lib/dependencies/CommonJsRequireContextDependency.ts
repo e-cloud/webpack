@@ -6,10 +6,11 @@ import ContextDependency = require('./ContextDependency');
 import CriticalDependencyWarning = require('./CriticalDependencyWarning');
 
 class CommonJsRequireContextDependency extends ContextDependency {
-    constructor(request, recursive, regExp, range, valueRange) {
+    critical: boolean | string
+    optional: boolean
+
+    constructor(request, recursive, regExp, public range, public valueRange?) {
         super(request, recursive, regExp);
-        this.range = range;
-        this.valueRange = valueRange;
     }
 
     getWarnings() {
@@ -17,10 +18,10 @@ class CommonJsRequireContextDependency extends ContextDependency {
             return [new CriticalDependencyWarning(this.critical)];
         }
     }
+
+    static Template = require('./ContextDependencyTemplateAsRequireCall')
 }
 
 CommonJsRequireContextDependency.prototype.type = 'cjs require context';
 
 export = CommonJsRequireContextDependency;
-
-CommonJsRequireContextDependency.Template = require('./ContextDependencyTemplateAsRequireCall');

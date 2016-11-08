@@ -4,9 +4,10 @@
  */
 import { ConcatSource } from 'webpack-sources'
 import Template = require('./Template');
+import HotUpdateChunkTemplate = require('./HotUpdateChunkTemplate')
 
 class JsonpHotUpdateChunkTemplatePlugin {
-    apply(hotUpdateChunkTemplate) {
+    apply(hotUpdateChunkTemplate: HotUpdateChunkTemplate) {
         hotUpdateChunkTemplate.plugin('render', function (modulesSource, modules, removedModules, hash, id) {
             const jsonpFunction = this.outputOptions.hotUpdateFunction;
             const source = new ConcatSource();

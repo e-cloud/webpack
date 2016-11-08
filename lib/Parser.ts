@@ -5,6 +5,16 @@
 import acorn = require('acorn');
 import Tapable = require('tapable');
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
+import Module = require('./Module')
+import DependenciesBlock = require('./DependenciesBlock')
+
+interface ASTOPTION {
+    ranges: boolean
+    locations: boolean
+    ecmaVersion: number
+    sourceType: string
+    onComment: any[]
+}
 
 const POSSIBLE_AST_OPTIONS = [
     {
@@ -18,9 +28,23 @@ const POSSIBLE_AST_OPTIONS = [
         ecmaVersion: 6,
         sourceType: 'script'
     }
-];
+] as ASTOPTION[];
+
+interface ParserScope {
+    inTry: boolean
+    inShorthand?: boolean
+    definitions: string[]
+    renames: {}
+}
 
 class Parser extends Tapable {
+    options: {}
+    scope: ParserScope
+    state: {
+        current: DependenciesBlock
+        module: Module
+    }
+
     constructor(options) {
         super();
         this.options = options;
@@ -38,7 +62,7 @@ class Parser extends Tapable {
             return [startRange[0], endRange[1]];
         }
 
-        this.plugin('evaluate Literal', expr => {
+        this.plugin('evaluate Literal', function (expr) {
             switch (typeof expr.value) {
                 case 'number':
                     return new BasicEvaluatedExpression().setNumber(expr.value).setRange(expr.range);
@@ -1057,7 +1081,7 @@ class Parser extends Tapable {
 
     inScope(params, fn) {
         const oldScope = this.scope;
-        const _this = this;
+        const self = this;
         this.scope = {
             inTry: false,
             inShorthand: false,
@@ -1066,18 +1090,18 @@ class Parser extends Tapable {
         };
         params.forEach(param => {
             if (typeof param !== 'string') {
-                param = _this.enterPattern(param, param => {
-                    _this.scope.renames[`$${param}`] = undefined;
-                    _this.scope.definitions.push(param);
+                param = self.enterPattern(param, param => {
+                    self.scope.renames[`$${param}`] = undefined;
+                    self.scope.definitions.push(param);
                 });
             }
             else {
-                _this.scope.renames[`$${param}`] = undefined;
-                _this.scope.definitions.push(param);
+                self.scope.renames[`$${param}`] = undefined;
+                self.scope.definitions.push(param);
             }
         });
         fn();
-        _this.scope = oldScope;
+        self.scope = oldScope;
     }
 
     enterPattern(pattern, onIdent) {

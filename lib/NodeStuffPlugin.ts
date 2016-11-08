@@ -9,19 +9,26 @@ import ConstDependency = require('./dependencies/ConstDependency');
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import UnsupportedFeatureWarning = require('./UnsupportedFeatureWarning');
 import NullFactory = require('./NullFactory');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
+import Parser = require('./Parser')
 
 class NodeStuffPlugin {
-    constructor(options) {
-        this.options = options;
+    constructor(
+        public options: {
+            __filename: string | boolean
+            __dirname: string | boolean
+        }
+    ) {
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const options = this.options;
-        compiler.plugin('compilation', (compilation, params) => {
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
             compilation.dependencyFactories.set(ConstDependency, new NullFactory());
             compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', (parser, parserOptions) => {
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
 
                 if (parserOptions.node === false) {
                     return;

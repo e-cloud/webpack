@@ -3,11 +3,10 @@
  Author Tobias Koppers @sokra
  */
 import { ConcatSource } from 'webpack-sources'
-
-import Template = require('./Template');
+import ChunkTemplate = require('./ChunkTemplate')
 
 class JsonpChunkTemplatePlugin {
-    apply(chunkTemplate) {
+    apply(chunkTemplate: ChunkTemplate) {
         chunkTemplate.plugin('render', function (modules, chunk) {
             const jsonpFunction = this.outputOptions.jsonpFunction;
             const source = new ConcatSource();

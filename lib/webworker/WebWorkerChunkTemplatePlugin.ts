@@ -4,9 +4,10 @@
  */
 import { ConcatSource } from 'webpack-sources'
 import Template = require('../Template');
+import ChunkTemplate = require('../ChunkTemplate')
 
 class WebWorkerChunkTemplatePlugin {
-    apply(chunkTemplate) {
+    apply(chunkTemplate: ChunkTemplate) {
         chunkTemplate.plugin('render', function (modules, chunk) {
             const chunkCallbackName = this.outputOptions.chunkCallbackName || Template.toIdentifier(`webpackChunk${this.outputOptions.library || ''}`);
             const source = new ConcatSource();

@@ -5,11 +5,14 @@
 import ConstDependency = require('./dependencies/ConstDependency');
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import NullFactory = require('./NullFactory');
+import Compilation = require('./Compilation')
+import Compiler = require('./Compiler')
+import Parser = require('./Parser')
 
 class UseStrictPlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', (compilation, params) => {
-            params.normalModuleFactory.plugin('parser', parser => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
+            params.normalModuleFactory.plugin('parser', function (parser: Parser) {
                 parser.plugin('program', function (ast) {
                     const body = ast.body[0];
                     if (body

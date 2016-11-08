@@ -3,6 +3,7 @@
  Author Tobias Koppers @sokra
  */
 import { ConcatSource, OriginalSource } from 'webpack-sources'
+import Compilation = require('./Compilation')
 
 function accessorToObjectAccess(accessor) {
     return accessor.map(a => `[${JSON.stringify(a)}]`).join('');
@@ -20,14 +21,17 @@ function accessorAccess(base, accessor) {
 }
 
 class UmdMainTemplatePlugin {
-    constructor(name, options) {
-        this.name = name;
+    auxiliaryComment: {}
+    optionalAmdExternalAsGlobal: boolean
+    namedDefine: boolean
+
+    constructor(public name: string, options) {
         this.optionalAmdExternalAsGlobal = options.optionalAmdExternalAsGlobal;
         this.namedDefine = options.namedDefine;
         this.auxiliaryComment = options.auxiliaryComment;
     }
 
-    apply(compilation) {
+    apply(compilation: Compilation) {
         const mainTemplate = compilation.mainTemplate;
         compilation.templatesPlugin('render-with-entry', (source, chunk, hash) => {
             let externals = chunk.modules.filter(m => m.external);
@@ -110,35 +114,49 @@ class UmdMainTemplatePlugin {
                 amdFactory = 'factory';
             }
 
-            return new ConcatSource(new OriginalSource(`(function webpackUniversalModuleDefinition(root, factory) {\n${this.auxiliaryComment && typeof this.auxiliaryComment === 'string'
-                ? '   //' + this.auxiliaryComment + '\n'
-                : this.auxiliaryComment.commonjs2
-                ? '   //' + this.auxiliaryComment.commonjs2 + '\n'
-                : ''}\tif(typeof exports === 'object' && typeof module === 'object')\n\t\tmodule.exports = factory(${externalsRequireArray('commonjs2')});\n${this.auxiliaryComment && typeof this.auxiliaryComment === 'string'
-                ? '   //' + this.auxiliaryComment + '\n'
-                : this.auxiliaryComment.amd
-                ? '   //' + this.auxiliaryComment.amd + '\n'
-                : ''}\telse if(typeof define === 'function' && define.amd)\n${requiredExternals.length > 0
-                ? this.name && this.namedDefine === true
-                ? '\t\tdefine(' + libraryName(this.name) + ', ' + externalsDepsArray(requiredExternals) + ', ' + amdFactory + ');\n'
-                : '\t\tdefine(' + externalsDepsArray(requiredExternals) + ', ' + amdFactory + ');\n'
-                : this.name && this.namedDefine === true
-                ? '\t\tdefine(' + libraryName(this.name) + ', [], ' + amdFactory + ');\n'
-                : '\t\tdefine([], ' + amdFactory + ');\n'}${this.name
-                ? (this.auxiliaryComment && typeof this.auxiliaryComment === 'string'
-                ? '   //' + this.auxiliaryComment + '\n'
-                : this.auxiliaryComment.commonjs
-                ? '   //' + this.auxiliaryComment.commonjs + '\n'
-                : '') + '\telse if(typeof exports === \'object\')\n' + '\t\texports[' + libraryName(this.name) + '] = factory(' + externalsRequireArray('commonjs') + ');\n' + (this.auxiliaryComment && typeof this.auxiliaryComment === 'string'
-                ? '   //' + this.auxiliaryComment + '\n'
-                : this.auxiliaryComment.root
-                ? '   //' + this.auxiliaryComment.root + '\n'
-                : '') + '\telse\n' + '\t\t' + replaceKeys(accessorAccess('root', this.name)) + ' = factory(' + externalsRootArray(externals) + ');\n'
-                : '\telse {\n' + (externals.length > 0
-                ? '\t\tvar a = typeof exports === \'object\' ? factory(' + externalsRequireArray('commonjs') + ') : factory(' + externalsRootArray(externals) + ');\n'
-                : '\t\tvar a = factory();\n') + '\t\tfor(var i in a) (typeof exports === \'object\' ? exports : root)[i] = a[i];\n' + '\t}\n'}})(this, function(${externalsArguments(externals)}) {\nreturn `, 'webpack/universalModuleDefinition'), source, '\n});\n');
-        }.bind(this));
-        mainTemplate.plugin('global-hash-paths', function (paths) {
+            return new ConcatSource(
+                new OriginalSource(`
+(function webpackUniversalModuleDefinition(root, factory) {
+    ${normalizeAuxiliaryComment(this.auxiliaryComment, 'commonjs2')}
+    if(typeof exports === "object" && typeof module === "object")
+        module.exports = factory(${externalsRequireArray('commonjs2')});
+    ${normalizeAuxiliaryComment(this.auxiliaryComment, 'amd')}
+    else if(typeof define === "function" && define.amd)
+` +
+                    (requiredExternals.length > 0
+                            ? (this.name && this.namedDefine === true
+                                ? `        define(${libraryName(this.name)}, ${externalsDepsArray(requiredExternals)}, ${amdFactory});`
+                                : `        define(${externalsDepsArray(requiredExternals)}, ${amdFactory});`
+                        )
+                            : (this.name && this.namedDefine === true
+                                ? `        define(${libraryName(this.name)}, [], ${amdFactory});`
+                                : `        define([], ${amdFactory});`
+                        )
+                    ) +
+                    (this.name
+                        ? `
+    ${normalizeAuxiliaryComment(this.auxiliaryComment, 'commonjs')}
+    else if(typeof exports === "object")
+        exports[${libraryName(this.name)}] = factory(${externalsRequireArray('commonjs')});
+    ${normalizeAuxiliaryComment(this.auxiliaryComment, 'root')}
+    else
+        ${replaceKeys(accessorAccess('root', this.name))} = factory(${externalsRootArray(externals)});
+`
+                        : `
+    else {
+${(externals.length > 0
+                        ? `        var a = typeof exports === "object" ? factory(${externalsRequireArray('commonjs')}) : factory(${externalsRootArray(externals)});`
+                        : '        var a = factory();')}
+        for(var i in a) (typeof exports === "object" ? exports : root)[i] = a[i];
+    }
+`)
+                    +
+                    `})(this, function(${externalsArguments(externals)}) {\nreturn `, 'webpack/universalModuleDefinition'),
+                source,
+                '\n});\n'
+            );
+        });
+        mainTemplate.plugin('global-hash-paths', paths => {
             if (this.name) {
                 paths = paths.concat(this.name);
             }
@@ -152,3 +170,20 @@ class UmdMainTemplatePlugin {
 }
 
 export = UmdMainTemplatePlugin;
+
+function isString(val) {
+    return typeof val === 'string'
+}
+
+function normalizeAuxiliaryComment(auxiliaryComment, type) {
+    if (auxiliaryComment) {
+        if (isString(auxiliaryComment)) {
+            return `//${auxiliaryComment}`
+        }
+        else if (auxiliaryComment[type]) {
+            return `//${auxiliaryComment[type]}`
+        }
+    }
+
+    return ''
+}

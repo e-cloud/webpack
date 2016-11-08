@@ -2,16 +2,16 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Gajus Kuizinas @gajus
  */
+import Ajv = require('ajv')
 const webpackOptionsSchema = require('../schemas/webpackOptionsSchema.json')
 
 class WebpackOptionsValidationError extends Error {
-    constructor(validationErrors) {
+    constructor(public validationErrors: Ajv.ErrorObject[]) {
         super();
         Error.captureStackTrace(this, WebpackOptionsValidationError);
         this.name = 'WebpackOptionsValidationError';
         this.message = `Invalid configuration object. Webpack has been initialised using a configuration object that does not match the API schema.\n${validationErrors.map(
             err => ' - ' + indent(WebpackOptionsValidationError.formatValidationError(err), '   ', false)).join('\n')}`;
-        this.validationErrors = validationErrors;
     }
 
     static formatValidationError(err) {
@@ -35,17 +35,16 @@ plugins: [
                     return `${baseMessage}
 For typos: please correct them.
 For loader options: webpack 2 no longer allows custom properties in configuration.
-Loaders should be updated to allow passing options via loader options in module.rules.
-Until loaders are updated one can use the LoaderOptionsPlugin to pass these options to the loader:
-plugins: [
+  Loaders should be updated to allow passing options via loader options in module.rules.
+  Until loaders are updated one can use the LoaderOptionsPlugin to pass these options to the loader:
+  plugins: [
     new webpack.LoaderOptionsPlugin({
-        // test: /\\.xxx$/,
-        // may apply this only for some modules
-        options: {
-            ${err.params.additionalProperty}: ...
-        }
+      // test: /\\.xxx$/, // may apply this only for some modules
+      options: {
+        ${err.params.additionalProperty}: ...
+      }
     })
-]`;
+  ]`;
                 }
                 return baseMessage;
             case 'oneOf':
@@ -84,19 +83,76 @@ plugins: [
         }
     }
 
-    static formatSchema = formatSchema
+    static formatSchema = function formatSchema(schema: AjvJsonSchema, prevSchemas: AjvJsonSchema[] = []) {
+        function formatInnerSchema(innerSchema, addSelf?) {
+            if (!addSelf) {
+                return formatSchema(innerSchema, prevSchemas);
+            }
+            if (prevSchemas.includes(innerSchema)) {
+                return '(recursive)';
+            }
+            return formatSchema(innerSchema, prevSchemas.concat(schema));
+        }
+
+        switch (schema.type) {
+            case 'string':
+                return 'string';
+            case 'boolean':
+                return 'boolean';
+            case 'number':
+                return 'number';
+            case 'object':
+                if (schema.properties) {
+                    const required = schema.required || [];
+                    return `object { ${Object.keys(schema.properties).map(property => {
+                        if (!required.includes(property)) {
+                            return property + '?';
+                        }
+                        return property;
+                    }).concat(schema.additionalProperties ? ['...'] : []).join(', ')} }`;
+                }
+                if (schema.additionalProperties) {
+                    return `object { <key>: ${formatInnerSchema(schema.additionalProperties)} }`;
+                }
+                return 'object';
+            case 'array':
+                return `[${formatInnerSchema(schema.items)}]`;
+        }
+        switch (schema.instanceof) {
+            case 'Function':
+                return 'function';
+            case 'RegExp':
+                return 'RegExp';
+        }
+        if (schema.$ref) {
+            return formatInnerSchema(getSchemaPart(schema.$ref), true);
+        }
+        if (schema.allOf) {
+            return schema.allOf.map(formatInnerSchema).join(' & ');
+        }
+        if (schema.oneOf) {
+            return schema.oneOf.map(formatInnerSchema).join(' | ');
+        }
+        if (schema.anyOf) {
+            return schema.anyOf.map(formatInnerSchema).join(' | ');
+        }
+        if (schema.enum) {
+            return schema.enum.map(item => JSON.stringify(item)).join(' | ');
+        }
+        return JSON.stringify(schema, null, 2);
+    }
 }
 
 export = WebpackOptionsValidationError;
 
-function getSchemaPart(path, parents = 0, additionalPath) {
+function getSchemaPart(path, parents = 0, additionalPath?) {
     path = path.split('/');
     path = path.slice(0, path.length - parents);
     if (additionalPath) {
         additionalPath = additionalPath.split('/');
         path = path.concat(additionalPath);
     }
-    let schemaPart = webpackOptionsSchema;
+    let schemaPart = <AjvJsonSchema>webpackOptionsSchema;
     for (let i = 1; i < path.length; i++) {
         const inner = schemaPart[path[i]];
         if (inner) {
@@ -116,7 +172,7 @@ function getSchemaPartText2(path, parents, additionalPath) {
     return schemaText;
 }
 
-function getSchemaPartText(schemaPart, additionalPath) {
+function getSchemaPartText(schemaPart, additionalPath?) {
     if (additionalPath) {
         for (let i = 0; i < additionalPath.length; i++) {
             const inner = schemaPart[additionalPath[i]];
@@ -131,65 +187,6 @@ function getSchemaPartText(schemaPart, additionalPath) {
         schemaText += `\n${schemaPart.description}`;
     }
     return schemaText;
-}
-
-function formatSchema(schema, prevSchemas = []) {
-    function formatInnerSchema(innerSchema, addSelf) {
-        if (!addSelf) {
-            return formatSchema(innerSchema, prevSchemas);
-        }
-        if (prevSchemas.includes(innerSchema)) {
-            return '(recursive)';
-        }
-        return formatSchema(innerSchema, prevSchemas.concat(schema));
-    }
-
-    switch (schema.type) {
-        case 'string':
-            return 'string';
-        case 'boolean':
-            return 'boolean';
-        case 'number':
-            return 'number';
-        case 'object':
-            if (schema.properties) {
-                const required = schema.required || [];
-                return `object { ${Object.keys(schema.properties).map(property => {
-                    if (!required.includes(property)) {
-                        return property + '?';
-                    }
-                    return property;
-                }).concat(schema.additionalProperties ? ['...'] : []).join(', ')} }`;
-            }
-            if (schema.additionalProperties) {
-                return `object { <key>: ${formatInnerSchema(schema.additionalProperties)} }`;
-            }
-            return 'object';
-        case 'array':
-            return `[${formatInnerSchema(schema.items)}]`;
-    }
-    switch (schema.instanceof) {
-        case 'Function':
-            return 'function';
-        case 'RegExp':
-            return 'RegExp';
-    }
-    if (schema.$ref) {
-        return formatInnerSchema(getSchemaPart(schema.$ref), true);
-    }
-    if (schema.allOf) {
-        return schema.allOf.map(formatInnerSchema).join(' & ');
-    }
-    if (schema.oneOf) {
-        return schema.oneOf.map(formatInnerSchema).join(' | ');
-    }
-    if (schema.anyOf) {
-        return schema.anyOf.map(formatInnerSchema).join(' | ');
-    }
-    if (schema.enum) {
-        return schema.enum.map(item => JSON.stringify(item)).join(' | ');
-    }
-    return JSON.stringify(schema, null, 2);
 }
 
 function indent(str, prefix, firstLine) {

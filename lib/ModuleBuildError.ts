@@ -2,10 +2,14 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Module = require('./Module')
+
 const loaderFlag = 'LOADER_EXECUTION';
 
 class ModuleBuildError extends Error {
-    constructor(module, err) {
+    details: string
+
+    constructor(public module: Module, public err: Error) {
         super();
         Error.captureStackTrace(this, ModuleBuildError);
         this.name = 'ModuleBuildError';
@@ -37,8 +41,6 @@ class ModuleBuildError extends Error {
                 this.message += err;
             }
         }
-        this.module = module;
-        this.error = err;
     }
 }
 

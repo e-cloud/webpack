@@ -4,15 +4,17 @@
  */
 import { ConcatSource } from 'webpack-sources'
 import TemplateArgumentDependency = require('../dependencies/TemplateArgumentDependency');
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
 
 class DedupePlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', compilation => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation) {
             compilation.notCacheable = 'DedupePlugin';
 
             compilation.dependencyTemplates.set(TemplateArgumentDependency, new TemplateArgumentDependency.Template());
 
-            compilation.plugin('after-optimize-tree', (chunks, modules) => {
+            compilation.plugin('after-optimize-tree', function (chunks, modules) {
                 const modulesByHash = {};
                 const allDups = [];
                 modules.forEach(module => {
@@ -105,7 +107,7 @@ class DedupePlugin {
                 return commonModules.filter(module => newModules.includes(module));
             }
 
-            compilation.moduleTemplate.plugin('package', (moduleSource, module, chunk) => {
+            compilation.moduleTemplate.plugin('package', function (moduleSource, module, chunk) {
                 if (!module.rootDuplicatesChunks || !chunk) {
                     return moduleSource;
                 }
@@ -146,7 +148,7 @@ class DedupePlugin {
                     return source;
                 }
             });
-            compilation.plugin('chunk-hash', (chunk, hash) => {
+            compilation.plugin('chunk-hash', function (chunk, hash) {
                 if (chunk.__DedupePluginHasDeduplicatedModules) {
                     hash.update('DedupePlugin (deduplication code)');
                 }

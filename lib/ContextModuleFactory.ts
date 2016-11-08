@@ -7,14 +7,19 @@ import path = require('path');
 import Tapable = require('tapable');
 import ContextModule = require('./ContextModule');
 import ContextElementDependency = require('./dependencies/ContextElementDependency');
+import ContextDependency = require('./dependencies/ContextDependency')
 
 class ContextModuleFactory extends Tapable {
-    constructor(resolvers) {
+    constructor(public resolvers) {
         super();
-        this.resolvers = resolvers;
     }
 
-    create(data, callback) {
+    create(
+        data: {
+            context: string
+            dependencies: ContextDependency[]
+        }, callback
+    ) {
         const module = this;
         const context = data.context;
         const dependencies = data.dependencies;
@@ -49,7 +54,8 @@ class ContextModuleFactory extends Tapable {
             const idx = request.lastIndexOf('!');
             if (idx >= 0) {
                 loaders = request.substr(0, idx + 1);
-                for (var i = 0; i < loaders.length && loaders[i] === '!'; i++) {
+                let i = 0
+                for (; i < loaders.length && loaders[i] === '!'; i++) {
                     loadersPrefix += '!';
                 }
                 loaders = loaders.substr(i).replace(/!+$/, '').replace(/!!+/g, '!');
@@ -81,13 +87,13 @@ class ContextModuleFactory extends Tapable {
                     async.map(loaders, (loader, callback) => {
                         resolvers.loader.resolve({}, context, loader, (err, result) => {
                             if (err) {
-                                return callback(err);
+                                return callback(err, null);
                             }
                             callback(null, result);
                         });
                     }, callback);
                 }
-            ], (err, result) => {
+            ], (err, result: string[][]) => {
                 if (err) {
                     return callback(err);
                 }
@@ -169,7 +175,7 @@ class ContextModuleFactory extends Tapable {
                             }
                         });
                     },
-                    (err, result) => {
+                    (err, result: string[]) => {
                         if (err) {
                             return callback(err);
                         }
@@ -178,7 +184,11 @@ class ContextModuleFactory extends Tapable {
                             return callback(null, []);
                         }
 
-                        callback(null, result.filter(i => !!i).reduce((a, i) => a.concat(i), []));
+                        callback(
+                            null,
+                            result.filter(i => !!i)
+                                .reduce((a, i) => a.concat(i), [])
+                        );
                     }
                 );
             });

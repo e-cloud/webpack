@@ -5,7 +5,14 @@
 import path = require('path');
 
 class RequestShortener {
-    constructor(directory) {
+    currentDirectoryRegExp: RegExp
+    parentDirectoryRegExp: RegExp
+    buildinsAsModule: boolean
+    buildinsRegExp: RegExp
+    nodeModulesRegExp: RegExp
+    indexJsRegExp: RegExp
+
+    constructor(directory: string) {
         directory = directory.replace(/\\/g, '/');
         let parentDirectory = path.dirname(directory);
         if (/[\/\\]$/.test(directory)) {
@@ -39,7 +46,7 @@ class RequestShortener {
         this.indexJsRegExp = /\/index.js(!|\?|\(query\))/g;
     }
 
-    shorten(request) {
+    shorten(request: string) {
         if (!request) {
             return request;
         }

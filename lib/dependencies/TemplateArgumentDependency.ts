@@ -3,8 +3,9 @@
  Author Tobias Koppers @sokra
  */
 
+import Dependency = require('../Dependency')
 class Template {
-    apply(dep, source, outputOptions, requestShortener) {
+    apply(dep, source, outputOptions, requestShortener, dependencyTemplates) {
         const d = dep.dep;
         const template = dependencyTemplates.get(d.constructor);
         if (!template) {
@@ -17,10 +18,9 @@ class Template {
     }
 }
 
-class TemplateArgumentDependency {
-    constructor(name, dep) {
-        this.name = name;
-        this.dep = dep;
+class TemplateArgumentDependency extends Dependency {
+    constructor(public name, public dep) {
+        super()
     }
 
     updateHash(hash) {

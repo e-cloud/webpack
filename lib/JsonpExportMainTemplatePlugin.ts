@@ -3,13 +3,13 @@
  Author Tobias Koppers @sokra
  */
 import { ConcatSource } from 'webpack-sources'
+import Compilation = require('./Compilation')
 
 class JsonpExportMainTemplatePlugin {
-    constructor(name) {
-        this.name = name;
+    constructor(public name: string) {
     }
 
-    apply(compilation) {
+    apply(compilation: Compilation) {
         const mainTemplate = compilation.mainTemplate;
         compilation.templatesPlugin('render-with-entry', (source, chunk, hash) => {
             const name = mainTemplate.applyPluginsWaterfall('asset-path', this.name || '', {

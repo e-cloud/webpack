@@ -2,15 +2,22 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
 class AggressiveMergingPlugin {
-    constructor(options) {
+    constructor(
+        public options: {
+            minSizeReduce: number
+            entryChunkMultiplicator: number
+            moveToParents: boolean
+        } = {}
+    ) {
         if (options !== undefined && typeof options !== 'object' || Array.isArray(options)) {
             throw new Error('Argument should be an options object. To use defaults, pass in nothing.\nFor more info on options, see https://webpack.github.io/docs/list-of-plugins.html');
         }
-        this.options = options || {};
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const options = this.options;
         const minSizeReduce = options.minSizeReduce || 1.5;
 
@@ -19,8 +26,8 @@ class AggressiveMergingPlugin {
                 .reduce((a, b) => a + b, 0);
         }
 
-        compiler.plugin('compilation', compilation => {
-            compilation.plugin('optimize-chunks-advanced', chunks => {
+        compiler.plugin('compilation', function (compilation: Compilation) {
+            compilation.plugin('optimize-chunks-advanced', function (chunks) {
                 let combinations = [];
                 chunks.forEach((a, idx) => {
                     if (a.isInitial()) {

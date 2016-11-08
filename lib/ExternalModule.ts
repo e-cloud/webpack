@@ -5,15 +5,19 @@
 import { OriginalSource, RawSource } from 'webpack-sources'
 import Module = require('./Module');
 import WebpackMissingModule = require('./dependencies/WebpackMissingModule');
+import Chunk = require('./Chunk')
 
 class ExternalModule extends Module {
-    constructor(request, type) {
+    chunkCondition
+    built: boolean
+    builtTime: number
+    optional: boolean
+    useSourceMap: boolean
+    external: boolean
+
+    constructor(public request: {} | String[], public type: string) {
         super();
-        this.chunkCondition = function (chunk) {
-            return chunk.hasEntryModule();
-        };
-        this.request = request;
-        this.type = type;
+        this.chunkCondition = (chunk: Chunk) => chunk.hasEntryModule();
         this.built = false;
     }
 

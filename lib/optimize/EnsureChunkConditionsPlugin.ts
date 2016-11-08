@@ -2,10 +2,13 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Compilation = require('../Compilation')
+import Compiler = require('../Compiler')
+
 class EnsureChunkConditionsPlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', compilation => {
-            compilation.plugin(['optimize-chunks-basic', 'optimize-extracted-chunks-basic'], chunks => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation) {
+            compilation.plugin(['optimize-chunks-basic', 'optimize-extracted-chunks-basic'], function (chunks) {
                 let changed = false;
                 chunks.forEach(chunk => {
                     chunk.modules.slice().forEach(module => {

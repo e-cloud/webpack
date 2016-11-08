@@ -46,6 +46,7 @@ jspm_packages
 
 # custom
 /examples/*/js
+lib/**/*.map
 
 # IDE
 .DS_Store

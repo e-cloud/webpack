@@ -3,15 +3,17 @@
  Author Tobias Koppers @sokra
  */
 import LoaderDependency = require('./LoaderDependency');
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
 
 class LoaderPlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', function (compilation, params) {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
             const normalModuleFactory = params.normalModuleFactory;
 
             compilation.dependencyFactories.set(LoaderDependency, normalModuleFactory);
         });
-        compiler.plugin('compilation', function (compilation) {
+        compiler.plugin('compilation', function (compilation: Compilation) {
             compilation.plugin('normal-module-loader', function (loaderContext, module) {
                 loaderContext.loadModule = function loadModule(request, callback) {
                     const dep = new LoaderDependency(request);
@@ -31,7 +33,7 @@ class LoaderPlugin {
                             next();
                         }
 
-                        function next(err) {
+                        function next(err?) {
                             if (err) {
                                 return callback(err);
                             }
@@ -54,7 +56,7 @@ class LoaderPlugin {
                                 map = moduleSource.map();
                                 source = moduleSource.source();
                             }
-                            if (dep.module.fileDependencies) {
+                            if ((dep.module).fileDependencies) {
                                 dep.module.fileDependencies.forEach(function (dep) {
                                     loaderContext.addDependency(dep);
                                 });

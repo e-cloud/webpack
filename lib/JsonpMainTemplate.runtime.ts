@@ -24,7 +24,7 @@ export = function () {
 
     function hotDownloadManifest() {
         // eslint-disable-line no-unused-vars
-        return new Promise(function (resolve, reject) {
+        return new Promise((resolve, reject) => {
             if (typeof XMLHttpRequest === 'undefined') {
                 return reject(new Error('No browser support'));
             }
@@ -37,7 +37,7 @@ export = function () {
             } catch (err) {
                 return reject(err);
             }
-            request.onreadystatechange = function () {
+            request.onreadystatechange = () => {
                 if (request.readyState !== 4) {
                     return;
                 }

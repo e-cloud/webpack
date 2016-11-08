@@ -2,12 +2,13 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Compiler = require('./Compiler')
+
 class WatchIgnorePlugin {
-    constructor(paths) {
-        this.paths = paths;
+    constructor(protected paths: string[]) {
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         compiler.plugin(
             'after-environment', () => {
                 compiler.watchFileSystem = new IgnoringWatchFileSystem(compiler.watchFileSystem, this.paths);
@@ -19,9 +20,7 @@ class WatchIgnorePlugin {
 export = WatchIgnorePlugin;
 
 class IgnoringWatchFileSystem {
-    constructor(wfs, paths) {
-        this.wfs = wfs;
-        this.paths = paths;
+    constructor(protected wfs, protected paths) {
     }
 
     watch(files, dirs, missing, startTime, options, callback, callbackUndelayed) {
@@ -58,7 +57,8 @@ class IgnoringWatchFileSystem {
                 );
 
                 callback(err, filesModified, dirsModified, missingModified, fileTimestamps, dirTimestamps);
-            }, callbackUndelayed
+            },
+            callbackUndelayed
         );
     }
 }

@@ -5,14 +5,15 @@
 import ModuleDependency = require('./ModuleDependency');
 
 class RequireResolveDependency extends ModuleDependency {
-    constructor(request, range) {
+    weak: boolean
+
+    constructor(request, public range) {
         super(request);
-        this.range = range;
     }
+
+    static Template = require('./ModuleDependencyTemplateAsId')
 }
 
 RequireResolveDependency.prototype.type = 'require.resolve';
 
 export = RequireResolveDependency;
-
-RequireResolveDependency.Template = require('./ModuleDependencyTemplateAsId');

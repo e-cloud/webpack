@@ -6,9 +6,10 @@ import NodeWatchFileSystem = require('./NodeWatchFileSystem');
 import NodeOutputFileSystem = require('./NodeOutputFileSystem');
 import NodeJsInputFileSystem = require('enhanced-resolve/lib/NodeJsInputFileSystem');
 import CachedInputFileSystem = require('enhanced-resolve/lib/CachedInputFileSystem');
+import Compiler = require('../Compiler')
 
 class NodeEnvironmentPlugin {
-    apply(compiler) {
+    apply(compiler: Compiler) {
         compiler.inputFileSystem = new NodeJsInputFileSystem();
         const inputFileSystem = compiler.inputFileSystem = new CachedInputFileSystem(compiler.inputFileSystem, 60000);
         compiler.resolvers.normal.fileSystem = compiler.inputFileSystem;
@@ -16,7 +17,7 @@ class NodeEnvironmentPlugin {
         compiler.resolvers.loader.fileSystem = compiler.inputFileSystem;
         compiler.outputFileSystem = new NodeOutputFileSystem();
         compiler.watchFileSystem = new NodeWatchFileSystem(compiler.inputFileSystem);
-        compiler.plugin('before-run', function (compiler, callback) {
+        compiler.plugin('before-run', function (compiler: Compiler, callback) {
             if (compiler.inputFileSystem === inputFileSystem) {
                 inputFileSystem.purge();
             }

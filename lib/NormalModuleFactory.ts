@@ -28,16 +28,17 @@ function loaderToIdent(data) {
 }
 
 class NormalModuleFactory extends Tapable {
-    constructor(context, resolvers, options) {
+    ruleSet: RuleSet
+    parserCache: {}
+
+    constructor(public context: string = '', public resolvers, options) {
         super();
-        this.resolvers = resolvers;
         this.ruleSet = new RuleSet(options.rules || options.loaders);
-        this.context = context || '';
         this.parserCache = {};
         this.plugin('factory', function () {
-            const _this = this;
+            const self = this;
             return (result, callback) => {
-                const resolver = _this.applyPluginsWaterfall0('resolver', null);
+                const resolver = self.applyPluginsWaterfall0('resolver', null);
 
                 // Ignored
                 if (!resolver) {
@@ -59,7 +60,7 @@ class NormalModuleFactory extends Tapable {
                         return callback(null, data);
                     }
 
-                    _this.applyPluginsAsyncWaterfall('after-resolve', data, (err, result) => {
+                    self.applyPluginsAsyncWaterfall('after-resolve', data, (err, result) => {
                         if (err) {
                             return callback(err);
                         }
@@ -69,7 +70,7 @@ class NormalModuleFactory extends Tapable {
                             return callback();
                         }
 
-                        let createdModule = _this.applyPluginsBailResult('create-module', result);
+                        let createdModule = self.applyPluginsBailResult('create-module', result);
                         if (!createdModule) {
 
                             if (!result.request) {
@@ -79,14 +80,14 @@ class NormalModuleFactory extends Tapable {
                             createdModule = new NormalModule(result.request, result.userRequest, result.rawRequest, result.loaders, result.resource, result.parser);
                         }
 
-                        createdModule = _this.applyPluginsWaterfall0('module', createdModule);
+                        createdModule = self.applyPluginsWaterfall0('module', createdModule);
 
                         return callback(null, createdModule);
                     });
                 });
             };
         });
-        this.plugin('resolver', function () {
+        this.plugin('resolver', () => {
             return (data, callback) => {
                 const contextInfo = data.contextInfo;
                 const context = data.context;
@@ -168,19 +169,8 @@ class NormalModuleFactory extends Tapable {
                             settings[r.type] = r.value;
                         }
                     });
-                    async.parallel([
-                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoadersPost, this.resolvers.loader),
-                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoaders, this.resolvers.loader),
-                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoadersPre, this.resolvers.loader)
-                    ], (err, results: string[][]) => {
-                        if (err) {
-                            return callback(err);
-                        }
-                        loaders = results[0].concat(loaders).concat(results[1]).concat(results[2]);
-                        onDoneResolving();
-                    });
 
-                    function onDoneResolving() {
+                    const onDoneResolving = () => {
                         callback(null, {
                             context,
                             request: loaders.map(loaderToIdent).concat([resource]).join('!'),
@@ -192,18 +182,30 @@ class NormalModuleFactory extends Tapable {
                             parser: this.getParser(settings.parser)
                         });
                     }
+
+                    async.parallel([
+                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoadersPost, this.resolvers.loader),
+                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoaders, this.resolvers.loader),
+                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoadersPre, this.resolvers.loader)
+                    ], (err, results: string[][]) => {
+                        if (err) {
+                            return callback(err);
+                        }
+                        loaders = results[0].concat(loaders).concat(results[1]).concat(results[2]);
+                        onDoneResolving();
+                    });
                 });
             };
         });
     }
 
     create(data, callback) {
-        const _this = this;
+        const self = this;
         const context = data.context || this.context;
         const dependencies = data.dependencies;
         const request = dependencies[0].request;
         const contextInfo = data.contextInfo || {};
-        _this.applyPluginsAsyncWaterfall('before-resolve', {
+        self.applyPluginsAsyncWaterfall('before-resolve', {
             contextInfo,
             context,
             request,
@@ -218,7 +220,7 @@ class NormalModuleFactory extends Tapable {
                 return callback();
             }
 
-            const factory = _this.applyPluginsWaterfall0('factory', null);
+            const factory = self.applyPluginsWaterfall0('factory', null);
 
             // Ignored
             if (!factory) {

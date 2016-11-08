@@ -40,7 +40,7 @@ class WebpackOptionsDefaulter extends OptionsDefaulter {
             }
         });
         this.set('output.filename', '[name].js');
-        this.set('output.chunkFilename', 'make', options => {
+        this.set('output.chunkFilename', 'make', function (options) {
             const filename = options.output.filename;
             return filename.includes('[name]') ? filename.replace('[name]', '[id]') : `[id].${filename}`;
         });

@@ -6,16 +6,19 @@ import RequireIncludeDependency = require('./RequireIncludeDependency');
 import RequireIncludeDependencyParserPlugin = require('./RequireIncludeDependencyParserPlugin');
 import ConstDependency = require('./ConstDependency');
 import BasicEvaluatedExpression = require('../BasicEvaluatedExpression');
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
+import Parser = require('../Parser')
 
 class RequireIncludePlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', function (compilation, params) {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
             const normalModuleFactory = params.normalModuleFactory;
 
             compilation.dependencyFactories.set(RequireIncludeDependency, normalModuleFactory);
             compilation.dependencyTemplates.set(RequireIncludeDependency, new RequireIncludeDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', function (parser, parserOptions) {
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
 
                 if (typeof parserOptions.requireInclude !== 'undefined' && !parserOptions.requireInclude) {
                     return;

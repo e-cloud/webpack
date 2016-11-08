@@ -3,8 +3,11 @@
  Author Tobias Koppers @sokra
  */
 import ModuleDependency = require('./ModuleDependency');
+import NormalModule = require('../NormalModule')
 
 class LoaderDependency extends ModuleDependency {
+    module: NormalModule
+
     constructor(request) {
         super(request);
     }

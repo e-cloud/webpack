@@ -5,10 +5,13 @@
 import ModuleDependency = require('./ModuleDependency');
 
 class ContextElementDependency extends ModuleDependency {
-    constructor(request, userRequest) {
+    type: string
+    optional: boolean
+
+    constructor(request, userRequest?) {
         super(request);
-        if (userRequest) {
-            this.userRequest = userRequest;
+        if(userRequest) {
+            this.userRequest = userRequest
         }
     }
 }

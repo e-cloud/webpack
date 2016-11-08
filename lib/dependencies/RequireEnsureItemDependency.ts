@@ -8,10 +8,10 @@ class RequireEnsureItemDependency extends ModuleDependency {
     constructor(request) {
         super(request);
     }
+
+    static Template = require('./NullDependencyTemplate')
 }
 
 RequireEnsureItemDependency.prototype.type = 'require.ensure item';
 
 export = RequireEnsureItemDependency;
-
-RequireEnsureItemDependency.Template = require('./NullDependencyTemplate');

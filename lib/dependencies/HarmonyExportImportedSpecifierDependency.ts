@@ -117,14 +117,15 @@ class Template {
 }
 
 class HarmonyExportImportedSpecifierDependency extends NullDependency {
-    constructor(originModule, importDependency, importedVar, id, name, position) {
+    constructor(
+        public originModule,
+        public importDependency,
+        public importedVar,
+        public id,
+        public name,
+        public position
+    ) {
         super();
-        this.originModule = originModule;
-        this.importDependency = importDependency;
-        this.importedVar = importedVar;
-        this.id = id;
-        this.name = name;
-        this.position = position;
     }
 
     getReference() {

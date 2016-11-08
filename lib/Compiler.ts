@@ -4,14 +4,28 @@
  */
 import path = require('path');
 import assign = require('object-assign');
+import Resolver = require('enhanced-resolve/lib/Resolver');
 import Tapable = require('tapable');
 import Compilation = require('./Compilation');
-import Resolver = require('enhanced-resolve/lib/Resolver');
 import NormalModuleFactory = require('./NormalModuleFactory');
 import ContextModuleFactory = require('./ContextModuleFactory');
+import Dependency = require('./Dependency')
+
+interface WatchOption {
+    aggregateTimeout: number
+}
 
 class Watching {
-    constructor(compiler, watchOptions, handler) {
+    startTime: number
+    invalid: boolean
+    error
+    stats
+    handler
+    watchOptions: WatchOption
+    running: boolean
+    watcher
+
+    constructor(public compiler: Compiler, watchOptions: WatchOption, handler) {
         this.startTime = null;
         this.invalid = false;
         this.error = null;
@@ -26,10 +40,9 @@ class Watching {
             this.watchOptions = assign({}, watchOptions);
         }
         else {
-            this.watchOptions = {};
+            this.watchOptions = {} as WatchOption;
         }
         this.watchOptions.aggregateTimeout = this.watchOptions.aggregateTimeout || 200;
-        this.compiler = compiler;
         this.running = true;
         this.compiler.readRecords(err => {
             if (err) {
@@ -99,12 +112,12 @@ class Watching {
         });
     }
 
-    _done(err, compilation) {
+    _done(err = null, compilation?: Compilation) {
         this.running = false;
         if (this.invalid) {
             return this._go();
         }
-        this.error = err || null;
+        this.error = err;
         this.stats = compilation ? compilation.getStats() : null;
         if (this.stats) {
             this.stats.startTime = this.startTime;
@@ -182,6 +195,26 @@ class Watching {
 }
 
 class Compiler extends Tapable {
+    outputPath: string
+    outputFileSystem
+    inputFileSystem
+    recordsInputPath
+    recordsOutputPath
+    records: {}
+    fileTimestamps: {}
+    contextTimestamps: {}
+    resolvers
+    parser
+    options
+    parentCompilation: Compilation
+    name: string
+    watchFileSystem
+    compilers?: Compiler[]
+    context
+    dependencies: Dependency[]
+    _lastCompilationFileDependencies: string[]
+    _lastCompilationContextDependencies: string[]
+
     constructor() {
         super();
 
@@ -208,8 +241,8 @@ class Compiler extends Tapable {
                     console.warn(`webpack: Using compiler.parser is deprecated.\nUse compiler.plugin("compilation", function(compilation, data) {\n  data.normalModuleFactory.plugin("parser", function(parser, options) { parser.plugin(/* ... */); });\n}); instead. It was called ${new Error().stack.split('\n')[2].trim()}.`);
                     deprecationReported = true;
                 }
-                this.plugin('compilation', (compilation, data) => {
-                    data.normalModuleFactory.plugin('parser', parser => {
+                this.plugin('compilation', function (compilation: Compilation, data) {
+                    data.normalModuleFactory.plugin('parser', function (parser) {
                         parser.plugin(hook, fn);
                     });
                 });
@@ -219,8 +252,8 @@ class Compiler extends Tapable {
                     console.warn(`webpack: Using compiler.parser is deprecated.\nUse compiler.plugin("compilation", function(compilation, data) {\n  data.normalModuleFactory.plugin("parser", function(parser, options) { parser.apply(/* ... */); });\n}); instead. It was called ${new Error().stack.split('\n')[2].trim()}.`);
                     deprecationReported = true;
                 }
-                this.plugin('compilation', (compilation, data) => {
-                    data.normalModuleFactory.plugin('parser', parser => {
+                this.plugin('compilation', function (compilation: Compilation, data) {
+                    data.normalModuleFactory.plugin('parser', function (parser) {
                         parser.apply(args);
                     });
                 });
@@ -232,11 +265,10 @@ class Compiler extends Tapable {
 
     static Watching = Watching
 
-    watch(watchOptions, handler) {
+    watch(watchOptions: WatchOption, handler) {
         this.fileTimestamps = {};
         this.contextTimestamps = {};
-        const watching = new Watching(this, watchOptions, handler);
-        return watching;
+        return new Watching(this, watchOptions, handler);
     }
 
     run(callback) {
@@ -336,10 +368,10 @@ class Compiler extends Tapable {
         }
     }
 
-    emitAssets(compilation, callback) {
+    emitAssets(compilation: Compilation, callback: (err?: Error) => any) {
         let outputPath;
 
-        this.applyPluginsAsync('emit', compilation, err => {
+        this.applyPluginsAsync('emit', compilation, (err) => {
             if (err) {
                 return callback(err);
             }
@@ -464,7 +496,7 @@ class Compiler extends Tapable {
         });
     }
 
-    createChildCompiler(compilation, compilerName, outputOptions) {
+    createChildCompiler(compilation: Compilation, compilerName: string, outputOptions) {
         const childCompiler = new Compiler();
 
         for (const pluginName in this._plugins) {
@@ -527,18 +559,17 @@ class Compiler extends Tapable {
     }
 
     createContextModuleFactory() {
-        const contextModuleFactory = new ContextModuleFactory(this.resolvers, this.inputFileSystem);
+        const contextModuleFactory = new ContextModuleFactory(this.resolvers);
         this.applyPlugins('context-module-factory', contextModuleFactory);
         return contextModuleFactory;
     }
 
     newCompilationParams() {
-        const params = {
+        return {
             normalModuleFactory: this.createNormalModuleFactory(),
             contextModuleFactory: this.createContextModuleFactory(),
             compilationDependencies: []
         };
-        return params;
     }
 
     compile(callback) {

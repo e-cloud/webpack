@@ -4,8 +4,10 @@
  */
 import { ConcatSource } from 'webpack-sources'
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
 
-function wrapComment(str) {
+function wrapComment(str: string) {
     if (!str.includes('\n')) {
         return `/*! ${str} */`;
     }
@@ -13,25 +15,28 @@ function wrapComment(str) {
 }
 
 class BannerPlugin {
-    constructor(options) {
+    banner: string
+    options: BannerPlugin.Option
+
+    constructor(options: string | BannerPlugin.Option = {} as BannerPlugin.Option) {
         if (arguments.length > 1) {
             throw new Error('BannerPlugin only takes one argument (pass an options object)');
         }
         if (typeof options === 'string') {
             options = {
                 banner: options
-            };
+            } as BannerPlugin.Option;
         }
-        this.options = options || {};
+        this.options = options;
         this.banner = this.options.raw ? options.banner : wrapComment(options.banner);
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const options = this.options;
         const banner = this.banner;
 
-        compiler.plugin('compilation', compilation => {
-            compilation.plugin('optimize-chunk-assets', (chunks, callback) => {
+        compiler.plugin('compilation', function (compilation: Compilation) {
+            compilation.plugin('optimize-chunk-assets', function (chunks, callback) {
                 chunks.forEach(chunk => {
                     if (options.entryOnly && !chunk.isInitial()) {
                         return;
@@ -44,6 +49,14 @@ class BannerPlugin {
                 callback();
             });
         });
+    }
+}
+
+declare namespace BannerPlugin {
+    interface Option {
+        raw: string
+        entryOnly: boolean
+        banner: string
     }
 }
 

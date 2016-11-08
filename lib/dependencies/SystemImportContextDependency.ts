@@ -6,10 +6,11 @@ import ContextDependency = require('./ContextDependency');
 import CriticalDependencyWarning = require('./CriticalDependencyWarning');
 
 class SystemImportContextDependency extends ContextDependency {
-    constructor(request, recursive, regExp, range, valueRange) {
+    async: boolean
+    critical: string
+
+    constructor(request, recursive, regExp, public range, public valueRange) {
         super(request, recursive, regExp);
-        this.range = range;
-        this.valueRange = valueRange;
         this.async = true;
     }
 
@@ -18,10 +19,10 @@ class SystemImportContextDependency extends ContextDependency {
             return [new CriticalDependencyWarning(this.critical)];
         }
     }
+
+    static Template = require('./ContextDependencyTemplateAsRequireCall')
 }
 
 SystemImportContextDependency.prototype.type = 'System.import context';
 
 export = SystemImportContextDependency;
-
-SystemImportContextDependency.Template = require('./ContextDependencyTemplateAsRequireCall');

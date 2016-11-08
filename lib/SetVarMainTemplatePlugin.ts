@@ -3,14 +3,13 @@
  Author Tobias Koppers @sokra
  */
 import { ConcatSource } from 'webpack-sources'
+import Compilation = require('./Compilation')
 
 class SetVarMainTemplatePlugin {
-    constructor(varExpression, copyObject) {
-        this.varExpression = varExpression;
-        this.copyObject = copyObject;
+    constructor(public varExpression: string, public copyObject?: boolean) {
     }
 
-    apply(compilation) {
+    apply(compilation: Compilation) {
         const mainTemplate = compilation.mainTemplate;
         compilation.templatesPlugin('render-with-entry', (source, chunk, hash) => {
             const varExpression = mainTemplate.applyPluginsWaterfall('asset-path', this.varExpression, {

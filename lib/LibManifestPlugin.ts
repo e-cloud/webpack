@@ -5,14 +5,22 @@
 import path = require('path');
 import async = require('async');
 import HarmonyModulesHelpers = require('./dependencies/HarmonyModulesHelpers');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
 
 class LibManifestPlugin {
-    constructor(options) {
-        this.options = options;
+    constructor(
+        public options: {
+            name: string
+            path: string
+            type: string
+            context: string
+        }
+    ) {
     }
 
-    apply(compiler) {
-        compiler.plugin('emit', (compilation, callback) => {
+    apply(compiler: Compiler) {
+        compiler.plugin('emit', (compilation: Compilation, callback) => {
             async.forEach(compilation.chunks, (chunk, callback) => {
                 if (!chunk.isInitial()) {
                     callback();

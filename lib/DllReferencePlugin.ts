@@ -5,14 +5,35 @@
 import DelegatedSourceDependency = require('./dependencies/DelegatedSourceDependency');
 import DelegatedModuleFactoryPlugin = require('./DelegatedModuleFactoryPlugin');
 import ExternalModuleFactoryPlugin = require('./ExternalModuleFactoryPlugin');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
+
+interface DllManifest {
+    name: string
+    content: string
+}
 
 class DllReferencePlugin {
+    options: {
+        manifest: string | {
+            name: string
+            content: string
+        }
+        name: string
+        sourceType: string
+        type: string
+        scope: string
+        context: string
+        content: string
+        extensions: string[]
+    }
+
     constructor(options) {
         this.options = options;
     }
 
-    apply(compiler) {
-        compiler.plugin('compilation', (compilation, params) => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation, params) {
             const normalModuleFactory = params.normalModuleFactory;
 
             compilation.dependencyFactories.set(DelegatedSourceDependency, normalModuleFactory);
@@ -38,7 +59,7 @@ class DllReferencePlugin {
             if (typeof manifest === 'string') {
                 manifest = params[`dll reference ${manifest}`];
             }
-            const name = this.options.name || manifest.name;
+            const name = this.options.name || (manifest as DllManifest).name;
             const sourceType = this.options.sourceType || 'var';
             const externals = {};
             const source = `dll-reference ${name}`;
@@ -49,7 +70,7 @@ class DllReferencePlugin {
                 type: this.options.type,
                 scope: this.options.scope,
                 context: this.options.context || compiler.options.context,
-                content: this.options.content || manifest.content,
+                content: this.options.content || (manifest as DllManifest).content,
                 extensions: this.options.extensions
             }));
         });

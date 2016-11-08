@@ -7,8 +7,26 @@ import path = require('path');
 import RequestShortener = require('./RequestShortener');
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
 import SourceMapDevToolModuleOptionsPlugin = require('./SourceMapDevToolModuleOptionsPlugin');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
 
 class SourceMapDevToolPlugin {
+    sourceMapFilename: string
+    sourceMappingURLComment: string | boolean
+    moduleFilenameTemplate: string
+    fallbackModuleFilenameTemplate: string
+    options: {
+        module: boolean
+        lineToLine: boolean
+        filename: string
+        append: string | boolean
+        moduleFilenameTemplate: string
+        fallbackModuleFilenameTemplate: string
+        test: string | RegExp
+        noSources: boolean
+        sourceRoot: string
+    }
+
     constructor(options) {
         if (arguments.length > 1) {
             throw new Error('SourceMapDevToolPlugin only takes one argument (pass an options object)');
@@ -30,7 +48,7 @@ class SourceMapDevToolPlugin {
         this.options = options;
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const sourceMapFilename = this.sourceMapFilename;
         const sourceMappingURLComment = this.sourceMappingURLComment;
         const moduleFilenameTemplate = this.moduleFilenameTemplate;
@@ -38,7 +56,7 @@ class SourceMapDevToolPlugin {
         const requestShortener = new RequestShortener(compiler.context);
         const options = this.options;
         options.test = options.test || /\.(js|css)($|\?)/i;
-        compiler.plugin('compilation', compilation => {
+        compiler.plugin('compilation', function (compilation: Compilation) {
             new SourceMapDevToolModuleOptionsPlugin(options).apply(compilation);
             compilation.plugin('after-optimize-chunk-assets', function (chunks) {
                 let allModules = [];

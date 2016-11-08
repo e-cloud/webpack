@@ -3,25 +3,29 @@
  Author Tobias Koppers @sokra
  */
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
+import Compilation = require('./Compilation')
 
 class SourceMapDevToolModuleOptionsPlugin {
-    constructor(options) {
-        this.options = options;
+    constructor(
+        public options: {
+            module: boolean
+            lineToLine: boolean
+        }
+    ) {
     }
 
-    apply(compilation) {
-        const options = this.options;
-        if (options.module !== false) {
-            compilation.plugin('build-module', module => {
+    apply(compilation: Compilation) {
+        if (this.options.module !== false) {
+            compilation.plugin('build-module', function (module) {
                 module.useSourceMap = true;
             });
         }
-        if (options.lineToLine === true) {
-            compilation.plugin('build-module', module => {
+        if (this.options.lineToLine === true) {
+            compilation.plugin('build-module', function (module) {
                 module.lineToLine = true;
             });
         }
-        else if (options.lineToLine) {
+        else if (this.options.lineToLine) {
             compilation.plugin('build-module', module => {
                 if (!module.resource) {
                     return;
@@ -31,7 +35,7 @@ class SourceMapDevToolModuleOptionsPlugin {
                 if (idx >= 0) {
                     resourcePath = resourcePath.substr(0, idx);
                 }
-                module.lineToLine = ModuleFilenameHelpers.matchObject(options.lineToLine, resourcePath);
+                module.lineToLine = ModuleFilenameHelpers.matchObject(this.options.lineToLine, resourcePath);
             });
         }
     }

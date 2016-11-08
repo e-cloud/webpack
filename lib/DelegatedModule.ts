@@ -6,15 +6,22 @@ import { OriginalSource, RawSource } from 'webpack-sources'
 import Module = require('./Module');
 import WebpackMissingModule = require('./dependencies/WebpackMissingModule');
 import DelegatedSourceDependency = require('./dependencies/DelegatedSourceDependency');
+import Compilation = require('./Compilation')
 
 class DelegatedModule extends Module {
-    constructor(sourceRequest, data, type, userRequest) {
+    request: string
+    meta
+    built: boolean
+    usedExports: boolean
+    providedExports: boolean
+    builtTime: number
+    useSourceMap: boolean
+    delegated: boolean
+
+    constructor(public sourceRequest: string, data, public type: string, public userRequest: string) {
         super();
-        this.sourceRequest = sourceRequest;
         this.request = data.id;
         this.meta = data.meta;
-        this.type = type;
-        this.userRequest = userRequest;
         this.built = false;
         this.usedExports = true;
         this.providedExports = data.exports || true;
@@ -32,7 +39,7 @@ class DelegatedModule extends Module {
         return false;
     }
 
-    build(options, compilation, resolver, fs, callback) {
+    build(options, compilation: Compilation, resolver, fs, callback) {
         this.builtTime = new Date().getTime();
         this.dependencies.length = 0;
         this.addDependency(new DelegatedSourceDependency(this.sourceRequest));

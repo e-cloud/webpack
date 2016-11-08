@@ -3,31 +3,34 @@
  Author Tobias Koppers @sokra
  */
 import async = require('async');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
 
 class CachePlugin {
-    constructor(cache) {
-        this.cache = cache || {};
+    FS_ACCURENCY: number
+    watching: boolean
+
+    constructor(public cache = {}) {
         this.FS_ACCURENCY = 2000;
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         if (Array.isArray(compiler.compilers)) {
-            compiler.compilers.forEach(function (c, idx) {
+            compiler.compilers.forEach((c, idx) => {
                 c.apply(new CachePlugin(this.cache[idx] = this.cache[idx] || {}));
-            }, this);
+            });
         }
         else {
-            const _this = this;
-            compiler.plugin('compilation', compilation => {
+            compiler.plugin('compilation', (compilation: Compilation) => {
                 if (!compilation.notCacheable) {
-                    compilation.cache = _this.cache;
+                    compilation.cache = this.cache;
                 }
-                else if (_this.watching) {
+                else if (this.watching) {
                     compilation.warnings.push(new Error(`CachePlugin - Cache cannot be used because of: ${compilation.notCacheable}`));
                 }
             });
             compiler.plugin('watch-run', (compiler, callback) => {
-                _this.watching = true;
+                this.watching = true;
                 callback();
             });
             compiler.plugin('run', (compiler, callback) => {
@@ -48,7 +51,7 @@ class CachePlugin {
                             }
 
                             if (stat.mtime) {
-                                _this.applyMtime(+stat.mtime);
+                                this.applyMtime(+stat.mtime);
                             }
 
                             fileTs[file] = +stat.mtime || Infinity;
@@ -60,13 +63,13 @@ class CachePlugin {
                             return callback(err);
                         }
                         Object.keys(fileTs).forEach(key => {
-                            fileTs[key] += _this.FS_ACCURENCY;
+                            fileTs[key] += this.FS_ACCURENCY;
                         });
                         callback();
                     }
                 );
             });
-            compiler.plugin('after-compile', (compilation, callback) => {
+            compiler.plugin('after-compile', function (compilation: Compilation, callback) {
                 compilation.compiler._lastCompilationFileDependencies = compilation.fileDependencies;
                 compilation.compiler._lastCompilationContextDependencies = compilation.contextDependencies;
                 callback();
@@ -74,7 +77,7 @@ class CachePlugin {
         }
     }
 
-    applyMtime(mtime) {
+    applyMtime(mtime: number) {
         if (this.FS_ACCURENCY > 1 && mtime % 2 !== 0) {
             this.FS_ACCURENCY = 1;
         }

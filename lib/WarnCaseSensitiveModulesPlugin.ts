@@ -3,10 +3,12 @@
  Author Tobias Koppers @sokra
  */
 import CaseSensitiveModulesWarning = require('./CaseSensitiveModulesWarning');
+import Compiler = require('./Compiler')
+import Compilation = require('./Compilation')
 
 class WarnCaseSensitiveModulesPlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', compilation => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation) {
             compilation.plugin('seal', function () {
                 const moduleWithoutCase = {};
                 this.modules.forEach(
@@ -18,14 +20,14 @@ class WarnCaseSensitiveModulesPlugin {
                         else {
                             moduleWithoutCase[`$${ident}`] = [module];
                         }
-                    }, this
+                    }
                 );
                 Object.keys(moduleWithoutCase).forEach(
                     function (key) {
                         if (moduleWithoutCase[key].length > 1) {
                             this.warnings.push(new CaseSensitiveModulesWarning(moduleWithoutCase[key]));
                         }
-                    }, this
+                    }
                 );
             });
         });

@@ -4,8 +4,9 @@
  */
 import { CachedSource } from 'webpack-sources'
 import async = require('async');
-import Tapable = require('tapable');
 import crypto = require('crypto')
+import Tapable = require('tapable');
+import Compiler = require('./Compiler')
 import EntryModuleNotFoundError = require('./EntryModuleNotFoundError');
 import ModuleNotFoundError = require('./ModuleNotFoundError');
 import ModuleDependencyWarning = require('./ModuleDependencyWarning');
@@ -20,8 +21,63 @@ import HotUpdateChunkTemplate = require('./HotUpdateChunkTemplate');
 import ModuleTemplate = require('./ModuleTemplate');
 import Dependency = require('./Dependency');
 import ChunkRenderError = require('./ChunkRenderError');
+import NormalModule = require('./NormalModule')
+
+interface SimpleChunk {
+    name: string
+    module: Module
+}
 
 class Compilation extends Tapable {
+    compiler: Compiler
+    resolvers
+    inputFileSystem
+    options
+    outputOptions
+    bail: boolean
+    profile: boolean
+    mainTemplate: MainTemplate
+    chunkTemplate: ChunkTemplate
+    hotUpdateChunkTemplate: HotUpdateChunkTemplate
+    moduleTemplate: ModuleTemplate
+    entries: string[];
+    preparedChunks: SimpleChunk[]
+    entrypoints: {}
+    chunks: Chunk[]
+    namedChunks: {
+        [propName: string]: Chunk
+    }
+    modules: NormalModule[]
+    _modules: {
+        [propName: string]: Module
+    }
+    cache
+    records
+    nextFreeModuleIndex: number
+    nextFreeModuleIndex2: number
+    additionalChunkAssets: string[]
+    assets: {}
+    errors: Error[]
+    warnings: Error[]
+    children: Compilation[]
+    dependencyFactories: ArrayMap
+    dependencyTemplates: ArrayMap
+    usedModuleIds: string[]
+    usedChunkIds: number[]
+    fileTimestamps: Compilation.TimeStampMap
+    contextTimestamps: Compilation.TimeStampMap
+    name: string
+    needAdditionalPass: boolean
+    fileDependencies: string[]
+    compilationDependencies: string[]
+    contextDependencies: string[]
+    missingDependencies: string[]
+    fullHash: string
+    hash: string
+    nextFreeChunkId: number
+    notCacheable: string
+    _aggressiveSplittingSplits: any[]
+
     constructor(compiler) {
         super();
         this.compiler = compiler;
@@ -185,13 +241,13 @@ class Compilation extends Tapable {
         this.addModuleDependencies(module, dependencies, this.bail, null, true, callback);
     }
 
-    addModuleDependencies(module, dependencies, bail, cacheGroup, recursive, callback) {
-        let _this = this;
-        const start = _this.profile && +new Date();
+    addModuleDependencies(module: NormalModule, dependencies, bail, cacheGroup, recursive, callback) {
+        let self = this;
+        const start = self.profile && +new Date();
         const factories = [];
 
         for (let i = 0; i < dependencies.length; i++) {
-            const factory = _this.dependencyFactories.get(dependencies[i][0].constructor);
+            const factory = self.dependencyFactories.get(dependencies[i][0].constructor);
             if (!factory) {
                 return callback(new Error(`No module factory available for dependency type: ${dependencies[i][0].constructor.name}`));
             }
@@ -204,7 +260,7 @@ class Compilation extends Tapable {
 
                 const errorAndCallback = function errorAndCallback(err) {
                     err.origin = module;
-                    _this.errors.push(err);
+                    self.errors.push(err);
                     if (bail) {
                         callback(err);
                     }
@@ -214,7 +270,7 @@ class Compilation extends Tapable {
                 };
                 const warningAndCallback = function warningAndCallback(err) {
                     err.origin = module;
-                    _this.warnings.push(err);
+                    self.warnings.push(err);
                     callback();
                 };
 
@@ -245,20 +301,22 @@ class Compilation extends Tapable {
                     if (!dependentModule) {
                         return process.nextTick(callback);
                     }
-                    if (_this.profile) {
+
+                    let afterFactory
+                    if (self.profile) {
                         if (!dependentModule.profile) {
                             dependentModule.profile = {};
                         }
-                        var afterFactory = +new Date();
+                        afterFactory = +new Date();
                         dependentModule.profile.factory = afterFactory - start;
                     }
 
                     dependentModule.issuer = module;
-                    const newModule = _this.addModule(dependentModule, cacheGroup);
+                    const newModule = self.addModule(dependentModule, cacheGroup);
 
                     if (!newModule) {
                         // from cache
-                        dependentModule = _this.getModule(dependentModule);
+                        dependentModule = self.getModule(dependentModule);
 
                         if (dependentModule.optional) {
                             dependentModule.optional = isOptional();
@@ -269,7 +327,7 @@ class Compilation extends Tapable {
                             dependentModule.addReason(module, dep);
                         });
 
-                        if (_this.profile) {
+                        if (self.profile) {
                             if (!module.profile) {
                                 module.profile = {};
                             }
@@ -283,7 +341,7 @@ class Compilation extends Tapable {
                     }
 
                     if (newModule instanceof Module) {
-                        if (_this.profile) {
+                        if (self.profile) {
                             newModule.profile = dependentModule.profile;
                         }
 
@@ -296,13 +354,13 @@ class Compilation extends Tapable {
                             dependentModule.addReason(module, dep);
                         });
 
-                        if (_this.profile) {
+                        if (self.profile) {
                             const afterBuilding = +new Date();
                             module.profile.building = afterBuilding - afterFactory;
                         }
 
                         if (recursive) {
-                            return process.nextTick(_this.processModuleDependencies.bind(_this, dependentModule, callback));
+                            return process.nextTick(self.processModuleDependencies.bind(self, dependentModule, callback));
                         }
                         else {
                             return process.nextTick(callback);
@@ -316,18 +374,18 @@ class Compilation extends Tapable {
                         dependentModule.addReason(module, dep);
                     });
 
-                    _this.buildModule(dependentModule, isOptional(), module, dependencies, err => {
+                    self.buildModule(dependentModule, isOptional(), module, dependencies, err => {
                         if (err) {
                             return errorOrWarningAndCallback(err);
                         }
 
-                        if (_this.profile) {
+                        if (self.profile) {
                             const afterBuilding = +new Date();
                             dependentModule.profile.building = afterBuilding - afterFactory;
                         }
 
                         if (recursive) {
-                            _this.processModuleDependencies(dependentModule, callback);
+                            self.processModuleDependencies(dependentModule, callback);
                         }
                         else {
                             return callback();
@@ -340,7 +398,7 @@ class Compilation extends Tapable {
                 // errors are created inside closures that keep a reference to the Compilation, so errors are
                 // leaking the Compilation object. Setting _this to null workarounds the following issue in V8.
                 // https://bugs.chromium.org/p/chromium/issues/detail?id=612191
-                _this = null;
+                self = null;
 
                 if (err) {
                     return callback(err);
@@ -378,12 +436,12 @@ class Compilation extends Tapable {
             if (err) {
                 return errorAndCallback(new EntryModuleNotFoundError(err));
             }
-
+            let afterFactory
             if (this.profile) {
                 if (!module.profile) {
                     module.profile = {};
                 }
-                var afterFactory = +new Date();
+                afterFactory = +new Date();
                 module.profile.factory = afterFactory - start;
             }
 
@@ -558,15 +616,19 @@ class Compilation extends Tapable {
         this.sortModules(this.modules);
         this.applyPlugins('optimize');
 
-        while (this.applyPluginsBailResult('optimize-modules-basic', this.modules)
+        while (
+        this.applyPluginsBailResult('optimize-modules-basic', this.modules)
         || this.applyPluginsBailResult('optimize-modules', this.modules)
-        || this.applyPluginsBailResult('optimize-modules-advanced', this.modules)); // eslint-disable-line no-extra-semi
+        || this.applyPluginsBailResult('optimize-modules-advanced', this.modules)
+            ); // eslint-disable-line no-extra-semi
 
         this.applyPlugins('after-optimize-modules', this.modules);
 
-        while (this.applyPluginsBailResult('optimize-chunks-basic', this.chunks)
+        while (
+        this.applyPluginsBailResult('optimize-chunks-basic', this.chunks)
         || this.applyPluginsBailResult('optimize-chunks', this.chunks)
-        || this.applyPluginsBailResult('optimize-chunks-advanced', this.chunks));
+        || this.applyPluginsBailResult('optimize-chunks-advanced', this.chunks)
+            );
 
         this.applyPlugins('after-optimize-chunks', this.chunks);
 
@@ -666,22 +728,22 @@ class Compilation extends Tapable {
     }
 
     reportDependencyWarnings(module, blocks) {
-        const _this = this;
+        const self = this;
         blocks.forEach(block => {
             block.dependencies.forEach(d => {
                 const warnings = d.getWarnings();
                 if (warnings) {
                     warnings.forEach(w => {
                         const warning = new ModuleDependencyWarning(module, w, d.loc);
-                        _this.warnings.push(warning);
+                        self.warnings.push(warning);
                     });
                 }
             });
-            _this.reportDependencyWarnings(module, block.blocks);
+            self.reportDependencyWarnings(module, block.blocks);
         });
     }
 
-    addChunk(name, module, loc) {
+    addChunk(name?, module?, loc?) {
         let chunk;
         if (name) {
             if (Object.prototype.hasOwnProperty.call(this.namedChunks, name)) {
@@ -1033,7 +1095,7 @@ class Compilation extends Tapable {
         }
     }
 
-    getPath(filename, data) {
+    getPath(filename, data: any = {}) {
         data.hash = data.hash || this.hash;
         return this.mainTemplate.applyPluginsWaterfall('asset-path', filename, data);
     }
@@ -1059,6 +1121,12 @@ class Compilation extends Tapable {
             }
             chunk.checkConstraints();
         });
+    }
+}
+
+declare namespace Compilation {
+    interface TimeStampMap {
+        [prop: string]: number
     }
 }
 

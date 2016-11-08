@@ -3,12 +3,15 @@
  Author Tobias Koppers @sokra
  */
 class OptionsDefaulter {
+    defaults: {}
+    config: {}
+
     constructor() {
         this.defaults = {};
         this.config = {};
     }
 
-    process(options) {
+    process(options: {}) {
         for (const name in this.defaults) {
             switch (this.config[name]) {
                 case undefined:
@@ -40,7 +43,7 @@ class OptionsDefaulter {
         }
     }
 
-    set(name, config, def) {
+    set(name: string, config: {} | boolean, def?: {}) {
         if (arguments.length === 3) {
             this.defaults[name] = def;
             this.config[name] = config;
@@ -54,35 +57,36 @@ class OptionsDefaulter {
 
 export = OptionsDefaulter;
 
-function getProperty(obj, name) {
-    name = name.split('.');
-    for (let i = 0; i < name.length - 1; i++) {
-        obj = obj[name[i]];
-        if (typeof obj != 'object' || !obj) {
+function getProperty(obj, name: string) {
+    const props = name.split('.');
+    for (let prop of props.slice(0, props.length - 1)) {
+        obj = obj[prop];
+        if (typeof obj !== 'object' || !obj) {
             return;
         }
     }
-    return obj[name.pop()];
+    return obj[props.pop()];
 }
 
-function setProperty(obj, name, value) {
-    name = name.split('.');
-    for (let i = 0; i < name.length - 1; i++) {
-        if (typeof obj[name[i]] !== 'object' || !obj[name[i]]) {
-            obj[name[i]] = {};
+function setProperty(obj, name: string, value) {
+    const props = name.split('.');
+    for (let prop of props.slice(0, props.length - 1)) {
+        if (typeof obj[prop] !== 'object' || !obj[prop]) {
+            obj[prop] = {};
         }
-        obj = obj[name[i]];
+        obj = obj[prop];
     }
-    obj[name.pop()] = value;
+    obj[props.pop()] = value;
 }
 
-function hasProperty(obj, name, value) {
-    name = name.split('.');
-    for (let i = 0; i < name.length - 1; i++) {
-        obj = obj[name[i]];
-        if (typeof obj != 'object' || !obj) {
-            return false;
+// tslint:disable-next-line
+function hasProperty(obj, name) {
+    const props = name.split('.');
+    for (let prop of props.slice(0, props.length - 1)) {
+        obj = obj[prop];
+        if (typeof obj !== 'object' || !obj) {
+            return;
         }
     }
-    return Object.prototype.hasOwnProperty.call(obj, name.pop());
+    return Object.prototype.hasOwnProperty.call(obj, props.pop());
 }

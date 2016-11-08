@@ -3,11 +3,13 @@
  Author Tobias Koppers @sokra
  */
 import path = require('path');
+import Compilation = require('./Compilation')
+import Compiler = require('./Compiler')
 
 class RecordIdsPlugin {
-    apply(compiler) {
-        compiler.plugin('compilation', compilation => {
-            compilation.plugin('record-modules', (modules, records) => {
+    apply(compiler: Compiler) {
+        compiler.plugin('compilation', function (compilation: Compilation) {
+            compilation.plugin('record-modules', function (modules, records) {
                 if (!records.modules) {
                     records.modules = {};
                 }
@@ -23,7 +25,7 @@ class RecordIdsPlugin {
                     records.modules.usedIds[module.id] = module.id;
                 });
             });
-            compilation.plugin('revive-modules', (modules, records) => {
+            compilation.plugin('revive-modules', function (modules, records) {
                 if (!records.modules) {
                     return;
                 }
@@ -91,7 +93,7 @@ class RecordIdsPlugin {
                     records.chunks.usedIds[chunk.id] = chunk.id;
                 });
             });
-            compilation.plugin('revive-chunks', (chunks, records) => {
+            compilation.plugin('revive-chunks', function (chunks, records) {
                 if (!records.chunks) {
                     return;
                 }

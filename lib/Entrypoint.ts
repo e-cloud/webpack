@@ -2,18 +2,21 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Chunk = require('./Chunk')
+
 class Entrypoint {
-    constructor(name) {
-        this.name = name;
+    chunks: Chunk[]
+
+    constructor(public name: string) {
         this.chunks = [];
     }
 
-    unshiftChunk(chunk) {
+    unshiftChunk(chunk: Chunk) {
         this.chunks.unshift(chunk);
         chunk.entrypoints.push(this);
     }
 
-    insertChunk(chunk, before) {
+    insertChunk(chunk: Chunk, before: Chunk) {
         const idx = this.chunks.indexOf(before);
         if (idx >= 0) {
             this.chunks.splice(idx, 0, chunk);

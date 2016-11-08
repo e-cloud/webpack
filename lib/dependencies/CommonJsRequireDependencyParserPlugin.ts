@@ -9,15 +9,22 @@ import RequireHeaderDependency = require('./RequireHeaderDependency');
 import LocalModuleDependency = require('./LocalModuleDependency');
 import ContextDependencyHelpers = require('./ContextDependencyHelpers');
 import LocalModulesHelpers = require('./LocalModulesHelpers');
+import Parser = require('../Parser')
 
 class CommonJsRequireDependencyParserPlugin {
-    constructor(options) {
-        this.options = options;
+    constructor(
+        public options: {
+            unknownContextRequest: string
+            unknownContextRecursive: boolean
+            unknownContextRegExp: RegExp
+            unknownContextCritical: boolean
+        }
+    ) {
     }
 
-    apply(parser) {
+    apply(parser: Parser) {
         const options = this.options;
-        parser.plugin('expression require.cache', function (expr) {
+        parser.plugin('expression require.cache', function (this: Parser, expr) {
             const dep = new ConstDependency('__webpack_require__.c', expr.range);
             dep.loc = expr.loc;
             this.state.current.addDependency(dep);

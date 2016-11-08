@@ -3,9 +3,10 @@
  Author Tobias Koppers @sokra
  */
 import Template = require('./Template');
+import MainTemplate = require('./MainTemplate')
 
 class JsonpMainTemplatePlugin {
-    apply(mainTemplate) {
+    apply(mainTemplate: MainTemplate) {
         mainTemplate.plugin('local-vars', function (source, chunk) {
             if (chunk.chunks.length > 0) {
                 return this.asString([

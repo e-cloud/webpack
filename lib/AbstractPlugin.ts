@@ -3,10 +3,15 @@
  Author Tobias Koppers @sokra
  */
 class AbstractPlugin {
-    constructor(plugins) {
-        this._plugins = plugins || {};
+    _plugins: {
+        [prop: string]: Function
     }
 
+    constructor(plugins = {}) {
+        this._plugins = plugins;
+    }
+
+    // todo: remove this static method
     static create(plugins) {
         class Plugin extends AbstractPlugin {
             constructor() {

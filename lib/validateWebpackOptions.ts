@@ -2,8 +2,8 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Gajus Kuizinas @gajus
  */
-import webpackOptionsSchema = require('../schemas/webpackOptionsSchema.json');
 import Ajv = require('ajv');
+const webpackOptionsSchema = require('../schemas/webpackOptionsSchema.json');
 
 const ajv = new Ajv({
     errorDataPath: 'configuration',

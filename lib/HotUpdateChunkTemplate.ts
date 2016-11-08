@@ -3,6 +3,7 @@
  Author Tobias Koppers @sokra
  */
 import Template = require('./Template');
+import { Hash } from 'crypto'
 
 class HotUpdateChunkTemplate extends Template {
     constructor(outputOptions) {
@@ -20,7 +21,7 @@ class HotUpdateChunkTemplate extends Template {
         return source;
     }
 
-    updateHash(hash) {
+    updateHash(hash: Hash) {
         hash.update('HotUpdateChunkTemplate');
         hash.update('1');
         this.applyPlugins('hash', hash);

@@ -12,13 +12,15 @@ import Template = require('./Template');
 // __webpack_require__.p = the bundle public path
 // __webpack_require__.i = the identity function used for harmony imports
 // __webpack_require__.e = the chunk ensure function
-// __webpack_require__.d = the exported propery define getter function
+// __webpack_require__.d = the exported property define getter function
 // __webpack_require__.o = Object.prototype.hasOwnProperty.call
 // __webpack_require__.n = compatibility get default export
 // __webpack_require__.h = the webpack hash
-// __webpack_require__.oe = the uncatched error handler for the webpack runtime
+// __webpack_require__.oe = the uncaught error handler for the webpack runtime
 
 class MainTemplate extends Template {
+    requireFn: string
+
     constructor(outputOptions) {
         super(outputOptions);
         this.plugin('startup', function (source, chunk, hash) {

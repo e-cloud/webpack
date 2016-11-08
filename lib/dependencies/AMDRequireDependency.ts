@@ -32,9 +32,8 @@ class Template {
 }
 
 class AMDRequireDependency extends NullDependency {
-    constructor(block) {
+    constructor(public block) {
         super();
-        this.block = block;
     }
 
     static Template = Template

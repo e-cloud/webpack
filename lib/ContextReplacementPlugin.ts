@@ -4,10 +4,16 @@
  */
 import path = require('path');
 import ContextElementDependency = require('./dependencies/ContextElementDependency');
+import Compiler = require('./Compiler')
 
 class ContextReplacementPlugin {
-    constructor(resourceRegExp, newContentResource, newContentRecursive, newContentRegExp) {
-        this.resourceRegExp = resourceRegExp;
+    newContentCallback
+    newContentCreateContextMap: (fs, callback: (something, recursive: boolean) => any) => void
+    newContentResource: string
+    newContentRecursive: boolean
+    newContentRegExp: RegExp
+
+    constructor(public resourceRegExp: RegExp, newContentResource, newContentRecursive, newContentRegExp) {
         if (typeof newContentResource === 'function') {
             this.newContentCallback = newContentResource;
         }
@@ -37,14 +43,14 @@ class ContextReplacementPlugin {
         }
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const resourceRegExp = this.resourceRegExp;
         const newContentCallback = this.newContentCallback;
         const newContentResource = this.newContentResource;
         const newContentRecursive = this.newContentRecursive;
         const newContentRegExp = this.newContentRegExp;
         const newContentCreateContextMap = this.newContentCreateContextMap;
-        compiler.plugin('context-module-factory', cmf => {
+        compiler.plugin('context-module-factory', function (cmf) {
             cmf.plugin('before-resolve', (result, callback) => {
                 if (!result) {
                     return callback();
@@ -72,7 +78,7 @@ class ContextReplacementPlugin {
                 }
                 return callback(null, result);
             });
-            cmf.plugin('after-resolve', (result, callback) => {
+            cmf.plugin('after-resolve', function (result, callback) {
                 if (!result) {
                     return callback();
                 }

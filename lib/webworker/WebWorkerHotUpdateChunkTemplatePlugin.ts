@@ -4,9 +4,10 @@
  */
 import { ConcatSource } from 'webpack-sources'
 import Template = require('../Template');
+import HotUpdateChunkTemplate = require('../HotUpdateChunkTemplate')
 
 class WebWorkerHotUpdateChunkTemplatePlugin {
-    apply(hotUpdateChunkTemplate) {
+    apply(hotUpdateChunkTemplate: HotUpdateChunkTemplate) {
         hotUpdateChunkTemplate.plugin('render', function (modulesSource, modules, removedModules, hash, id) {
             const chunkCallbackName = this.outputOptions.hotUpdateFunction || Template.toIdentifier(`webpackHotUpdate${this.outputOptions.library || ''}`);
             const source = new ConcatSource();

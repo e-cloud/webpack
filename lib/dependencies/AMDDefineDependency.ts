@@ -3,12 +3,13 @@
  Author Tobias Koppers @sokra
  */
 import NullDependency = require('./NullDependency');
+import LocalModule = require('./LocalModule')
 
 class Template {
     apply(dep, source) {
         const localModuleVar = dep.localModule && dep.localModule.used && dep.localModule.variableName();
 
-        function replace(def, text) {
+        function replace(def: string, text: string) {
             if (localModuleVar) {
                 text = text.replace(/XXX/g, localModuleVar.replace(/\$/g, '$$$$'));
             }
@@ -38,12 +39,14 @@ class Template {
             }
         }
 
-        const branch = (localModuleVar ? 'l' : '')
+        const branch: string = (localModuleVar ? 'l' : '')
             + (dep.arrayRange ? 'a' : '')
             + (dep.objectRange ? 'o' : '')
             + (dep.functionRange ? 'f' : '');
 
-        const defs = {
+        const defs: {
+            [prop: string]: [string, string]
+        } = {
             f: [
                 'var __WEBPACK_AMD_DEFINE_RESULT__;',
                 '!(__WEBPACK_AMD_DEFINE_RESULT__ = #.call(exports, __webpack_require__, exports, module), ' +
@@ -90,12 +93,13 @@ class Template {
             ]
         };
 
-        replace(...defs[branch]);
+        replace.apply(null, defs[branch]);
     }
 }
 
 class AMDDefineDependency extends NullDependency {
     type: string
+    localModule: LocalModule
 
     constructor(public range, public arrayRange, public functionRange, public objectRange) {
         super();

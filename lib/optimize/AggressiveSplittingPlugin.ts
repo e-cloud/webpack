@@ -3,10 +3,18 @@
  Author Tobias Koppers @sokra
  */
 import path = require('path');
+import Compiler = require('../Compiler')
+import Compilation = require('../Compilation')
 
 class AggressiveSplittingPlugin {
-    constructor(options) {
-        this.options = options || {};
+    constructor(
+        public options: {
+            minSize: number
+            maxSize: number
+            chunkOverhead: number
+            entryChunkMultiplicator: number
+        } = {}
+    ) {
         if (typeof this.options.minSize !== 'number') {
             this.options.minSize = 30 * 1024;
         }
@@ -21,10 +29,10 @@ class AggressiveSplittingPlugin {
         }
     }
 
-    apply(compiler) {
+    apply(compiler: Compiler) {
         const _this = this;
-        compiler.plugin('compilation', compilation => {
-            compilation.plugin('optimize-chunks-advanced', chunks => {
+        compiler.plugin('compilation', function (compilation: Compilation) {
+            compilation.plugin('optimize-chunks-advanced', function (chunks) {
                 let i;
                 let chunk;
                 let newChunk;
@@ -134,7 +142,7 @@ class AggressiveSplittingPlugin {
                     }
                 }
             });
-            compilation.plugin('record-hash', records => {
+            compilation.plugin('record-hash', function (records) {
                 // 3. save to made splittings to records
                 const minSize = _this.options.minSize;
                 const maxSize = _this.options.maxSize;

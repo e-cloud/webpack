@@ -5,12 +5,39 @@
 import DependenciesBlock = require('./DependenciesBlock');
 import ModuleReason = require('./ModuleReason');
 import Template = require('./Template');
-import HarmonyModulesHelpers = require('./dependencies/HarmonyModulesHelpers');
+import Chunk = require('./Chunk')
 import removeAndDo = require('./removeAndDo');
 
 let debugId = 1000;
 
-class Module extends DependenciesBlock {
+abstract class Module extends DependenciesBlock implements IRemoveAndDo {
+    context: {};
+    reasons: ModuleReason[];
+    debugId: number;
+    lastId: number;
+    id: number;
+    index: number;
+    // todo: what does this mean
+    index2 = null;
+    used: boolean;
+    usedExports: string | boolean;
+    providedExports: string[] | string | boolean;
+    chunks: Chunk[];
+    warnings: Error[];
+    dependenciesWarnings: string[];
+    errors: Error[];
+    dependenciesErrors: Error[];
+    strict: boolean;
+    meta: {
+        harmonyModule: Module
+    };
+    profile?
+    optional?: boolean
+    issuer: string
+    building: Function[]
+    error: Error
+    _source
+
     constructor() {
         super();
         this.context = null;
@@ -159,7 +186,7 @@ class Module extends DependenciesBlock {
         return `Module[${this.id || this.debugId}]`;
     }
 
-    needRebuild() /* fileTimestamps, contextTimestamps */ {
+    needRebuild(...args) {
         return true;
     }
 
@@ -174,6 +201,16 @@ class Module extends DependenciesBlock {
         this.chunks.sort(byId);
         this.reasons.sort((a, b) => byId(a.module, b.module));
     }
+
+    abstract size(): number;
+
+    abstract identifier(): string;
+
+    abstract readableIdentifier(...args): string;
+
+    abstract source(...args): any;
+
+    abstract build(...args): void;
 }
 
 export = Module;
