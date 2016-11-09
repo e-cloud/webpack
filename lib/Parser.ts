@@ -20,12 +20,12 @@ const POSSIBLE_AST_OPTIONS = [
     {
         ranges: true,
         locations: true,
-        ecmaVersion: 6,
+        ecmaVersion: 2017,
         sourceType: 'module'
     }, {
         ranges: true,
         locations: true,
-        ecmaVersion: 6,
+        ecmaVersion: 2017,
         sourceType: 'script'
     }
 ] as ASTOPTION[];
@@ -829,6 +829,13 @@ class Parser extends Tapable {
         }
     }
 
+    walkAwaitExpression(expression) {
+        const argument = expression.argument
+        if (this["walk" + argument.type]) {
+            return this["walk" + argument.type](argument);
+        }
+    }
+
     walkSpreadElement(expression) {
         if (expression.argument) {
             this.walkExpression(expression.argument);
@@ -1105,7 +1112,7 @@ class Parser extends Tapable {
     }
 
     enterPattern(pattern, onIdent) {
-        if (this[`enter${pattern.type}`]) {
+        if (pattern != null && this[`enter${pattern.type}`]) {
             return this[`enter${pattern.type}`](pattern, onIdent);
         }
     }
@@ -1251,7 +1258,7 @@ class Parser extends Tapable {
             ast = acorn.parse(source, {
                 ranges: true,
                 locations: true,
-                ecmaVersion: 6,
+                ecmaVersion: 2017,
                 sourceType: 'module',
                 onComment: comments
             });
@@ -1279,7 +1286,7 @@ class Parser extends Tapable {
         const ast = acorn.parse(`(${source})`, {
             ranges: true,
             locations: true,
-            ecmaVersion: 6,
+            ecmaVersion: 2017,
             sourceType: 'module'
         });
         if (!ast || typeof ast !== 'object' || ast.type !== 'Program') {

@@ -94,7 +94,6 @@ class WebpackOptionsDefaulter extends OptionsDefaulter {
         this.set('resolveLoader.unsafeCache', true);
         this.set('resolveLoader.mainFields', ['loader', 'main']);
         this.set('resolveLoader.extensions', ['.js', '.json']);
-        this.set('resolveLoader.moduleExtensions', ['-loader']);
     }
 }
 

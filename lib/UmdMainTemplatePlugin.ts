@@ -153,7 +153,7 @@ ${(externals.length > 0
                     +
                     `})(this, function(${externalsArguments(externals)}) {\nreturn `, 'webpack/universalModuleDefinition'),
                 source,
-                '\n});\n'
+                ';\n})'
             );
         });
         mainTemplate.plugin('global-hash-paths', paths => {

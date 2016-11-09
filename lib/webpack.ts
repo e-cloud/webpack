@@ -7,14 +7,16 @@ import MultiCompiler = require('./MultiCompiler');
 import NodeEnvironmentPlugin = require('./node/NodeEnvironmentPlugin');
 import WebpackOptionsApply = require('./WebpackOptionsApply');
 import WebpackOptionsDefaulter = require('./WebpackOptionsDefaulter');
-import validateWebpackOptions = require('./validateWebpackOptions');
+import validateSchema = require("./validateSchema");
 import WebpackOptionsValidationError = require('./WebpackOptionsValidationError');
+
+const webpackOptionsSchema = require("../schemas/webpackOptionsSchema.json");
 
 function webpack(options, callback): Watching
 function webpack(options): MultiCompiler | Compiler
 
 function webpack(options, callback?) {
-    const webpackOptionsValidationErrors = validateWebpackOptions(options);
+    const webpackOptionsValidationErrors = validateSchema(webpackOptionsSchema, options);
     if (webpackOptionsValidationErrors.length) {
         throw new WebpackOptionsValidationError(webpackOptionsValidationErrors);
     }
@@ -57,7 +59,9 @@ webpack.WebpackOptionsApply = WebpackOptionsApply;
 webpack.Compiler = Compiler;
 webpack.MultiCompiler = MultiCompiler;
 webpack.NodeEnvironmentPlugin = NodeEnvironmentPlugin;
-webpack.validate = validateWebpackOptions;
+webpack.validate = validateSchema.bind(this, webpackOptionsSchema);
+webpack.validateSchema = validateSchema;
+webpack.WebpackOptionsValidationError = WebpackOptionsValidationError;
 
 function exportPlugins(exports, path, plugins) {
     plugins.forEach(name => {

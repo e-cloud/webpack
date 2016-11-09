@@ -65,6 +65,8 @@ For loader options: webpack 2 no longer allows custom properties in configuratio
                         return `${dataPath} should be a number.`;
                 }
                 return `${dataPath} should be ${err.params.type}:\n${getSchemaPartText(err.parentSchema)}`;
+            case "instanceof":
+                return `${dataPath} should be an instance of ${getSchemaPartText(err.parentSchema)}.`;
             case 'required':
                 const missingProperty = err.params.missingProperty.replace(/^\./, '');
                 return `${dataPath} misses the property '${missingProperty}'.\n${getSchemaPartText(err.parentSchema, [

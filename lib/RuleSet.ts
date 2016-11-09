@@ -51,7 +51,7 @@
  <condition>: { and: [<condition>] }
  <condition>: { or: [<condition>] }
  <condition>: { not: [<condition>] }
- <condition>: { test: <condition>, include: <condition>, exclude: <codition> }
+ <condition>: { test: <condition>, include: <condition>, exclude: <condition> }
 
 
  normalized:
@@ -163,20 +163,33 @@ class RuleSet {
 
         if (rule.test || rule.include || rule.exclude) {
             checkResourceSource('test + include + exclude');
-            newRule.resource = RuleSet.normalizeCondition({
+            let condition = {
                 test: rule.test,
                 include: rule.include,
                 exclude: rule.exclude
-            });
+            };
+            try {
+                newRule.resource = RuleSet.normalizeCondition(condition);
+            } catch(error) {
+                throw new Error(RuleSet.buildErrorMessage(condition, error));
+            }
         }
 
         if (rule.resource) {
             checkResourceSource('resource');
-            newRule.resource = RuleSet.normalizeCondition(rule.resource);
+            try {
+                newRule.resource = RuleSet.normalizeCondition(rule.resource);
+            } catch(error) {
+                throw new Error(RuleSet.buildErrorMessage(rule.resource, error));
+            }
         }
 
         if (rule.issuer) {
-            newRule.issuer = RuleSet.normalizeCondition(rule.issuer);
+            try {
+                newRule.issuer = RuleSet.normalizeCondition(rule.issuer);
+            } catch(error) {
+                throw new Error(RuleSet.buildErrorMessage(rule.issuer, error));
+            }
         }
 
         if (rule.loader && rule.loaders) {
@@ -348,6 +361,15 @@ class RuleSet {
             return matchers[0];
         }
         return andMatcher(matchers);
+    }
+
+    static buildErrorMessage(condition, error) {
+        const conditionAsText = JSON.stringify(
+            condition,
+            (key, value) => value === undefined ? "undefined" : value,
+            2
+        )
+        return error.message + " in " + conditionAsText;
     }
 
     exec(data) {

@@ -1,9 +1,9 @@
 /*
- MIT License http://www.opensource.org/licenses/mit-license.php
- Author Gajus Kuizinas @gajus
- */
+	MIT License http://www.opensource.org/licenses/mit-license.php
+	Author Gajus Kuizinas @gajus
+*/
 import Ajv = require('ajv');
-const webpackOptionsSchema = require('../schemas/webpackOptionsSchema.json');
+import defineKeywords = require('ajv-keywords')
 
 const ajv = new Ajv({
     errorDataPath: 'configuration',
@@ -11,14 +11,16 @@ const ajv = new Ajv({
     verbose: true
 });
 
-const validate = ajv.compile(webpackOptionsSchema);
+defineKeywords(ajv);
 
-function validateWebpackOptions(options) {
+function validateSchema(schema, options) {
+    const validate = ajv.compile(schema);
     if (Array.isArray(options)) {
         const errors = options.map(validateObject);
-        errors.forEach((list, idx) => {
+
+        errors.forEach(function (list, idx) {
             list.forEach(function applyPrefix(err) {
-                err.dataPath = `[${idx}]${err.dataPath}`;
+                err.dataPath = "[" + idx + "]" + err.dataPath;
                 if (err.children) {
                     err.children.forEach(applyPrefix);
                 }
@@ -29,11 +31,11 @@ function validateWebpackOptions(options) {
     else {
         return validateObject(options);
     }
-}
 
-function validateObject(options) {
-    const valid = validate(options);
-    return valid ? [] : filterErrors(validate.errors);
+    function validateObject(options) {
+        const valid = validate(options);
+        return valid ? [] : filterErrors(validate.errors);
+    }
 }
 
 function filterErrors(errors) {
@@ -62,4 +64,4 @@ function filterErrors(errors) {
     return newErrors;
 }
 
-export = validateWebpackOptions;
+export = validateSchema;

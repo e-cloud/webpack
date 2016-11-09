@@ -1037,11 +1037,12 @@ class Compilation extends Tapable {
         for (let i = 0; i < this.modules.length; i++) {
             const module = this.modules[i];
             if (module.assets) {
-                Object.keys(module.assets).forEach(function (name) {
-                    const file = this.getPath(name);
-                    this.assets[file] = module.assets[name];
-                    this.applyPlugins('module-asset', module, file);
-                }, this);
+                Object.keys(module.assets)
+                    .forEach(name => {
+                        const file = this.getPath(name);
+                        this.assets[file] = module.assets[name];
+                        this.applyPlugins('module-asset', module, file);
+                    });
             }
         }
     }
