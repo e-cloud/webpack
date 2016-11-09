@@ -52,3 +52,5 @@ lib/**/*.map
 .DS_Store
 .idea
 .vscode
+
+yarn.lock
