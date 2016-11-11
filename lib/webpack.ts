@@ -12,7 +12,7 @@ import WebpackOptionsValidationError = require('./WebpackOptionsValidationError'
 
 const webpackOptionsSchema = require("../schemas/webpackOptionsSchema.json");
 
-function webpack(options, callback): Watching
+function webpack(options, callback): Compiler.Watching
 function webpack(options): MultiCompiler | Compiler
 
 function webpack(options, callback?) {

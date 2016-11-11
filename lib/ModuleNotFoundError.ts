@@ -6,7 +6,7 @@ import Dependency = require('./Dependency')
 import Module = require('./Module')
 
 class ModuleNotFoundError extends Error {
-    details: string[]
+    details: string
     missing: string
     origin: Module
 

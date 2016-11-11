@@ -2,6 +2,14 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+
+// just for eliminating the compiler error, ignore it
+declare var installedChunks
+declare var $hotChunkFilename$
+declare var $require$
+declare var hotAddUpdateChunk
+declare var $hotMainFilename$
+
 /*global installedChunks $hotChunkFilename$ $require$ hotAddUpdateChunk $hotMainFilename$ */
 export = function () {
     function hotDownloadUpdateChunk(chunkId) {
@@ -16,7 +24,7 @@ export = function () {
                     throw err;
                 }
             }
-            const chunk = {};
+            const chunk: any = {};
             require('vm').runInThisContext(`(function(exports) {${content}\n})`, filename)(chunk);
             hotAddUpdateChunk(chunk.id, chunk.modules);
         });

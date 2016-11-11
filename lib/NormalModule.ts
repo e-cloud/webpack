@@ -125,7 +125,7 @@ class NormalModule extends Module {
                 this.assets[name] = new OriginalSource(content, sourceMap);
             }
             else if (sourceMap) {
-                this.assets[name] = new SourceMapSource(content, name, sourceMap);
+                this.assets[name] = new SourceMapSource(content, name, sourceMap, null);
             }
             else {
                 this.assets[name] = new RawSource(content);
@@ -167,7 +167,7 @@ class NormalModule extends Module {
                 self._source = new LineToLineMappedSource(source, self.identifier(), asString(resourceBuffer));
             }
             else if (self.identifier && self.useSourceMap && sourceMap) {
-                self._source = new SourceMapSource(source, self.identifier(), sourceMap);
+                self._source = new SourceMapSource(source, self.identifier(), sourceMap, null);
             }
             else if (self.identifier) {
                 self._source = new OriginalSource(source, self.identifier());
@@ -190,7 +190,7 @@ class NormalModule extends Module {
         self.built = true;
         self._source = null;
         self.error = null;
-        return self.doBuild(options, compilation, resolver, fs, err => {
+        return self.doBuild(options, compilation, resolver, fs, function (err) {
             self.dependencies.length = 0;
             self.variables.length = 0;
             self.blocks.length = 0;
@@ -198,12 +198,14 @@ class NormalModule extends Module {
             if (err) {
                 return setError(err);
             }
+
+            function testRegExp(regExp) {
+                return typeof regExp === 'string'
+                    ? self.request.indexOf(regExp) === 0
+                    : regExp.test(self.request);
+            }
+
             if (options.module && options.module.noParse) {
-                function testRegExp(regExp) {
-                    return typeof regExp === 'string'
-                        ? self.request.indexOf(regExp) === 0
-                        : regExp.test(self.request);
-                }
 
                 if (Array.isArray(options.module.noParse)) {
                     if (options.module.noParse.some(testRegExp, self)) {
@@ -252,7 +254,7 @@ class NormalModule extends Module {
         if (!_source) {
             return new RawSource('throw new Error(\'No source available\');');
         }
-        const source = new ReplaceSource(_source);
+        const source = new ReplaceSource(_source, '');
         this._cachedSource = {
             source,
             hash

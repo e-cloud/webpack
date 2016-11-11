@@ -9,7 +9,7 @@ class LimitChunkCountPlugin {
     constructor(
         public options: {
             maxChunks: number
-        } = {}
+        } = {} as any
     ) {
         if (options !== undefined && typeof options !== 'object' || Array.isArray(options)) {
             throw new Error('Argument should be an options object.\nFor more info on options, see https://webpack.github.io/docs/list-of-plugins.html');

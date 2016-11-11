@@ -2,7 +2,19 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-/*global $hash$ installedModules $require$ hotDownloadManifest hotDownloadUpdateChunk hotDisposeChunk modules */
+
+// just for eliminating the compiler error, ignore it
+declare var $hash$
+declare var installedModules
+declare var $require$
+declare var $require$
+declare var hotDownloadManifest
+declare var chunkId
+declare var hotDownloadUpdateChunk
+declare var installedModules
+declare var hotDisposeChunk
+declare var modules
+
 export = function () {
     let hotApplyOnUpdate = true;
     let hotCurrentHash = $hash$; // eslint-disable-line no-unused-vars
@@ -377,7 +389,7 @@ export = function () {
         for (const id in hotUpdate) {
             if (Object.prototype.hasOwnProperty.call(hotUpdate, id)) {
                 moduleId = toModuleId(id);
-                let result;
+                let result: any;
                 if (hotUpdate[id]) {
                     result = getAffectedStuff(moduleId);
                 }
@@ -387,7 +399,7 @@ export = function () {
                         moduleId: id
                     };
                 }
-                let abortError = false;
+                let abortError: any = false;
                 let doApply = false;
                 let doDispose = false;
                 let chainInfo = '';

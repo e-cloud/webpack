@@ -13,7 +13,7 @@ class HashedModuleIdsPlugin {
         hashDigest: HexBase64Latin1Encoding
         hashDigestLength: number
         context: string
-    } = {}) {
+    } = {} as any) {
         this.options.hashFunction = this.options.hashFunction || 'md5';
         this.options.hashDigest = this.options.hashDigest || 'base64';
         this.options.hashDigestLength = this.options.hashDigestLength || 4;

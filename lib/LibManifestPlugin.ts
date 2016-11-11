@@ -7,6 +7,8 @@ import async = require('async');
 import HarmonyModulesHelpers = require('./dependencies/HarmonyModulesHelpers');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import Chunk = require('./Chunk')
+import NormalModule = require('./NormalModule')
 
 class LibManifestPlugin {
     constructor(
@@ -21,7 +23,7 @@ class LibManifestPlugin {
 
     apply(compiler: Compiler) {
         compiler.plugin('emit', (compilation: Compilation, callback) => {
-            async.forEach(compilation.chunks, (chunk, callback) => {
+            async.each(compilation.chunks, (chunk: Chunk, callback) => {
                 if (!chunk.isInitial()) {
                     callback();
                     return;
@@ -37,7 +39,7 @@ class LibManifestPlugin {
                 const manifest = {
                     name,
                     type: this.options.type,
-                    content: chunk.modules.reduce((obj, module) => {
+                    content: chunk.modules.reduce((obj, module: NormalModule) => {
                         if (module.libIdent) {
                             const ident = module.libIdent({
                                 context: this.options.context || compiler.options.context

@@ -11,7 +11,7 @@ import NormalModuleFactory = require('./NormalModuleFactory');
 import ContextModuleFactory = require('./ContextModuleFactory');
 import Dependency = require('./Dependency')
 
-interface WatchOption {
+declare interface WatchOption {
     aggregateTimeout: number
 }
 

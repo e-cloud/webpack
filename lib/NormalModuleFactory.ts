@@ -27,6 +27,11 @@ function loaderToIdent(data) {
     return `${data.loader}?${JSON.stringify(data.options)}`;
 }
 
+type Loader = {
+    loader: string,
+    options: string
+}
+
 class NormalModuleFactory extends Tapable {
     ruleSet: RuleSet
     parserCache: {}
@@ -235,7 +240,7 @@ class NormalModuleFactory extends Tapable {
         if (array.length === 0) {
             return callback(null, []);
         }
-        async.map(array, (item, callback) => {
+        async.map(array, function (item: Loader, callback: (err, ...args) => any) {
             resolver.resolve(contextInfo, context, item.loader, (err, result) => {
                 if (err) {
                     return callback(err);
@@ -265,7 +270,7 @@ class NormalModuleFactory extends Tapable {
     }
 
     createParser(parserOptions) {
-        const parser = new Parser();
+        const parser = new Parser({});
         this.applyPlugins('parser', parser, parserOptions || {});
         return parser;
     }

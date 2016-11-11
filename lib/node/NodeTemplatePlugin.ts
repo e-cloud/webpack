@@ -11,11 +11,9 @@ import Compiler = require('../Compiler')
 class NodeTemplatePlugin {
     asyncChunkLoading: boolean
 
-    constructor(
-        options: {
-            asyncChunkLoading: boolean
-        } = {}
-    ) {
+    constructor(options: {
+        asyncChunkLoading: boolean
+    } = {} as any) {
         this.asyncChunkLoading = options.asyncChunkLoading;
     }
 

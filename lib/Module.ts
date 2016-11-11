@@ -56,7 +56,7 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
         this.errors = [];
         this.dependenciesErrors = [];
         this.strict = false;
-        this.meta = {};
+        this.meta = {} as any;
     }
 
     _removeAndDo(collection, thing, action) {
@@ -211,6 +211,8 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
     abstract source(...args): any;
 
     abstract build(...args): void;
+
+    nameForCondition?(...args): any;
 }
 
 export = Module;

@@ -153,7 +153,7 @@ class SourceMapDevToolPlugin {
                     asset.__SourceMapDevToolData = {};
                     let currentSourceMappingURLComment = sourceMappingURLComment;
                     if (currentSourceMappingURLComment !== false && /\.css($|\?)/i.test(file)) {
-                        currentSourceMappingURLComment = currentSourceMappingURLComment.replace(/^\n\/\/(.*)$/, '\n/*$1*/');
+                        currentSourceMappingURLComment = (currentSourceMappingURLComment as string).replace(/^\n\/\/(.*)$/, '\n/*$1*/');
                     }
                     if (sourceMapFilename) {
                         let filename = file;
@@ -171,13 +171,13 @@ class SourceMapDevToolPlugin {
                         });
                         const sourceMapUrl = path.relative(path.dirname(file), sourceMapFile).replace(/\\/g, '/');
                         if (currentSourceMappingURLComment !== false) {
-                            asset.__SourceMapDevToolData[file] = this.assets[file] = new ConcatSource(new RawSource(source), currentSourceMappingURLComment.replace(/\[url\]/g, sourceMapUrl));
+                            asset.__SourceMapDevToolData[file] = this.assets[file] = new ConcatSource(new RawSource(source), (currentSourceMappingURLComment as string).replace(/\[url\]/g, sourceMapUrl));
                         }
                         asset.__SourceMapDevToolData[sourceMapFile] = this.assets[sourceMapFile] = new RawSource(JSON.stringify(sourceMap));
                         chunk.files.push(sourceMapFile);
                     }
                     else {
-                        asset.__SourceMapDevToolData[file] = this.assets[file] = new ConcatSource(new RawSource(source), currentSourceMappingURLComment.replace(/\[map\]/g, () => JSON.stringify(sourceMap))
+                        asset.__SourceMapDevToolData[file] = this.assets[file] = new ConcatSource(new RawSource(source), (currentSourceMappingURLComment as string).replace(/\[map\]/g, () => JSON.stringify(sourceMap))
                             .replace(/\[url\]/g, () => `data:application/json;charset=utf-8;base64,${new Buffer(JSON.stringify(sourceMap)).toString('base64')}`));
                     }
                 }, this);

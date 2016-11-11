@@ -40,7 +40,7 @@ export = AbstractPlugin.create({
                     this.inScope([], () => {
                         dependenciesItems.forEach(ee => {
                             if (ee.isString()) {
-                                const edep = new RequireEnsureItemDependency(ee.string, ee.range);
+                                const edep = new RequireEnsureItemDependency(ee.string);
                                 edep.loc = dep.loc;
                                 dep.addDependency(edep);
                             }

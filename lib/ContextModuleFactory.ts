@@ -136,7 +136,7 @@ class ContextModuleFactory extends Tapable {
                 }
                 async.map(
                     files.filter(p => p.indexOf('.') !== 0),
-                    (seqment, callback) => {
+                    (seqment, callback: (err?: Error, result?) => void) => {
                         const subResource = path.join(directory, seqment);
 
                         fs.stat(subResource, (err, stat) => {

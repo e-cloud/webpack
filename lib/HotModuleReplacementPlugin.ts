@@ -22,12 +22,10 @@ class HotModuleReplacementPlugin {
     multiStep: boolean
     fullBuildTimeout: number
 
-    constructor(
-        options: {
-            multiStep: boolean
-            fullBuildTimeout: number
-        } = {}
-    ) {
+    constructor(options: {
+        multiStep: boolean
+        fullBuildTimeout: number
+    } = {} as any) {
         this.multiStep = options.multiStep;
         this.fullBuildTimeout = options.fullBuildTimeout || 200;
     }

@@ -16,4 +16,13 @@ NodeOutputFileSystem.prototype.unlink = fs.unlink.bind(this);
 NodeOutputFileSystem.prototype.writeFile = fs.writeFile.bind(fs);
 NodeOutputFileSystem.prototype.join = path.join.bind(path);
 
+interface NodeOutputFileSystem {
+    mkdirp
+    mkdir
+    rmdir
+    unlink
+    writeFile
+    join
+}
+
 export = NodeOutputFileSystem;

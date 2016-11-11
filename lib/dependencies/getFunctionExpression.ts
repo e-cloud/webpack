@@ -2,7 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { FunctionExpression, Expression } from 'estree'
+import { FunctionExpression, Expression, ReturnStatement } from 'estree'
 
 export = function (expr: Expression): {
     fn: FunctionExpression
@@ -38,10 +38,10 @@ export = function (expr: Expression): {
         && expr.callee.body.body
         && expr.callee.body.body.length === 1
         && expr.callee.body.body[0].type === 'ReturnStatement'
-        && expr.callee.body.body[0].argument
-        && expr.callee.body.body[0].argument.type === 'FunctionExpression') {
+        && (expr.callee.body.body[0] as ReturnStatement).argument
+        && ((expr.callee.body.body[0] as ReturnStatement).argument as FunctionExpression).type === 'FunctionExpression') {
         return {
-            fn: expr.callee.body.body[0].argument,
+            fn: (expr.callee.body.body[0] as ReturnStatement).argument as FunctionExpression,
             expressions: [],
             needThis: true
         };

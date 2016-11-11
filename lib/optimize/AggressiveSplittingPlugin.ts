@@ -13,7 +13,7 @@ class AggressiveSplittingPlugin {
             maxSize: number
             chunkOverhead: number
             entryChunkMultiplicator: number
-        } = {}
+        } = {} as any
     ) {
         if (typeof this.options.minSize !== 'number') {
             this.options.minSize = 30 * 1024;

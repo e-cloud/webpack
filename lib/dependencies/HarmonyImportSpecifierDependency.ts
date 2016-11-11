@@ -61,7 +61,7 @@ class HarmonyImportSpecifierDependency extends NullDependency {
         const importedModule = this.importDependency.module;
         if (importedModule && importedModule.meta && importedModule.meta.harmonyModule) {
             if (this.id && importedModule.isProvided(this.id) === false) {
-                const err = new Error(`export '${this.id}'${this.id !== this.name
+                const err: any = new Error(`export '${this.id}'${this.id !== this.name
                     ? ' (imported as \'' + this.name + '\')'
                     : ''} was not found in '${this.importDependency.userRequest}'`);
                 err.hideStack = true;

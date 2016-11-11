@@ -10,7 +10,7 @@ class AggressiveMergingPlugin {
             minSizeReduce: number
             entryChunkMultiplicator: number
             moveToParents: boolean
-        } = {}
+        } = {} as any
     ) {
         if (options !== undefined && typeof options !== 'object' || Array.isArray(options)) {
             throw new Error('Argument should be an options object. To use defaults, pass in nothing.\nFor more info on options, see https://webpack.github.io/docs/list-of-plugins.html');

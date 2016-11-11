@@ -57,7 +57,9 @@ class Compilation extends Tapable {
     nextFreeModuleIndex2: number
     additionalChunkAssets: string[]
     assets: {}
-    errors: Error[]
+    errors: (Error & {
+        missing?: string[]
+    })[]
     warnings: Error[]
     children: Compilation[]
     dependencyFactories: ArrayMap
@@ -90,7 +92,7 @@ class Compilation extends Tapable {
         this.profile = options && options.profile;
 
         this.mainTemplate = new MainTemplate(this.outputOptions);
-        this.chunkTemplate = new ChunkTemplate(this.outputOptions, this.mainTemplate);
+        this.chunkTemplate = new ChunkTemplate(this.outputOptions);
         this.hotUpdateChunkTemplate = new HotUpdateChunkTemplate(this.outputOptions);
         this.moduleTemplate = new ModuleTemplate(this.outputOptions);
 
@@ -253,7 +255,7 @@ class Compilation extends Tapable {
             }
             factories[i] = [factory, dependencies[i]];
         }
-        async.forEach(
+        async.each(
             factories,
             (item, callback) => {
                 const dependencies = item[1];

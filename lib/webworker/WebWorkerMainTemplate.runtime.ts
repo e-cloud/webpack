@@ -2,7 +2,16 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-/*globals installedChunks hotAddUpdateChunk parentHotUpdateCallback importScripts XMLHttpRequest $require$ $hotChunkFilename$ $hotMainFilename$ */
+// just for eliminating the compiler error, ignore it
+declare var installedChunks
+declare var hotAddUpdateChunk
+declare var parentHotUpdateCallback
+declare var importScripts
+declare var XMLHttpRequest
+declare var $require$
+declare var $hotChunkFilename$
+declare var $hotMainFilename$
+
 export = function () {
     function webpackHotUpdateCallback(chunkId, moreModules) {
         // eslint-disable-line no-unused-vars

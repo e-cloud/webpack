@@ -39,9 +39,9 @@ class CachePlugin {
                 }
                 const fs = compiler.inputFileSystem;
                 const fileTs = compiler.fileTimestamps = {};
-                async.forEach(
+                async.each(
                     compiler._lastCompilationFileDependencies,
-                    (file, callback) => {
+                    (file: string, callback) => {
                         fs.stat(file, (err, stat) => {
                             if (err) {
                                 if (err.code === 'ENOENT') {

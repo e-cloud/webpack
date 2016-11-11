@@ -5,11 +5,18 @@
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 
+interface ProgressPluginHandler {
+    (percentage, msg, ...details: string[]): void
+}
+
 class ProgressPlugin {
     profile: boolean
-    handler: (percentage, msg, ...details: string[]) => void
+    handler: ProgressPluginHandler
 
-    constructor(options = {}) {
+    constructor(options: ProgressPluginHandler |　{
+        profile?: boolean
+        handler: ProgressPluginHandler
+    } = {} as any) {
         if (typeof options === 'function') {
             options = {
                 handler: options

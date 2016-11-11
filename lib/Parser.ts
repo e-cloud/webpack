@@ -2,6 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import * as ESTree from 'estree'
 import acorn = require('acorn');
 import Tapable = require('tapable');
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
@@ -1172,7 +1173,7 @@ class Parser extends Tapable {
         throw new Error(`${expression.type} is not supported as parameter for require`);
     }
 
-    parseCalculatedString(expression) {
+    parseCalculatedString(expression): CalculatedStringArrayParseResult {
         switch (expression.type) {
             case 'BinaryExpression':
                 if (expression.operator === '+') {
@@ -1295,7 +1296,7 @@ class Parser extends Tapable {
         if (ast.body.length !== 1 || ast.body[0].type !== 'ExpressionStatement') {
             throw new Error('evaluate: Source is not a expression');
         }
-        return this.evaluateExpression(ast.body[0].expression);
+        return this.evaluateExpression((ast.body[0] as ESTree.ExpressionStatement).expression);
     }
 }
 
@@ -1330,5 +1331,23 @@ Parser.prototype.walkBinaryExpression = Parser.prototype.walkLogicalExpression =
         return [this[fn](expression)];
     };
 });
+
+interface CalculatedStringArrayParseResult {
+    value: string
+    code?: boolean
+    range?: [number, number]
+    conditional?: CalculatedStringArrayParseResult[]
+}
+
+declare interface Parser {
+    walkReturnStatement(statement): void
+    walkThrowStatement(statement): void
+    walkWhileStatement(statement): void
+    walkDoWhileStatement(statement): void
+    walkBinaryExpression(expression): void
+    walkLogicalExpression(expression): void
+    parseStringArray(expression): string
+    parseCalculatedStringArray(expression): CalculatedStringArrayParseResult
+}
 
 export = Parser;

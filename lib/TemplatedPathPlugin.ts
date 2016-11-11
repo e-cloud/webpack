@@ -23,6 +23,7 @@ const REGEXP_CHUNKHASH_FOR_TEST = new RegExp(REGEXP_CHUNKHASH.source, 'i');
 const REGEXP_NAME_FOR_TEST = new RegExp(REGEXP_NAME.source, 'i');
 
 // Backwards compatibility; expose regexps on Template object
+// todo: remove these code
 Template.REGEXP_HASH = REGEXP_HASH;
 Template.REGEXP_CHUNKHASH = REGEXP_CHUNKHASH;
 Template.REGEXP_NAME = REGEXP_NAME;

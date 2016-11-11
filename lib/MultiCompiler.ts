@@ -8,7 +8,7 @@ import Stats = require('./Stats');
 import Compiler = require('./Compiler')
 
 class MultiWatching {
-    constructor(public watchings: Watching[]) {
+    constructor(public watchings: Compiler.Watching[]) {
     }
 
     invalidate() {
@@ -18,7 +18,7 @@ class MultiWatching {
     }
 
     close(callback) {
-        async.forEach(this.watchings, (watching, callback) => {
+        async.each(this.watchings, (watching, callback) => {
             watching.close(callback);
         }, callback);
     }
@@ -91,7 +91,7 @@ class MultiCompiler extends Tapable {
         }, this);
     }
 
-    watch(watchOptions: WatchOption, handler) {
+    watch(watchOptions: Compiler.WatchOption, handler) {
         const watchings = [];
         const allStats = this.compilers.map(() => null);
         const compilerStatus = this.compilers.map(() => false);
@@ -184,7 +184,7 @@ function runWithDependencies(compilers, fn, callback) {
         if (remainingCompilers.length === 0) {
             return callback();
         }
-        async.map(getReadyCompilers(), (compiler, callback) => {
+        async.map(getReadyCompilers(), (compiler, callback: (err) => any) => {
             fn(compiler, err => {
                 if (err) {
                     return callback(err);
