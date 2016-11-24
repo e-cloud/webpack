@@ -82,6 +82,9 @@
               },
               {
                 "type": "object"
+              },
+              {
+                "type": "boolean"
               }
             ]
           },
@@ -144,8 +147,7 @@
                 "instanceof": "RegExp"
               },
               "minItems": 1,
-              "type": "array",
-              "uniqueItems": true
+              "type": "array"
             },
             {
               "instanceof": "RegExp"
@@ -363,6 +365,10 @@
           "description": "Prefixes every line of the source in the bundle with this string.",
           "type": "string"
         },
+        "strictModuleExceptionHandling": {
+          "description": "Handles exceptions in module loading correctly at a performance cost.",
+          "type": "boolean"
+        },
         "umdNamedDefine": {
           "description": "If `output.libraryTarget` is set to umd and `output.library` is set, setting this to true will name the AMD module.",
           "type": "boolean"
@@ -561,6 +567,9 @@
         "resource": {
           "$ref": "#/definitions/ruleSet-condition"
         },
+        "resourceQuery": {
+          "$ref": "#/definitions/ruleSet-condition"
+        },
         "rules": {
           "$ref": "#/definitions/ruleSet-rules"
         },
@@ -583,6 +592,9 @@
       "anyOf": [
         {
           "$ref": "#/definitions/ruleSet-use-item"
+        },
+        {
+          "instanceof": "Function"
         },
         {
           "items": {

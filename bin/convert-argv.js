@@ -296,6 +296,7 @@ module.exports = function(yargs, argv, convertOptions) {
 			ifArgPair(arg, function(name, binding) {
 				if(name === null) {
 					name = binding;
+					binding += "-loader";
 				}
 				options.module[collection].push({
 					test: new RegExp("\\." + name.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&") + "$"),
@@ -455,12 +456,6 @@ module.exports = function(yargs, argv, convertOptions) {
 			options.plugins.push(new LoaderOptionsPlugin({
 				minimize: true
 			}));
-		});
-
-		ifBooleanArg("optimize-dedupe", function() {
-			ensureArray(options, "plugins");
-			var DedupePlugin = require("../lib/optimize/DedupePlugin");
-			options.plugins.push(new DedupePlugin());
 		});
 
 		ifArg("prefetch", function(request) {
