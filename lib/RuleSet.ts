@@ -102,7 +102,7 @@ interface Rule {
         test: Condition
         include: Condition
         exclude: Condition
-    } | Condition,// -> resource.test
+    } | Condition, // -> resource.test
     test: Condition // -> resource.test
     include: Condition // -> resource.include
     exclude: Condition // -> resource.exclude
@@ -110,7 +110,7 @@ interface Rule {
         test: Condition
         include: Condition
         exclude: Condition
-    } | Condition,// -> issuer.test
+    } | Condition, // -> issuer.test
     use: UseItem // -> use[0].loader
     loader: Loader // -> use[0].loader
     loaders: UseItem // -> use
@@ -170,7 +170,7 @@ class RuleSet {
             };
             try {
                 newRule.resource = RuleSet.normalizeCondition(condition);
-            } catch(error) {
+            } catch (error) {
                 throw new Error(RuleSet.buildErrorMessage(condition, error));
             }
         }
@@ -179,7 +179,7 @@ class RuleSet {
             checkResourceSource('resource');
             try {
                 newRule.resource = RuleSet.normalizeCondition(rule.resource);
-            } catch(error) {
+            } catch (error) {
                 throw new Error(RuleSet.buildErrorMessage(rule.resource, error));
             }
         }
@@ -187,7 +187,7 @@ class RuleSet {
         if (rule.issuer) {
             try {
                 newRule.issuer = RuleSet.normalizeCondition(rule.issuer);
-            } catch(error) {
+            } catch (error) {
                 throw new Error(RuleSet.buildErrorMessage(rule.issuer, error));
             }
         }
@@ -366,10 +366,10 @@ class RuleSet {
     static buildErrorMessage(condition, error) {
         const conditionAsText = JSON.stringify(
             condition,
-            (key, value) => value === undefined ? "undefined" : value,
+            (key, value) => value === undefined ? 'undefined' : value,
             2
         )
-        return error.message + " in " + conditionAsText;
+        return `${error.message} in ${conditionAsText}`;
     }
 
     exec(data) {

@@ -38,7 +38,7 @@ class OccurrenceOrderPlugin {
                             }
                             return r.module.chunks.length;
                         }).reduce((a, b) => a + b, 0) + m.chunks.length + m.chunks.filter(c => {
-                            // todo: what?
+                            // todo: what? may need a return
                             c.entryModule === m;
                         }).length;
                 }

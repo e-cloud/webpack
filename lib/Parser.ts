@@ -251,9 +251,9 @@ class Parser extends Tapable {
         });
         this.plugin('evaluate UnaryExpression', function (expr) {
             if (expr.operator === 'typeof') {
-                let res;
+                let res, name;
                 if (expr.argument.type === 'Identifier') {
-                    var name = this.scope.renames[`$${expr.argument.name}`] || expr.argument.name;
+                    name = this.scope.renames[`$${expr.argument.name}`] || expr.argument.name;
                     if (!this.scope.definitions.includes(name)) {
                         res = this.applyPluginsBailResult(`evaluate typeof ${name}`, expr);
                         if (res !== undefined) {
@@ -270,6 +270,7 @@ class Parser extends Tapable {
                     }
                     if (expression.type === 'Identifier') {
                         exprName.unshift(this.scope.renames[`$${expression.name}`] || expression.name);
+                        // todo: what's the name? it hasn't been initialized
                         if (!this.scope.definitions.includes(name)) {
                             const exprNameStr = exprName.join('.');
                             res = this.applyPluginsBailResult(`evaluate typeof ${exprNameStr}`, expr);
@@ -682,8 +683,9 @@ class Parser extends Tapable {
     }
 
     walkExportNamedDeclaration(statement) {
+        let source
         if (statement.source) {
-            var source = statement.source.value;
+            source = statement.source.value;
             this.applyPluginsBailResult('export import', statement, source);
         }
         else {
@@ -832,8 +834,8 @@ class Parser extends Tapable {
 
     walkAwaitExpression(expression) {
         const argument = expression.argument
-        if (this["walk" + argument.type]) {
-            return this["walk" + argument.type](argument);
+        if (this['walk' + argument.type]) {
+            return this['walk' + argument.type](argument);
         }
     }
 

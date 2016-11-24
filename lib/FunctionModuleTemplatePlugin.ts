@@ -2,7 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { ConcatSource, PrefixSource } from 'webpack-sources'
+import { ConcatSource } from 'webpack-sources'
 import ModuleTemplate = require('./ModuleTemplate')
 
 class FunctionModuleTemplatePlugin {

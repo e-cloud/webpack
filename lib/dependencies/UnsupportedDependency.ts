@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import NullDependency = require('./NullDependency');
-import DepBlockHelpers = require('./DepBlockHelpers');
 
 class Template {
     apply(dep, source, outputOptions, requestShortener) {

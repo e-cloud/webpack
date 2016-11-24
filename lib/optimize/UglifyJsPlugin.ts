@@ -60,15 +60,15 @@ class UglifyJsPlugin {
                 files.forEach(file => {
                     const oldWarnFunction = uglify.AST_Node.warn_function;
                     const warnings = [];
+                    let sourceMap: SourceMapConsumer
                     try {
                         const asset = compilation.assets[file];
                         if (asset.__UglifyJsPlugin) {
                             compilation.assets[file] = asset.__UglifyJsPlugin;
                             return;
                         }
-                        let input;
+                        let input, inputSourceMap;
                         if (options.sourceMap) {
-                            var inputSourceMap;
                             if (asset.sourceAndMap) {
                                 const sourceAndMap = asset.sourceAndMap();
                                 inputSourceMap = sourceAndMap.map;
@@ -78,7 +78,7 @@ class UglifyJsPlugin {
                                 inputSourceMap = asset.map();
                                 input = asset.source();
                             }
-                            var sourceMap = new SourceMapConsumer(inputSourceMap);
+                            sourceMap = new SourceMapConsumer(inputSourceMap);
                             uglify.AST_Node.warn_function = warning => {
                                 // eslint-disable-line camelcase
                                 const match = /\[.+:([0-9]+),([0-9]+)\]/.exec(warning);
@@ -128,8 +128,9 @@ class UglifyJsPlugin {
                         for (const k in options.output) {
                             output[k] = options.output[k];
                         }
+                        let map
                         if (options.sourceMap) {
-                            var map = uglify.SourceMap({ // eslint-disable-line new-cap
+                            map = uglify.SourceMap({ // eslint-disable-line new-cap
                                 file,
                                 root: ''
                             });

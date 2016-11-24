@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import ModuleDependency = require('./ModuleDependency');
-import Module = require('../Module')
 
 class Template {
     apply(dep, source, outputOptions, requestShortener) {

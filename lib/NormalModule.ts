@@ -137,7 +137,9 @@ class NormalModule extends Module {
         loaderContext.fs = fs;
         compilation.applyPlugins('normal-module-loader', loaderContext, this);
         if (options.loader) {
-            for (const key in options.loader) loaderContext[key] = options.loader[key];
+            for (const key in options.loader) {
+                loaderContext[key] = options.loader[key];
+            }
         }
 
         runLoaders({

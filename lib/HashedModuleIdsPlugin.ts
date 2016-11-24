@@ -6,14 +6,17 @@ import crypto = require('crypto')
 import Compiler = require('./Compiler')
 import { HexBase64Latin1Encoding } from 'crypto'
 import Compilation = require('./Compilation')
+import NormalModule = require('./NormalModule')
 
 class HashedModuleIdsPlugin {
-    constructor(public options: {
-        hashFunction: string
-        hashDigest: HexBase64Latin1Encoding
-        hashDigestLength: number
-        context: string
-    } = {} as any) {
+    constructor(
+        public options: {
+            hashFunction: string
+            hashDigest: HexBase64Latin1Encoding
+            hashDigestLength: number
+            context: string
+        } = {} as any
+    ) {
         this.options.hashFunction = this.options.hashFunction || 'md5';
         this.options.hashDigest = this.options.hashDigest || 'base64';
         this.options.hashDigestLength = this.options.hashDigestLength || 4;
@@ -22,7 +25,7 @@ class HashedModuleIdsPlugin {
     apply(compiler: Compiler) {
         compiler.plugin('compilation', (compilation: Compilation) => {
             const usedIds = {};
-            compilation.plugin('before-module-ids', modules => {
+            compilation.plugin('before-module-ids', (modules: NormalModule[]) => {
                 modules.forEach((module) => {
                     if (module.id === null && module.libIdent) {
                         let id = module.libIdent({
@@ -32,7 +35,9 @@ class HashedModuleIdsPlugin {
                         hash.update(id);
                         id = hash.digest(this.options.hashDigest);
                         let len = this.options.hashDigestLength;
-                        while (usedIds[id.substr(0, len)]) len++;
+                        while (usedIds[id.substr(0, len)]) {
+                            len++
+                        }
                         module.id = id.substr(0, len);
                         usedIds[module.id] = true;
                     }

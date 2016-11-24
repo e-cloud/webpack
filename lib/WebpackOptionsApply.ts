@@ -257,7 +257,7 @@ class WebpackOptionsApply extends OptionsApply {
             new RequireContextPlugin(options.resolve.modules, options.resolve.extensions),
             new AMDPlugin(options.module, options.amd || {}),
             new CommonJsPlugin(options.module),
-            new HarmonyModulesPlugin(options.module),
+            new HarmonyModulesPlugin(),
             new SystemPlugin(options.module)
         );
 

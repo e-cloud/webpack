@@ -20,7 +20,7 @@ function validateSchema(schema, options) {
 
         errors.forEach(function (list, idx) {
             list.forEach(function applyPrefix(err) {
-                err.dataPath = "[" + idx + "]" + err.dataPath;
+                err.dataPath = `[${idx}]${err.dataPath}`;
                 if (err.children) {
                     err.children.forEach(applyPrefix);
                 }

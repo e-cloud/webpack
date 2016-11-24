@@ -65,7 +65,7 @@ For loader options: webpack 2 no longer allows custom properties in configuratio
                         return `${dataPath} should be a number.`;
                 }
                 return `${dataPath} should be ${err.params.type}:\n${getSchemaPartText(err.parentSchema)}`;
-            case "instanceof":
+            case 'instanceof':
                 return `${dataPath} should be an instance of ${getSchemaPartText(err.parentSchema)}.`;
             case 'required':
                 const missingProperty = err.params.missingProperty.replace(/^\./, '');
@@ -166,7 +166,9 @@ function getSchemaPart(path, parents = 0, additionalPath?) {
 
 function getSchemaPartText2(path, parents, additionalPath) {
     let schemaPart = getSchemaPart(path, parents, additionalPath);
-    while (schemaPart.$ref) schemaPart = getSchemaPart(schemaPart.$ref);
+    while (schemaPart.$ref) {
+        schemaPart = getSchemaPart(schemaPart.$ref);
+    }
     let schemaText = WebpackOptionsValidationError.formatSchema(schemaPart);
     if (schemaPart.description) {
         schemaText += `\n${schemaPart.description}`;
@@ -183,7 +185,9 @@ function getSchemaPartText(schemaPart, additionalPath?) {
             }
         }
     }
-    while (schemaPart.$ref) schemaPart = getSchemaPart(schemaPart.$ref);
+    while (schemaPart.$ref) {
+        schemaPart = getSchemaPart(schemaPart.$ref);
+    }
     let schemaText = WebpackOptionsValidationError.formatSchema(schemaPart);
     if (schemaPart.description) {
         schemaText += `\n${schemaPart.description}`;

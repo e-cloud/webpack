@@ -4,7 +4,6 @@
  */
 import DependenciesBlockVariable = require('./DependenciesBlockVariable')
 import Chunk = require('./Chunk')
-import ModuleDependency = require('./dependencies/ModuleDependency')
 import Dependency = require('./Dependency')
 import { Hash } from 'crypto'
 

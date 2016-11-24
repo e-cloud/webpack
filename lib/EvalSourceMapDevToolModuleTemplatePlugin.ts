@@ -59,7 +59,9 @@ class EvalSourceMapDevToolModuleTemplatePlugin {
                 return ModuleFilenameHelpers.createFilename(module, self.moduleFilenameTemplate, this.requestShortener);
             }, this);
             moduleFilenames = ModuleFilenameHelpers.replaceDuplicates(moduleFilenames, (filename, i, n) => {
-                for (let j = 0; j < n; j++) filename += '*';
+                for (let j = 0; j < n; j++) {
+                    filename += '*'
+                }
                 return filename;
             });
             sourceMap.sources = moduleFilenames;

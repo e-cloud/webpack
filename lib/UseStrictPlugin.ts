@@ -2,9 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import ConstDependency = require('./dependencies/ConstDependency');
-import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
-import NullFactory = require('./NullFactory');
+
 import Compilation = require('./Compilation')
 import Compiler = require('./Compiler')
 import Parser = require('./Parser')

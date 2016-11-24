@@ -36,7 +36,7 @@ class NormalModuleFactory extends Tapable {
     ruleSet: RuleSet
     parserCache: {}
 
-    constructor(public context: string = '', public resolvers, options) {
+    constructor(public context = '', public resolvers, options) {
         super();
         this.ruleSet = new RuleSet(options.rules || options.loaders);
         this.parserCache = {};

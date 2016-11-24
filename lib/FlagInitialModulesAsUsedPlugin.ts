@@ -2,8 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import path = require('path');
-import async = require('async');
+
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 

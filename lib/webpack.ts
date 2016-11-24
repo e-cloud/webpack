@@ -7,10 +7,10 @@ import MultiCompiler = require('./MultiCompiler');
 import NodeEnvironmentPlugin = require('./node/NodeEnvironmentPlugin');
 import WebpackOptionsApply = require('./WebpackOptionsApply');
 import WebpackOptionsDefaulter = require('./WebpackOptionsDefaulter');
-import validateSchema = require("./validateSchema");
+import validateSchema = require('./validateSchema');
 import WebpackOptionsValidationError = require('./WebpackOptionsValidationError');
 
-const webpackOptionsSchema = require("../schemas/webpackOptionsSchema.json");
+const webpackOptionsSchema = require('../schemas/webpackOptionsSchema.json');
 
 function webpack(options, callback): Compiler.Watching
 function webpack(options): MultiCompiler | Compiler

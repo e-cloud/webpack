@@ -112,8 +112,9 @@ The available options are:
                             return chunk.hasRuntime();
                         });
                     }
+                    let asyncChunk
                     if (async) {
-                        var asyncChunk = this.addChunk(typeof async === 'string' ? async : undefined);
+                        asyncChunk = this.addChunk(typeof async === 'string' ? async : undefined);
                         asyncChunk.chunkReason = 'async commons chunk';
                         asyncChunk.extraAsync = true;
                         asyncChunk.addParent(commonChunk);

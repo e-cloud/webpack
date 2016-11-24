@@ -2,16 +2,15 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+/* tslint:disable:no-unused-variable no-unused-expression */
 
 // just for eliminating the compiler error, ignore it
 declare var $hash$
 declare var installedModules
 declare var $require$
-declare var $require$
 declare var hotDownloadManifest
 declare var chunkId
 declare var hotDownloadUpdateChunk
-declare var installedModules
 declare var hotDisposeChunk
 declare var modules
 
@@ -116,8 +115,9 @@ export = function () {
                     hot._selfAccepted = dep;
                 }
                 else if (typeof dep === 'object') {
-                    for (let i = 0; i < dep.length; i++)
+                    for (let i = 0; i < dep.length; i++) {
                         hot._acceptedDependencies[dep[i]] = callback || (() => {});
+                    }
                 }
                 else {
                     hot._acceptedDependencies[dep] = callback || (() => {});
@@ -128,7 +128,9 @@ export = function () {
                     hot._selfDeclined = true;
                 }
                 else if (typeof dep === 'object') {
-                    for (let i = 0; i < dep.length; i++) hot._declinedDependencies[dep[i]] = true;
+                    for (let i = 0; i < dep.length; i++) {
+                        hot._declinedDependencies[dep[i]] = true;
+                    }
                 }
                 else {
                     hot._declinedDependencies[dep] = true;
@@ -166,25 +168,27 @@ export = function () {
                 }
             },
 
-            //inherit from previous dispose call
+            // inherit from previous dispose call
             data: hotCurrentModuleData[moduleId]
         };
         hotMainModule = true;
         return hot;
     }
 
-    var hotStatusHandlers = [];
-    var hotStatus = 'idle';
+    let hotStatusHandlers = [];
+    let hotStatus = 'idle';
 
     function hotSetStatus(newStatus) {
         hotStatus = newStatus;
-        for (let i = 0; i < hotStatusHandlers.length; i++) hotStatusHandlers[i].call(null, newStatus);
+        for (let i = 0; i < hotStatusHandlers.length; i++) {
+            hotStatusHandlers[i].call(null, newStatus);
+        }
     }
 
     // while downloading
-    var hotWaitingFiles = 0;
-    var hotChunksLoading = 0;
-    var hotWaitingFilesMap = {};
+    let hotWaitingFiles = 0;
+    let hotChunksLoading = 0;
+    let hotWaitingFilesMap = {};
     let hotRequestedFilesMap = {};
     let hotAvailableFilesMap = {};
     let hotDeferred;

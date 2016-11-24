@@ -2,6 +2,8 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+/* tslint:disable:no-unused-variable no-unused-expression */
+
 // just for eliminating the compiler error, ignore it
 declare var installedChunks
 declare var $hotChunkFilename$
@@ -17,8 +19,9 @@ export = function () {
 
     function hotDownloadManifest() {
         // eslint-disable-line no-unused-vars
+        let update
         try {
-            var update = require(`./${$hotMainFilename$}`);
+            update = require(`./${$hotMainFilename$}`);
         } catch (e) {
             return Promise.resolve();
         }

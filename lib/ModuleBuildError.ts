@@ -17,8 +17,10 @@ class ModuleBuildError extends Error {
         if (err !== null && typeof err === 'object') {
             if (typeof err.stack === 'string' && err.stack) {
                 let stack = err.stack.split('\n');
-                for (let i = 0; i < stack.length; i++) if (stack[i].includes(loaderFlag)) {
-                    stack.length = i;
+                for (let i = 0; i < stack.length; i++) {
+                    if (stack[i].includes(loaderFlag)) {
+                        stack.length = i;
+                    }
                 }
                 const stackStr = stack.join('\n');
                 if (!err.hideStack) {

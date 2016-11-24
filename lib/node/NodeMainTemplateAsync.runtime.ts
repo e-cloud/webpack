@@ -2,6 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+/* tslint:disable:no-unused-variable no-unused-expression */
 
 // just for eliminating the compiler error, ignore it
 declare var installedChunks
@@ -38,8 +39,9 @@ export = function () {
                 if (err) {
                     return resolve();
                 }
+                let update
                 try {
-                    var update = JSON.parse(content);
+                    update = JSON.parse(content);
                 } catch (e) {
                     return reject(e);
                 }

@@ -5,15 +5,30 @@
       true,
       "check-space"
     ],
+    "curly": true,
+    "eofline": true,
+    "forin": true,
     "indent": [
       true,
       "spaces"
     ],
+    "label-position": true,
+    "linebreak-style": [
+      true,
+      "LF"
+    ],
+    "no-arg": true,
+    "no-construct": true,
+    "no-debugger": true,
     "no-duplicate-variable": true,
+    "no-empty": false,
     "no-eval": true,
+    "no-inferrable-types": true,
     "no-internal-module": true,
     "no-trailing-whitespace": true,
     "no-unsafe-finally": true,
+    "no-unused-expression": true,
+    "no-unused-variable": true,
     "no-var-keyword": true,
     "one-line": [
       true,
@@ -51,12 +66,6 @@
       "check-module",
       "check-separator",
       "check-type"
-    ],
-    "linebreak-style": [
-      true,
-      "LF"
-    ],
-    "no-inferrable-types": true,
-    "no-unused-variable": true
+    ]
   }
 }

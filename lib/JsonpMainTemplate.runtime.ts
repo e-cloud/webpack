@@ -2,6 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+/* tslint:disable:no-unused-variable no-unused-expression */
 
 // just for eliminating the compiler error, ignore it
 declare var hotAddUpdateChunk
@@ -37,9 +38,10 @@ export = function () {
             if (typeof XMLHttpRequest === 'undefined') {
                 return reject(new Error('No browser support'));
             }
+            let request, requestPath
             try {
-                var request = new XMLHttpRequest();
-                var requestPath = $require$.p + $hotMainFilename$;
+                request = new XMLHttpRequest();
+                requestPath = $require$.p + $hotMainFilename$;
                 request.open('GET', requestPath, true);
                 request.timeout = 10000;
                 request.send(null);
@@ -64,8 +66,9 @@ export = function () {
                 }
                 else {
                     // success
+                    let update
                     try {
-                        var update = JSON.parse(request.responseText);
+                        update = JSON.parse(request.responseText);
                     } catch (e) {
                         reject(e);
                         return;

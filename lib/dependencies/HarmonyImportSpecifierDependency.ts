@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import NullDependency = require('./NullDependency');
-import HarmonyModulesHelpers = require('./HarmonyModulesHelpers');
 import ModuleDependency = require('./ModuleDependency')
 import { Expression } from 'estree'
 

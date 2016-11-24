@@ -123,7 +123,9 @@ class SourceMapDevToolPlugin {
                         return a.length - b.length;
                     });
                 allModuleFilenames = ModuleFilenameHelpers.replaceDuplicates(allModuleFilenames, (filename, i, n) => {
-                    for (let j = 0; j < n; j++) filename += '*';
+                    for (let j = 0; j < n; j++) {
+                        filename += '*'
+                    }
                     return filename;
                 });
                 tasks.forEach(task => {

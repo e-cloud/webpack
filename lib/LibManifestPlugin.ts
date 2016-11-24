@@ -4,7 +4,6 @@
  */
 import path = require('path');
 import async = require('async');
-import HarmonyModulesHelpers = require('./dependencies/HarmonyModulesHelpers');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Chunk = require('./Chunk')

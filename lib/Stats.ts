@@ -171,8 +171,8 @@ class Stats {
             warnings: compilation.warnings.map(formatError)
         };
 
-        //We just hint other renderers since actually omitting
-        //errors/warnings from the JSON would be kind of weird.
+        // We just hint other renderers since actually omitting
+        // errors/warnings from the JSON would be kind of weird.
         Object.defineProperty(obj, '_showWarnings', {
             value: showWarnings,
             enumerable: false
@@ -445,8 +445,9 @@ class Stats {
             const cols = array[0].length;
             const colSizes = new Array(cols);
             let value;
-            for (col = 0; col < cols; col++)
+            for (col = 0; col < cols; col++) {
                 colSizes[col] = 3;
+            }
             for (row = 0; row < rows; row++) {
                 for (col = 0; col < cols; col++) {
                     value = `${array[row][col]}`;
@@ -463,8 +464,9 @@ class Stats {
                     if (align[col] === 'l') {
                         format(value);
                     }
-                    for (; l < colSizes[col] && col !== cols - 1; l++)
+                    for (; l < colSizes[col] && col !== cols - 1; l++) {
                         colors.normal(' ');
+                    }
 
                     if (align[col] === 'r') {
                         format(value);
@@ -807,13 +809,16 @@ class Stats {
             colors.yellow('Compilation needs an additional pass and will compile again.');
         }
 
-        while (buffer[buffer.length - 1] === '\n') buffer.pop();
+        while (buffer[buffer.length - 1] === '\n') {
+            buffer.pop()
+        }
+
         return buffer.join('');
     }
 
     static presetToOptions(name) {
-        //Accepted values: none, errors-only, minimal, normal, verbose
-        //Any other falsy value will behave as 'none', truthy values as 'normal'
+        // Accepted values: none, errors-only, minimal, normal, verbose
+        // Any other falsy value will behave as 'none', truthy values as 'normal'
         const pn = typeof name === 'string' && name.toLowerCase() || name;
         if (pn === 'none' || !pn) {
             return {
@@ -844,7 +849,7 @@ class Stats {
                 entrypoints: pn === 'verbose',
                 chunks: pn !== 'errors-only',
                 chunkModules: pn === 'verbose',
-                //warnings: pn !== "errors-only",
+                // warnings: pn !== "errors-only",
                 errorDetails: pn !== 'errors-only' && pn !== 'minimal',
                 reasons: pn === 'verbose',
                 usedExports: pn === 'verbose',
