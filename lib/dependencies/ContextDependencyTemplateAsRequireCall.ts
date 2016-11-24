@@ -12,6 +12,11 @@ class ContextDependencyTemplateAsRequireCall {
         const isAsync = dep.module && dep.module.async;
         if (dep.module && (isAsync || containsDeps)) {
             if (dep.valueRange) {
+                if (Array.isArray(dep.replaces)) {
+                    for (const rep of dep.replaces) {
+                        source.replace(rep.range[0], rep.range[1] - 1, rep.value)
+                    }
+                }
                 source.replace(dep.valueRange[1], dep.range[1] - 1, ')');
                 source.replace(dep.range[0],
                     dep.valueRange[0] - 1, `__webpack_require__(${comment}${JSON.stringify(dep.module.id)})(${

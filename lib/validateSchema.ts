@@ -1,7 +1,7 @@
 /*
-	MIT License http://www.opensource.org/licenses/mit-license.php
-	Author Gajus Kuizinas @gajus
-*/
+ MIT License http://www.opensource.org/licenses/mit-license.php
+ Author Gajus Kuizinas @gajus
+ */
 import Ajv = require('ajv');
 import defineKeywords = require('ajv-keywords')
 

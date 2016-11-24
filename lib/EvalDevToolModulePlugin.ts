@@ -11,7 +11,7 @@ class EvalDevToolModulePlugin {
     }
 
     apply(compiler: Compiler) {
-        compiler.plugin('compilation',  (compilation: Compilation) => {
+        compiler.plugin('compilation', (compilation: Compilation) => {
             compilation.moduleTemplate.apply(new EvalDevToolModuleTemplatePlugin(this.sourceUrlComment, this.moduleFilenameTemplate));
         });
     }

@@ -2,6 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import path = require('path')
 import objectAssign = require('object-assign');
 import nodeLibsBrowser = require('node-libs-browser');
 import AliasPlugin = require('enhanced-resolve/lib/AliasPlugin');
@@ -35,6 +36,23 @@ class NodeSourcePlugin {
             }
         }
 
+        function buildExpression(context, pathToModule) {
+            let moduleJsPath = path.relative(context, pathToModule);
+            if (!/^[A-Z]:/i.test(moduleJsPath)) {
+                moduleJsPath = `./${moduleJsPath.replace(/\\/g, '/')}`;
+            }
+            return `require(${JSON.stringify(moduleJsPath)})`;
+        }
+
+        function addExpression(parser, name, module, type, suffix = '') {
+            parser.plugin(`expression ${name}`, function () {
+                if (this.state.module && this.state.module.resource === getPathToModule(module, type)) {
+                    return;
+                }
+                return ModuleParserHelpers.addParsedVariable(this, name, buildExpression(this.state.module.context, getPathToModule(module, type)) + suffix);
+            });
+        }
+
         compiler.plugin('compilation', function (compilation: Compilation, params) {
             params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
                 if (parserOptions.node === false) {
@@ -46,37 +64,28 @@ class NodeSourcePlugin {
                     localOptions = objectAssign({}, localOptions, parserOptions.node);
                 }
 
-                if (localOptions.process) {
-                    const processType = localOptions.process;
-                    parser.plugin('expression process', function () {
-                        return ModuleParserHelpers.addParsedVariable(this, 'process', `require(${JSON.stringify(getPathToModule('process', processType))})`);
-                    });
-                }
                 if (localOptions.global) {
                     parser.plugin('expression global', function () {
-                        return ModuleParserHelpers.addParsedVariable(this, 'global', `require(${JSON.stringify(require.resolve('../../buildin/global.js'))})`);
+                        return ModuleParserHelpers.addParsedVariable(this, 'global', buildExpression(this.state.module.context, require.resolve('../../buildin/global.js')));
                     });
+                }
+
+                if (localOptions.process) {
+                    const processType = localOptions.process;
+                    addExpression(parser, 'process', 'process', processType);
                 }
                 if (localOptions.console) {
                     const consoleType = localOptions.console;
-                    parser.plugin('expression console', function () {
-                        return ModuleParserHelpers.addParsedVariable(this, 'console', `require(${JSON.stringify(getPathToModule('console', consoleType))})`);
-                    });
+                    addExpression(parser, 'console', 'console', consoleType);
                 }
                 const bufferType = localOptions.Buffer;
                 if (bufferType) {
-                    parser.plugin('expression Buffer', function () {
-                        return ModuleParserHelpers.addParsedVariable(this, 'Buffer', `require(${JSON.stringify(getPathToModule('buffer', bufferType))}).Buffer`);
-                    });
+                    addExpression(parser, 'Buffer', 'buffer', bufferType, '.Buffer');
                 }
                 if (localOptions.setImmediate) {
                     const setImmediateType = localOptions.setImmediate;
-                    parser.plugin('expression setImmediate', function () {
-                        return ModuleParserHelpers.addParsedVariable(this, 'setImmediate', `require(${JSON.stringify(getPathToModule('timers', setImmediateType))}).setImmediate`);
-                    });
-                    parser.plugin('expression clearImmediate', function () {
-                        return ModuleParserHelpers.addParsedVariable(this, 'clearImmediate', `require(${JSON.stringify(getPathToModule('timers', setImmediateType))}).clearImmediate`);
-                    });
+                    addExpression(parser, 'setImmediate', 'timers', setImmediateType, '.setImmediate');
+                    addExpression(parser, 'clearImmediate', 'timers', setImmediateType, '.clearImmediate');
                 }
             });
         });

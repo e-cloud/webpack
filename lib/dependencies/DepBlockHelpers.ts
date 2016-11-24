@@ -4,7 +4,11 @@
  */
 export function getLoadDepBlockWrapper(depBlock, outputOptions, requestShortener, name) {
     const promiseCode = getDepBlockPromise(depBlock, outputOptions, requestShortener, name);
-    return [`${promiseCode}.catch(function(err) { __webpack_require__.oe(err); }).then(`, ')'];
+    return [
+        `${promiseCode}.then(`,
+        ').catch(',
+        ')'
+    ];
 }
 
 export function getDepBlockPromise(depBlock, outputOptions, requestShortener, name) {

@@ -420,6 +420,54 @@ class Parser extends Tapable {
                 }
                 return new BasicEvaluatedExpression().setString(result).setRange(expr.range);
             });
+
+            /**
+             * @param {string} kind "cooked" | "raw"
+             * @param {any[]} quasis quasis
+             * @param {any[]} expressions expressions
+             * @return {BasicEvaluatedExpression[]} Simplified template
+             */
+            function getSimplifiedTemplateResult(kind, quasis, expressions) {
+                const parts = [];
+
+                for (let i = 0; i < quasis.length; i++) {
+                    parts.push(
+                        new BasicEvaluatedExpression()
+                            .setString(quasis[i].value[kind])
+                            .setRange(quasis[i].range)
+                    );
+
+                    if (i > 0) {
+                        const prevExpr = parts[parts.length - 2], lastExpr = parts[parts.length - 1];
+                        const expr = this.evaluateExpression(expressions[i - 1]);
+                        if (!(expr.isString() || expr.isNumber())) {
+                            continue;
+                        }
+
+                        prevExpr.setString(prevExpr.string + (expr.isString()
+                                ? expr.string
+                                : expr.number) + lastExpr.string)
+                        prevExpr.setRange([prevExpr.range[0], lastExpr.range[1]]);
+                        parts.pop();
+                    }
+                }
+                return parts;
+            }
+
+            this.plugin('evaluate TemplateLiteral', function (node) {
+                const parts = getSimplifiedTemplateResult.call(this, 'cooked', node.quasis, node.expressions);
+                if (parts.length === 1) {
+                    return parts[0].setRange(node.range);
+                }
+                return new BasicEvaluatedExpression().setTemplateString(parts).setRange(node.range);
+            });
+            this.plugin('evaluate TaggedTemplateExpression', function (node) {
+                if (this.evaluateExpression(node.tag).identifier !== 'String.raw') {
+                    return;
+                }
+                const parts = getSimplifiedTemplateResult.call(this, 'raw', node.quasi.quasis, node.quasi.expressions);
+                return new BasicEvaluatedExpression().setTemplateString(parts).setRange(node.range);
+            });
         }, this);
         this.plugin('evaluate CallExpression .split', function (expr, param) {
             if (!param.isString()) {
@@ -794,14 +842,13 @@ class Parser extends Tapable {
                             }
                         }
                     }
-                    else if (declarator.id.type === 'Identifier' && !this.applyPluginsBailResult(`var ${declarator.id.name}`, declarator)) {
-                        this.scope.renames[`$${declarator.id.name}`] = undefined;
-                        this.scope.definitions.push(declarator.id.name);
-                        if (declarator.init) {
-                            this.walkExpression(declarator.init);
-                        }
-                    }
                     else {
+                        this.enterPattern(declarator.id, (name, decl) => {
+                            if (!this.applyPluginsBailResult(`var ${name}`, decl)) {
+                                this.scope.renames[`$${name}`] = undefined;
+                                this.scope.definitions.push(name);
+                            }
+                        });
                         this.walkExpression(declarator.id);
                         if (declarator.init) {
                             this.walkExpression(declarator.init);
@@ -1121,16 +1168,12 @@ class Parser extends Tapable {
     }
 
     enterIdentifier(pattern, onIdent) {
-        onIdent(pattern.name);
+        onIdent(pattern.name, pattern);
     }
 
     enterObjectPattern(pattern, onIdent) {
         pattern.properties.forEach(function (property) {
-            switch (property.type) {
-                case 'AssignmentProperty':
-                    this.enterPattern(property.value, onIdent);
-                    break;
-            }
+            this.enterPattern(property.value, onIdent);
         }, this);
     }
 

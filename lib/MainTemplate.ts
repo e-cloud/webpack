@@ -17,6 +17,7 @@ import Template = require('./Template');
 // __webpack_require__.n = compatibility get default export
 // __webpack_require__.h = the webpack hash
 // __webpack_require__.oe = the uncaught error handler for the webpack runtime
+// __webpack_require__.nc = the script nonce
 
 class MainTemplate extends Template {
     requireFn: string
@@ -58,8 +59,23 @@ class MainTemplate extends Template {
                 this.indent(this.applyPluginsWaterfall('module-obj', '', chunk, hash, 'moduleId')),
                 '};',
                 '',
-                '// Execute the module function',
-                `modules[moduleId].call(module.exports, module, module.exports, ${this.renderRequireFunctionForModule(hash, chunk, 'moduleId')});`,
+                this.asString(outputOptions.strictModuleExceptionHandling ? [
+                    '// Execute the module function',
+                    'var threw = true;',
+                    'try {',
+                    this.indent([
+                        `modules[moduleId].call(module.exports, module, module.exports, ${this.renderRequireFunctionForModule(hash, chunk, 'moduleId')});`,
+                        'threw = false;'
+                    ]),
+                    '} finally {',
+                    this.indent([
+                        'if(threw) delete installedModules[moduleId];'
+                    ]),
+                    '}'
+                ] : [
+                    '// Execute the module function',
+                    `modules[moduleId].call(module.exports, module, module.exports, ${this.renderRequireFunctionForModule(hash, chunk, 'moduleId')});`,
+                ]),
                 '',
                 '// Flag the module as loaded',
                 'module.l = true;',

@@ -33,6 +33,9 @@ class JsonpMainTemplatePlugin {
                 'script.async = true;',
                 `script.timeout = ${chunkLoadTimeout};`,
                 crossOriginLoading ? `script.crossOrigin = '${crossOriginLoading}';` : '',
+                `if (${this.requireFn}.nc) {`,
+                this.indent(`script.setAttribute("nonce", ${this.requireFn}.nc);`),
+                '}',
                 `script.src = ${this.requireFn}.p + ${
                     this.applyPluginsWaterfall(
                         'asset-path', JSON.stringify(chunkFilename),

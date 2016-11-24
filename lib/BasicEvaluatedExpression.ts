@@ -19,6 +19,7 @@ class BasicEvaluatedExpression {
     options: {}
     items: string[]
     array: boolean
+    quasis: BasicEvaluatedExpression[]
 
     constructor() {
         this.range = null;
@@ -64,6 +65,10 @@ class BasicEvaluatedExpression {
         return Object.prototype.hasOwnProperty.call(this, 'prefix') || Object.prototype.hasOwnProperty.call(this, 'postfix');
     }
 
+    isTemplateString() {
+        return Object.prototype.hasOwnProperty.call(this, 'quasis');
+    }
+
     asBool() {
         if (this.isBoolean()) {
             return this.bool;
@@ -88,6 +93,17 @@ class BasicEvaluatedExpression {
         }
         else if (this.isWrapped()) {
             return this.prefix && this.prefix.asBool() || this.postfix && this.postfix.asBool() ? true : undefined;
+        }
+        else if (this.isTemplateString()) {
+            if (this.quasis.length === 1) {
+                return this.quasis[0].asBool();
+            }
+            for (const quasis of this.quasis) {
+                if (quasis.asBool()) {
+                    return true;
+                }
+            }
+            // can't tell if string will be empty without executing
         }
         return undefined;
     }
@@ -207,6 +223,16 @@ class BasicEvaluatedExpression {
         }
         else {
             this.array = array;
+        }
+        return this;
+    }
+
+    setTemplateString(quasis) {
+        if (quasis === null) {
+            delete this.quasis;
+        }
+        else {
+            this.quasis = quasis;
         }
         return this;
     }

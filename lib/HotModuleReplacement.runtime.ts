@@ -20,7 +20,7 @@ export = function () {
     const hotCurrentModuleData = {};
     let hotMainModule = true; // eslint-disable-line no-unused-vars
     let hotCurrentParents = []; // eslint-disable-line no-unused-vars
-    const hotCurrentParentsTemp = []; // eslint-disable-line no-unused-vars
+    let hotCurrentParentsTemp = []; // eslint-disable-line no-unused-vars
 
     function hotCreateRequire(moduleId) {
         // eslint-disable-line no-unused-vars
@@ -539,12 +539,14 @@ export = function () {
         for (moduleId in outdatedDependencies) {
             if (Object.prototype.hasOwnProperty.call(outdatedDependencies, moduleId)) {
                 module = installedModules[moduleId];
-                moduleOutdatedDependencies = outdatedDependencies[moduleId];
-                for (j = 0; j < moduleOutdatedDependencies.length; j++) {
-                    dependency = moduleOutdatedDependencies[j];
-                    idx = module.children.indexOf(dependency);
-                    if (idx >= 0) {
-                        module.children.splice(idx, 1);
+                if (module) {
+                    moduleOutdatedDependencies = outdatedDependencies[moduleId];
+                    for (j = 0; j < moduleOutdatedDependencies.length; j++) {
+                        dependency = moduleOutdatedDependencies[j];
+                        idx = module.children.indexOf(dependency);
+                        if (idx >= 0) {
+                            module.children.splice(idx, 1);
+                        }
                     }
                 }
             }

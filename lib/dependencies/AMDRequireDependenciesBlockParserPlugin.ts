@@ -26,71 +26,59 @@ class AMDRequireDependenciesBlockParserPlugin {
             let dep;
             let old;
             let result;
-            switch (expr.arguments.length) {
-                case 1:
-                    param = this.evaluateExpression(expr.arguments[0]);
-                    dep = new AMDRequireDependenciesBlock(expr, param.range, null, this.state.module, expr.loc);
-                    old = this.state.current;
-                    this.state.current = dep;
-                    this.inScope([], () => {
+
+            old = this.state.current;
+
+            if (expr.arguments.length >= 1) {
+                param = this.evaluateExpression(expr.arguments[0]);
+                dep = new AMDRequireDependenciesBlock(
+                    expr,
+                    param.range,
+                    (expr.arguments.length > 1) ? expr.arguments[1].range : null,
+                    (expr.arguments.length > 2) ? expr.arguments[2].range : null,
+                    this.state.module,
+                    expr.loc
+                );
+                this.state.current = dep;
+            }
+
+            if (expr.arguments.length === 1) {
+                this.inScope([], function () {
+                    result = this.applyPluginsBailResult('call require:amd:array', expr, param);
+                }.bind(this));
+                this.state.current = old;
+                if (!result) {
+                    return;
+                }
+                this.state.current.addBlock(dep);
+                return true;
+            }
+
+            if (expr.arguments.length === 2 || expr.arguments.length === 3) {
+                try {
+                    this.inScope([], function () {
                         result = this.applyPluginsBailResult('call require:amd:array', expr, param);
-                    });
-                    this.state.current = old;
+                    }.bind(this));
                     if (!result) {
-                        return;
+                        dep = new UnsupportedDependency('unsupported', expr.range);
+                        old.addDependency(dep);
+                        if (this.state.module) {
+                            this.state.module.errors.push(new UnsupportedFeatureWarning(this.state.module, `Cannot statically analyse 'require(..., ...)' in line ${expr.loc.start.line}`));
+                        }
+                        dep = null;
+                        return true;
                     }
-                    this.state.current.addBlock(dep);
-                    return true;
-                case 2:
-                    param = this.evaluateExpression(expr.arguments[0]);
-                    dep = new AMDRequireDependenciesBlock(expr, param.range, expr.arguments[1].range, this.state.module, expr.loc);
-                    dep.loc = expr.loc;
-                    old = this.state.current;
-                    this.state.current = dep;
-                    try {
-                        this.inScope([], () => {
-                            result = this.applyPluginsBailResult('call require:amd:array', expr, param);
-                        });
-                        if (!result) {
-                            dep = new UnsupportedDependency('unsupported', expr.range);
-                            old.addDependency(dep);
-                            if (this.state.module) {
-                                this.state.module.errors.push(new UnsupportedFeatureWarning(this.state.module, `Cannot statically analyse 'require(..., ...)' in line ${expr.loc.start.line}`));
-                            }
-                            dep = null;
-                            return true;
-                        }
-                        const fnData = getFunctionExpression(expr.arguments[1]);
-                        if (fnData) {
-                            this.inScope(
-                                fnData.fn.params.filter(
-                                    i => !['require', 'module', 'exports'].includes(i.name)
-                                ),
-                                () => {
-                                    if (fnData.fn.body.type === 'BlockStatement') {
-                                        this.walkStatement(fnData.fn.body);
-                                    }
-                                    else {
-                                        this.walkExpression(fnData.fn.body);
-                                    }
-                                }
-                            );
-                            this.walkExpressions(fnData.expressions);
-                            if (fnData.needThis === false) {
-                                // smaller bundles for simple function expression
-                                dep.bindThis = false;
-                            }
-                        }
-                        else {
-                            this.walkExpression(expr.arguments[1]);
-                        }
-                    } finally {
-                        this.state.current = old;
-                        if (dep) {
-                            this.state.current.addBlock(dep);
-                        }
+                    dep.functionBindThis = processFunctionArgument(this, expr.arguments[1]);
+                    if (expr.arguments.length === 3) {
+                        dep.errorCallbackBindThis = processFunctionArgument(this, expr.arguments[2]);
                     }
-                    return true;
+                } finally {
+                    this.state.current = old;
+                    if (dep) {
+                        this.state.current.addBlock(dep);
+                    }
+                }
+                return true;
             }
         });
         parser.plugin('call require:amd:array', function (expr, param) {
@@ -178,6 +166,31 @@ class AMDRequireDependenciesBlockParserPlugin {
             return true;
         });
     }
+}
+
+function processFunctionArgument(parser, expression) {
+    let bindThis = true;
+    const fnData = getFunctionExpression(expression);
+    if (fnData) {
+        parser.inScope(fnData.fn.params.filter(function (i) {
+            return !['require', 'module', 'exports'].includes(i.name);
+        }), function () {
+            if (fnData.fn.body.type === 'BlockStatement') {
+                parser.walkStatement(fnData.fn.body);
+            }
+            else {
+                parser.walkExpression(fnData.fn.body);
+            }
+        });
+        parser.walkExpressions(fnData.expressions);
+        if (fnData.needThis === false) {
+            bindThis = false;
+        }
+    }
+    else {
+        parser.walkExpression(expression);
+    }
+    return bindThis;
 }
 
 export = AMDRequireDependenciesBlockParserPlugin;

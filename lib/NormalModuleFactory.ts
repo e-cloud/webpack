@@ -131,12 +131,23 @@ class NormalModuleFactory extends Tapable {
                             callback(null, result);
                         });
                     }
-                ], (err, results: string[][]) => {
+                ], (err, results: any[][]) => {
                     if (err) {
                         return callback(err);
                     }
                     let loaders = results[0];
                     resource = results[1];
+
+                    // translate option idents
+                    try {
+                        loaders.forEach(item => {
+                            if (typeof item.options === 'string' && /^\?/.test(item.options)) {
+                                item.options = this.ruleSet.findOptionsByIdent(item.options.substr(1));
+                            }
+                        })
+                    } catch (e) {
+                        return callback(e);
+                    }
 
                     if (resource === false) {
                         return callback(null, new RawModule('/* (ignored) */', `ignored ${context} ${request}`, `${request} (ignored)`));
@@ -145,13 +156,16 @@ class NormalModuleFactory extends Tapable {
                     const userRequest = loaders.map(loaderToIdent).concat([resource]).join('!');
 
                     let resourcePath = resource;
+                    let resourceQuery = '';
                     const queryIndex = resourcePath.indexOf('?');
                     if (queryIndex >= 0) {
+                        resourceQuery = resourcePath.substr(queryIndex);
                         resourcePath = resourcePath.substr(0, queryIndex);
                     }
 
                     const result = this.ruleSet.exec({
                         resource: resourcePath,
+                        resourceQuery: resourceQuery,
                         issuer: contextInfo.issuer
                     });
                     const settings: any = {};
@@ -242,6 +256,16 @@ class NormalModuleFactory extends Tapable {
         }
         async.map(array, function (item: Loader, callback: (err, ...args) => any) {
             resolver.resolve(contextInfo, context, item.loader, (err, result) => {
+                if (err && /^[^/]*$/.test(item.loader) && !/-loader$/.test(item.loader)) {
+                    return resolver.resolve(contextInfo, context, item.loader + '-loader', function (err2) {
+                        if (!err2) {
+                            err.message = `${err.message}
+BREAKING CHANGE: It's no longer allowed to omit the '-loader' suffix when using loaders.
+                 You need to specify '${item.loader}-loader' instead of '${item.loader}'.`;
+                        }
+                        callback(err);
+                    });
+                }
                 if (err) {
                     return callback(err);
                 }

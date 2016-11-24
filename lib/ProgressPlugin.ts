@@ -13,10 +13,12 @@ class ProgressPlugin {
     profile: boolean
     handler: ProgressPluginHandler
 
-    constructor(options: ProgressPluginHandler |　{
-        profile?: boolean
-        handler: ProgressPluginHandler
-    } = {} as any) {
+    constructor(
+        options: ProgressPluginHandler | {
+            profile?: boolean
+            handler: ProgressPluginHandler
+        } = {} as any
+    ) {
         if (typeof options === 'function') {
             options = {
                 handler: options

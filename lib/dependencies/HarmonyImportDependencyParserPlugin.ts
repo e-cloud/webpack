@@ -48,7 +48,7 @@ export = AbstractPlugin.create({
         if (settings[2] !== null) {
             return false;
         }
-        const dep = new HarmonyImportSpecifierDependency(settings[0], settings[1], expr.property.name, name, expr.range);
+        const dep = new HarmonyImportSpecifierDependency(settings[0], settings[1], expr.property.name || expr.property.value, name, expr.range);
         dep.shorthand = this.scope.inShorthand;
         dep.directImport = false;
         dep.loc = expr.loc;

@@ -12,6 +12,11 @@ class ContextDependencyTemplateAsId {
         }
         if (dep.module && dep.module.dependencies && dep.module.dependencies.length > 0) {
             if (dep.valueRange) {
+                if (Array.isArray(dep.replaces)) {
+                    for (const rep of dep.replaces) {
+                        source.replace(rep.range[0], rep.range[1] - 1, rep.value)
+                    }
+                }
                 source.replace(dep.valueRange[1], dep.range[1] - 1, ')');
                 source.replace(
                     dep.range[0],

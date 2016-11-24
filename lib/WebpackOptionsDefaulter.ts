@@ -59,6 +59,7 @@ class WebpackOptionsDefaulter extends OptionsDefaulter {
         this.set('output.hashDigest', 'hex');
         this.set('output.hashDigestLength', 20);
         this.set('output.devtoolLineToLine', false);
+        this.set('output.strictModuleExceptionHandling', false);
 
         this.set('node', {});
         this.set('node.console', false);

@@ -14,13 +14,15 @@ const REPLACEMENTS = {
     __webpack_modules__: '__webpack_require__.m', // eslint-disable-line camelcase
     __webpack_chunk_load__: '__webpack_require__.e', // eslint-disable-line camelcase
     __non_webpack_require__: 'require', // eslint-disable-line camelcase
+    __webpack_nonce__: '__webpack_require__.nc', // eslint-disable-line camelcase
     'require.onError': '__webpack_require__.oe' // eslint-disable-line camelcase
 };
 const REPLACEMENT_TYPES = {
     __webpack_public_path__: 'string', // eslint-disable-line camelcase
     __webpack_require__: 'function', // eslint-disable-line camelcase
     __webpack_modules__: 'object', // eslint-disable-line camelcase
-    __webpack_chunk_load__: 'function' // eslint-disable-line camelcase
+    __webpack_chunk_load__: 'function', // eslint-disable-line camelcase
+    __webpack_nonce__: 'string' // eslint-disable-line camelcase
 };
 const IGNORES = [];
 
