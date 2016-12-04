@@ -5,12 +5,12 @@
 import path = require('path');
 
 class RequestShortener {
-    currentDirectoryRegExp: RegExp
-    parentDirectoryRegExp: RegExp
     buildinsAsModule: boolean
     buildinsRegExp: RegExp
-    nodeModulesRegExp: RegExp
+    currentDirectoryRegExp: RegExp
     indexJsRegExp: RegExp
+    nodeModulesRegExp: RegExp
+    parentDirectoryRegExp: RegExp
 
     constructor(directory: string) {
         directory = directory.replace(/\\/g, '/');

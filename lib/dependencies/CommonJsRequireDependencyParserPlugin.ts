@@ -10,27 +10,22 @@ import LocalModuleDependency = require('./LocalModuleDependency');
 import ContextDependencyHelpers = require('./ContextDependencyHelpers');
 import LocalModulesHelpers = require('./LocalModulesHelpers');
 import Parser = require('../Parser')
+import { Expression, CallExpression } from 'estree'
+import { ModuleOptions } from '../../typings/webpack-types'
 
 class CommonJsRequireDependencyParserPlugin {
-    constructor(
-        public options: {
-            unknownContextRequest: string
-            unknownContextRecursive: boolean
-            unknownContextRegExp: RegExp
-            unknownContextCritical: boolean
-        }
-    ) {
+    constructor(public options: ModuleOptions) {
     }
 
     apply(parser: Parser) {
         const options = this.options;
-        parser.plugin('expression require.cache', function (this: Parser, expr) {
+        parser.plugin('expression require.cache', function (expr: Expression) {
             const dep = new ConstDependency('__webpack_require__.c', expr.range);
             dep.loc = expr.loc;
             this.state.current.addDependency(dep);
             return true;
         });
-        parser.plugin('expression require', function (expr) {
+        parser.plugin('expression require', function (expr: Expression) {
             const dep = new CommonJsRequireContextDependency(options.unknownContextRequest, options.unknownContextRecursive, options.unknownContextRegExp, expr.range);
             dep.critical = options.unknownContextCritical && 'require function is used in a way in which dependencies cannot be statically extracted';
             dep.loc = expr.loc;
@@ -38,7 +33,7 @@ class CommonJsRequireDependencyParserPlugin {
             this.state.current.addDependency(dep);
             return true;
         });
-        parser.plugin('call require', function (expr) {
+        parser.plugin('call require', function (expr: CallExpression) {
             if (expr.arguments.length !== 1) {
                 return;
             }
@@ -83,7 +78,7 @@ class CommonJsRequireDependencyParserPlugin {
                 return true;
             }
         });
-        parser.plugin('call require:commonjs:item', function (expr, param) {
+        parser.plugin('call require:commonjs:item', function (expr: CallExpression, param) {
             if (param.isString()) {
                 const dep = new CommonJsRequireDependency(param.string, param.range);
                 dep.loc = expr.loc;
@@ -92,7 +87,7 @@ class CommonJsRequireDependencyParserPlugin {
                 return true;
             }
         });
-        parser.plugin('call require:commonjs:context', function (expr, param) {
+        parser.plugin('call require:commonjs:context', function (expr: CallExpression, param) {
             const dep = ContextDependencyHelpers.create(CommonJsRequireContextDependency, expr.range, param, expr, options);
             if (!dep) {
                 return;

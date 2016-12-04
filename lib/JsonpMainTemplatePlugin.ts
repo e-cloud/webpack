@@ -4,10 +4,12 @@
  */
 import Template = require('./Template');
 import MainTemplate = require('./MainTemplate')
+import Chunk = require('./Chunk')
+import { Hash } from 'crypto'
 
 class JsonpMainTemplatePlugin {
     apply(mainTemplate: MainTemplate) {
-        mainTemplate.plugin('local-vars', function (source, chunk) {
+        mainTemplate.plugin('local-vars', function (source: string, chunk: Chunk) {
             if (chunk.chunks.length > 0) {
                 return this.asString([
                     source,
@@ -20,7 +22,7 @@ class JsonpMainTemplatePlugin {
             }
             return source;
         });
-        mainTemplate.plugin('jsonp-script', function (_, chunk, hash) {
+        mainTemplate.plugin('jsonp-script', function (_: string, chunk: Chunk, hash: string) {
             const filename = this.outputOptions.filename;
             const chunkFilename = this.outputOptions.chunkFilename;
             const chunkMaps = chunk.getChunkMaps();
@@ -41,11 +43,11 @@ class JsonpMainTemplatePlugin {
                         'asset-path', JSON.stringify(chunkFilename),
                         {
                             hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
-                            hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
+                            hashWithLength: (length: number) => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
                             chunk: {
                                 id: '" + chunkId + "',
                                 hash: `" + ${JSON.stringify(chunkMaps.hash)}[chunkId] + "`,
-                                hashWithLength(length) {
+                                hashWithLength(length: number) {
                                     const shortChunkHashMap = {};
                                     Object.keys(chunkMaps.hash).forEach(chunkId => {
                                         if (typeof chunkMaps.hash[chunkId] === 'string') {
@@ -76,7 +78,7 @@ class JsonpMainTemplatePlugin {
                 '};'
             ]);
         });
-        mainTemplate.plugin('require-ensure', function (_, chunk, hash) {
+        mainTemplate.plugin('require-ensure', function (_: string, chunk: Chunk, hash: string) {
             const chunkFilename = this.outputOptions.chunkFilename;
             return this.asString([
                 'if(installedChunks[chunkId] === 0)',
@@ -97,7 +99,7 @@ class JsonpMainTemplatePlugin {
                 'return installedChunks[chunkId][2] = promise;'
             ]);
         });
-        mainTemplate.plugin('require-extensions', function (source, chunk) {
+        mainTemplate.plugin('require-extensions', function (source: string, chunk: Chunk) {
             if (chunk.chunks.length === 0) {
                 return source;
             }
@@ -108,7 +110,7 @@ class JsonpMainTemplatePlugin {
                 `${this.requireFn}.oe = function(err) { console.error(err); throw err; };`
             ]);
         });
-        mainTemplate.plugin('bootstrap', function (source, chunk, hash) {
+        mainTemplate.plugin('bootstrap', function (source: string, chunk: Chunk, hash: string) {
             if (chunk.chunks.length > 0) {
                 const jsonpFunction = this.outputOptions.jsonpFunction;
                 return this.asString([
@@ -155,20 +157,20 @@ class JsonpMainTemplatePlugin {
             }
             return source;
         });
-        mainTemplate.plugin('hot-bootstrap', function (source, chunk, hash) {
+        mainTemplate.plugin('hot-bootstrap', function (source: string, chunk: Chunk, hash: string) {
             const hotUpdateChunkFilename = this.outputOptions.hotUpdateChunkFilename;
             const hotUpdateMainFilename = this.outputOptions.hotUpdateMainFilename;
             const hotUpdateFunction = this.outputOptions.hotUpdateFunction;
             const currentHotUpdateChunkFilename = this.applyPluginsWaterfall('asset-path', JSON.stringify(hotUpdateChunkFilename), {
                 hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
-                hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
+                hashWithLength: (length: number) => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
                 chunk: {
                     id: '" + chunkId + "'
                 }
             });
             const currentHotUpdateMainFilename = this.applyPluginsWaterfall('asset-path', JSON.stringify(hotUpdateMainFilename), {
                 hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
-                hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`
+                hashWithLength: (length: number) => `" + ${this.renderCurrentHashCode(hash, length)} + "`
             });
 
             return `${source}\nfunction hotDisposeChunk(chunkId) {\n\tdelete installedChunks[chunkId];\n}\nvar parentHotUpdateCallback = this[${JSON.stringify(hotUpdateFunction)}];\nthis[${JSON.stringify(hotUpdateFunction)}] = ${Template.getFunctionContent(require('./JsonpMainTemplate.runtime.js'))
@@ -178,7 +180,7 @@ class JsonpMainTemplatePlugin {
                 .replace(/\$hotChunkFilename\$/g, currentHotUpdateChunkFilename)
                 .replace(/\$hash\$/g, JSON.stringify(hash))}`;
         });
-        mainTemplate.plugin('hash', function (hash) {
+        mainTemplate.plugin('hash', function (hash: Hash) {
             hash.update('jsonp');
             hash.update('4');
             hash.update(`${this.outputOptions.filename}`);

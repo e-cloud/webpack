@@ -5,13 +5,13 @@
 /* tslint:disable:no-unused-variable no-unused-expression */
 
 // just for eliminating the compiler error, ignore it
-declare var installedChunks
-declare var $hotChunkFilename$
-declare var hotAddUpdateChunk
-declare var $hotMainFilename$
+declare var installedChunks: any
+declare var $hotChunkFilename$: any
+declare var hotAddUpdateChunk: any
+declare var $hotMainFilename$: any
 
 export = function () {
-    function hotDownloadUpdateChunk(chunkId) {
+    function hotDownloadUpdateChunk(chunkId: number) {
         // eslint-disable-line no-unused-vars
         const chunk = require(`./${$hotChunkFilename$}`);
         hotAddUpdateChunk(chunk.id, chunk.modules);
@@ -28,7 +28,7 @@ export = function () {
         return Promise.resolve(update);
     }
 
-    function hotDisposeChunk(chunkId) {
+    function hotDisposeChunk(chunkId: number) {
         delete installedChunks[chunkId];
     }
 };

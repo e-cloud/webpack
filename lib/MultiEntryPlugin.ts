@@ -7,13 +7,14 @@ import SingleEntryDependency = require('./dependencies/SingleEntryDependency');
 import MultiModuleFactory = require('./MultiModuleFactory');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import { CompilationParams } from '../typings/webpack-types'
 
 class MultiEntryPlugin {
-    constructor(public context, public entries, public name) {
+    constructor(public context: string, public entries: string[], public name: string) {
     }
 
     apply(compiler: Compiler) {
-        compiler.plugin('compilation', function (compilation: Compilation, params) {
+        compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
             const multiModuleFactory = new MultiModuleFactory();
             const normalModuleFactory = params.normalModuleFactory;
 

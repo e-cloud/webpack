@@ -4,10 +4,12 @@
  */
 import Template = require('../Template');
 import MainTemplate = require('../MainTemplate')
+import Chunk = require('../Chunk')
+import { Hash } from 'crypto'
 
 class WebWorkerMainTemplatePlugin {
     apply(mainTemplate: MainTemplate) {
-        mainTemplate.plugin('local-vars', function (source, chunk) {
+        mainTemplate.plugin('local-vars', function (source: string, chunk: Chunk) {
             if (chunk.chunks.length > 0) {
                 return this.asString([
                     source,
@@ -21,7 +23,7 @@ class WebWorkerMainTemplatePlugin {
             }
             return source;
         });
-        mainTemplate.plugin('require-ensure', function (_, chunk, hash) {
+        mainTemplate.plugin('require-ensure', function (_: string, chunk: Chunk, hash: string) {
             const filename = this.outputOptions.filename;
             const chunkFilename = this.outputOptions.chunkFilename;
             return this.asString([
@@ -33,7 +35,7 @@ class WebWorkerMainTemplatePlugin {
                         JSON.stringify(chunkFilename),
                         {
                             hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
-                            hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
+                            hashWithLength: (length: number) => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
                             chunk: {
                                 id: '" + chunkId + "'
                             }
@@ -43,7 +45,7 @@ class WebWorkerMainTemplatePlugin {
                 'return Promise.resolve();'
             ]);
         });
-        mainTemplate.plugin('bootstrap', function (source, chunk, hash) {
+        mainTemplate.plugin('bootstrap', function (source: string, chunk: Chunk, hash: string) {
             if (chunk.chunks.length > 0) {
                 const chunkCallbackName = this.outputOptions.chunkCallbackName || Template.toIdentifier(`webpackChunk${this.outputOptions.library || ''}`);
                 return this.asString([
@@ -61,20 +63,20 @@ class WebWorkerMainTemplatePlugin {
             }
             return source;
         });
-        mainTemplate.plugin('hot-bootstrap', function (source, chunk, hash) {
+        mainTemplate.plugin('hot-bootstrap', function (source: string, chunk: Chunk, hash: string) {
             const hotUpdateChunkFilename = this.outputOptions.hotUpdateChunkFilename;
             const hotUpdateMainFilename = this.outputOptions.hotUpdateMainFilename;
             const hotUpdateFunction = this.outputOptions.hotUpdateFunction || Template.toIdentifier(`webpackHotUpdate${this.outputOptions.library || ''}`);
             const currentHotUpdateChunkFilename = this.applyPluginsWaterfall('asset-path', JSON.stringify(hotUpdateChunkFilename), {
                 hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
-                hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
+                hashWithLength: (length: number) => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
                 chunk: {
                     id: '" + chunkId + "'
                 }
             });
             const currentHotUpdateMainFilename = this.applyPluginsWaterfall('asset-path', JSON.stringify(hotUpdateMainFilename), {
                 hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
-                hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`
+                hashWithLength: (length: number) => `" + ${this.renderCurrentHashCode(hash, length)} + "`
             });
 
             return `${source}\nvar parentHotUpdateCallback = this[${JSON.stringify(hotUpdateFunction)}];\nthis[${JSON.stringify(hotUpdateFunction)}] = ${Template.getFunctionContent(require('./WebWorkerMainTemplate.runtime.js'))
@@ -84,7 +86,7 @@ class WebWorkerMainTemplatePlugin {
                 .replace(/\$hotChunkFilename\$/g, currentHotUpdateChunkFilename)
                 .replace(/\$hash\$/g, JSON.stringify(hash))}`;
         });
-        mainTemplate.plugin('hash', function (hash) {
+        mainTemplate.plugin('hash', function (hash: Hash) {
             hash.update('webworker');
             hash.update('3');
             hash.update(`${this.outputOptions.publicPath}`);

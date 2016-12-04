@@ -5,8 +5,9 @@
 import Chunk = require('../Chunk')
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
+import Module = require('../Module')
 
-function chunkContainsModule(chunk, module) {
+function chunkContainsModule(chunk: Chunk, module: Module) {
     const chunks = module.chunks;
     const modules = chunk.modules;
     if (chunks.length < modules.length) {
@@ -17,7 +18,7 @@ function chunkContainsModule(chunk, module) {
     }
 }
 
-function hasModule(chunk, module, checkedChunks): boolean | Chunk[] {
+function hasModule(chunk: Chunk, module: Module, checkedChunks: Chunk[]): boolean | Chunk[] {
     if (chunkContainsModule(chunk, module)) {
         return [chunk];
     }
@@ -27,20 +28,20 @@ function hasModule(chunk, module, checkedChunks): boolean | Chunk[] {
     return allHaveModule(chunk.parents.filter(c => !checkedChunks.includes(c)), module, checkedChunks);
 }
 
-function allHaveModule(someChunks, module, checkedChunks = []): boolean | Chunk[] {
-    const chunks = [];
+function allHaveModule(someChunks: Chunk[], module: Module, checkedChunks: Chunk[] = []): false | Chunk[] {
+    const chunks: Chunk[] = [];
     for (let i = 0; i < someChunks.length; i++) {
         checkedChunks.push(someChunks[i]);
         const subChunks = hasModule(someChunks[i], module, checkedChunks);
         if (!subChunks) {
             return false;
         }
-        addToSet(chunks, subChunks);
+        addToSet(chunks, subChunks as Chunk[]);
     }
     return chunks;
 }
 
-function addToSet(set, items) {
+function addToSet(set: any[], items: any[]) {
     items.forEach(item => {
         if (!set.includes(item)) {
             set.push(item);
@@ -48,7 +49,7 @@ function addToSet(set, items) {
     });
 }
 
-function debugIds(chunks) {
+function debugIds(chunks: Chunk[]) {
     const list = chunks.map(chunk => chunk.debugId);
     const debugIdMissing = list.some(dId => typeof dId !== 'number');
     if (debugIdMissing) {
@@ -61,7 +62,7 @@ function debugIds(chunks) {
 class RemoveParentModulesPlugin {
     apply(compiler: Compiler) {
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin(['optimize-chunks-basic', 'optimize-extracted-chunks-basic'], chunks => {
+            compilation.plugin(['optimize-chunks-basic', 'optimize-extracted-chunks-basic'], (chunks: Chunk[]) => {
                 chunks.forEach(chunk => {
                     const cache = {};
                     chunk.modules.slice().forEach(module => {

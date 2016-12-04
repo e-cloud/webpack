@@ -5,9 +5,10 @@
 import EvalDevToolModuleTemplatePlugin = require('./EvalDevToolModuleTemplatePlugin');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import { FilenameTemplate } from '../typings/webpack-types'
 
 class EvalDevToolModulePlugin {
-    constructor(public sourceUrlComment: string, public moduleFilenameTemplate: string) {
+    constructor(public sourceUrlComment: string, public moduleFilenameTemplate: FilenameTemplate) {
     }
 
     apply(compiler: Compiler) {

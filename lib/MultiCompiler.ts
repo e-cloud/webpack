@@ -6,9 +6,13 @@ import Tapable = require('tapable');
 import async = require('async');
 import Stats = require('./Stats');
 import Compiler = require('./Compiler')
+import { WatchCallback, ErrCallback, WatchOptions, AbstractStats } from '../typings/webpack-types'
+import MultiStats from './MultiStats'
+import Watching = Compiler.Watching
+import Dependency = require('./Dependency')
 
 class MultiWatching {
-    constructor(public watchings: Compiler.Watching[]) {
+    constructor(public watchings: Watching[]) {
     }
 
     invalidate() {
@@ -17,8 +21,8 @@ class MultiWatching {
         });
     }
 
-    close(callback) {
-        async.each(this.watchings, (watching, callback) => {
+    close(callback: ErrCallback) {
+        async.each(this.watchings, (watching: Watching, callback: ErrCallback) => {
             watching.close(callback);
         }, callback);
     }
@@ -34,13 +38,13 @@ class MultiCompiler extends Tapable {
             });
         }
 
-        function delegateProperty(name) {
+        function delegateProperty(this: MultiCompiler, name: string) {
             Object.defineProperty(this, name, {
                 configurable: false,
                 get() {
                     throw new Error(`Cannot read ${name} of a MultiCompiler`);
                 },
-                set: value => {
+                set: (value: any) => {
                     this.compilers.forEach(compiler => {
                         compiler[name] = value;
                     });
@@ -68,10 +72,10 @@ class MultiCompiler extends Tapable {
         });
 
         let doneCompilers = 0;
-        const compilerStats = [];
-        this.compilers.forEach(function (compiler, idx) {
+        const compilerStats: Stats[] = [];
+        this.compilers.forEach(function (compiler: Compiler, idx) {
             let compilerDone = false;
-            compiler.plugin('done', stats => {
+            compiler.plugin('done', (stats: Stats) => {
                 if (!compilerDone) {
                     compilerDone = true;
                     doneCompilers++;
@@ -91,8 +95,8 @@ class MultiCompiler extends Tapable {
         }, this);
     }
 
-    watch(watchOptions: Compiler.WatchOption, handler) {
-        const watchings = [];
+    watch(watchOptions: WatchOptions, handler: WatchCallback<AbstractStats>) {
+        const watchings: Watching[] = [];
         const allStats = this.compilers.map(() => null);
         const compilerStatus = this.compilers.map(() => false);
 
@@ -124,19 +128,19 @@ class MultiCompiler extends Tapable {
         return new MultiWatching(watchings);
     }
 
-    run(callback) {
+    run(callback: WatchCallback<AbstractStats>) {
         const allStats = this.compilers.map(() => null);
 
         runWithDependencies(this.compilers, (compiler, callback) => {
             const compilerIdx = this.compilers.indexOf(compiler);
-            compiler.run((err, stats) => {
+            compiler.run((err: Error, stats: Stats) => {
                 if (err) {
                     return callback(err);
                 }
                 allStats[compilerIdx] = stats;
                 callback();
             });
-        }, err => {
+        }, (err: Error) => {
             if (err) {
                 return callback(err);
             }
@@ -151,15 +155,23 @@ class MultiCompiler extends Tapable {
             }
         });
     }
+
+    static MultiWatching = MultiWatching
 }
+
+declare namespace MultiCompiler {}
 
 export = MultiCompiler;
 
-function runWithDependencies(compilers, fn, callback) {
+function runWithDependencies(
+    compilers: Compiler[],
+    fn: (compiler: Compiler, callback: ErrCallback) => any,
+    callback: ErrCallback
+) {
     const fulfilledNames = {};
     let remainingCompilers = compilers;
 
-    function isDependencyFulfilled(d) {
+    function isDependencyFulfilled(d: string) {
         return fulfilledNames[d];
     }
 
@@ -180,12 +192,12 @@ function runWithDependencies(compilers, fn, callback) {
         return readyCompilers;
     }
 
-    function runCompilers(callback) {
+    function runCompilers(callback: ErrCallback) {
         if (remainingCompilers.length === 0) {
             return callback();
         }
-        async.map(getReadyCompilers(), (compiler, callback: (err) => any) => {
-            fn(compiler, err => {
+        async.map(getReadyCompilers(), (compiler, callback: (err: Error) => any) => {
+            fn(compiler, (err: Error) => {
                 if (err) {
                     return callback(err);
                 }
@@ -198,50 +210,3 @@ function runWithDependencies(compilers, fn, callback) {
     runCompilers(callback);
 }
 
-class MultiStats {
-    hash: string
-
-    constructor(public stats: Stats[]) {
-        this.hash = stats.map(stat => stat.hash).join('');
-    }
-
-    hasErrors() {
-        return this.stats
-            .map(stat => stat.hasErrors())
-            .reduce((a, b) => a || b, false);
-    }
-
-    hasWarnings() {
-        return this.stats
-            .map(stat => stat.hasWarnings())
-            .reduce((a, b) => a || b, false);
-    }
-
-    toJson(options, forToString) {
-        const jsons = this.stats.map(stat => {
-            const obj = stat.toJson(options, forToString);
-            obj.name = stat.compilation && stat.compilation.name;
-            return obj;
-        });
-        const obj: any = {
-            errors: jsons.reduce((arr, j) =>
-                    arr.concat(j.errors.map(msg => `(${j.name}) ${msg}`))
-                , []),
-            warnings: jsons.reduce((arr, j) =>
-                    arr.concat(j.warnings.map(msg => `(${j.name}) ${msg}`))
-                , [])
-        };
-        if (!options || options.version !== false) {
-            obj.version = require('../package.json').version;
-        }
-        if (!options || options.hash !== false) {
-            obj.hash = this.hash;
-        }
-        if (!options || options.children !== false) {
-            obj.children = jsons;
-        }
-        return obj;
-    }
-}
-
-MultiStats.prototype.toString = Stats.prototype.toString;

@@ -4,11 +4,21 @@
  */
 import AsyncDependenciesBlock = require('../AsyncDependenciesBlock');
 import RequireEnsureDependency = require('./RequireEnsureDependency');
+import { FunctionExpression, SourceLocation, CallExpression } from 'estree'
+import { SourceRange } from '../../typings/webpack-types'
+import Module = require('../Module')
 
 class RequireEnsureDependenciesBlock extends AsyncDependenciesBlock {
-    range
+    range: SourceRange
 
-    constructor(public expr, fnExpression, chunkName, public chunkNameRange, module, loc) {
+    constructor(
+        public expr: CallExpression,
+        fnExpression: FunctionExpression,
+        chunkName: string,
+        public chunkNameRange: SourceRange,
+        module: Module,
+        loc: SourceLocation
+    ) {
         super(chunkName, module, loc);
         const bodyRange = fnExpression && fnExpression.body && fnExpression.body.range;
         this.range = bodyRange && [bodyRange[0] + 1, bodyRange[1] - 1] || null;

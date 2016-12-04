@@ -11,7 +11,7 @@ class ArrayMap {
         this.values = [];
     }
 
-    get(key) {
+    get(key: any) {
         for (let i = 0; i < this.keys.length; i++) {
             if (this.keys[i] === key) {
                 return this.values[i];
@@ -20,7 +20,7 @@ class ArrayMap {
         return;
     }
 
-    set(key, value) {
+    set(key: any, value: any) {
         for (let i = 0; i < this.keys.length; i++) {
             if (this.keys[i] === key) {
                 this.values[i] = value;
@@ -32,7 +32,7 @@ class ArrayMap {
         return this;
     }
 
-    remove(key) {
+    remove(key: any) {
         for (let i = 0; i < this.keys.length; i++) {
             if (this.keys[i] === key) {
                 this.keys.splice(i, 1);

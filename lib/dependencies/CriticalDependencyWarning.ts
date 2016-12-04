@@ -3,7 +3,7 @@
  Author Tobias Koppers @sokra
  */
 class CriticalDependencyWarning extends Error {
-    constructor(message) {
+    constructor(message: string) {
         super();
         Error.captureStackTrace(this, CriticalDependencyWarning);
         this.name = 'CriticalDependencyWarning';

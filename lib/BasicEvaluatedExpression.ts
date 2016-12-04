@@ -2,24 +2,22 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import { SourceRange } from '../typings/webpack-types'
+
 class BasicEvaluatedExpression {
-    range: {}
-    null: boolean
+    array: any[]
     bool: boolean
-    string: boolean
-    number: boolean
-    regExp: boolean
-    identifier: boolean
-    prefix: {
-        asBool(): boolean
-    }
-    postfix: {
-        asBool(): boolean
-    }
-    options: {}
-    items: string[]
-    array: boolean
+    identifier: string
+    items: BasicEvaluatedExpression[]
+    null: boolean
+    number: number
+    options: any[]
+    postfix: BasicEvaluatedExpression
+    prefix: BasicEvaluatedExpression
     quasis: BasicEvaluatedExpression[]
+    range: SourceRange
+    regExp: RegExp
+    string: string
 
     constructor() {
         this.range = null;
@@ -69,7 +67,7 @@ class BasicEvaluatedExpression {
         return Object.prototype.hasOwnProperty.call(this, 'quasis');
     }
 
-    asBool() {
+    asBool(): boolean {
         if (this.isBoolean()) {
             return this.bool;
         }
@@ -108,7 +106,7 @@ class BasicEvaluatedExpression {
         return undefined;
     }
 
-    set(value) {
+    set(value: string | number | boolean | null | RegExp | any[]) {
         if (typeof value === 'string') {
             return this.setString(value);
         }
@@ -130,7 +128,7 @@ class BasicEvaluatedExpression {
         return this;
     }
 
-    setString(str) {
+    setString(str: string | null) {
         if (str === null) {
             delete this.string;
         }
@@ -145,7 +143,7 @@ class BasicEvaluatedExpression {
         return this;
     }
 
-    setNumber(num) {
+    setNumber(num: number) {
         if (num === null) {
             delete this.number;
         }
@@ -155,7 +153,7 @@ class BasicEvaluatedExpression {
         return this;
     }
 
-    setBoolean(bool) {
+    setBoolean(bool: boolean) {
         if (bool === null) {
             delete this.bool;
         }
@@ -165,7 +163,7 @@ class BasicEvaluatedExpression {
         return this;
     }
 
-    setRegExp(regExp) {
+    setRegExp(regExp: RegExp) {
         if (regExp === null) {
             delete this.regExp;
         }
@@ -175,7 +173,7 @@ class BasicEvaluatedExpression {
         return this;
     }
 
-    setIdentifier(identifier) {
+    setIdentifier(identifier: string) {
         if (identifier === null) {
             delete this.identifier;
         }
@@ -185,7 +183,7 @@ class BasicEvaluatedExpression {
         return this;
     }
 
-    setWrapped(prefix, postfix) {
+    setWrapped(prefix: BasicEvaluatedExpression, postfix: BasicEvaluatedExpression) {
         this.prefix = prefix;
         this.postfix = postfix;
         return this;
@@ -197,7 +195,7 @@ class BasicEvaluatedExpression {
         return this;
     }
 
-    setOptions(options) {
+    setOptions(options: any[]) {
         if (options === null) {
             delete this.options;
         }
@@ -207,7 +205,7 @@ class BasicEvaluatedExpression {
         return this;
     }
 
-    setItems(items) {
+    setItems(items: BasicEvaluatedExpression[]) {
         if (items === null) {
             delete this.items;
         }
@@ -217,7 +215,7 @@ class BasicEvaluatedExpression {
         return this;
     }
 
-    setArray(array) {
+    setArray(array: any[]) {
         if (array === null) {
             delete this.array;
         }
@@ -227,7 +225,7 @@ class BasicEvaluatedExpression {
         return this;
     }
 
-    setTemplateString(quasis) {
+    setTemplateString(quasis: BasicEvaluatedExpression[]) {
         if (quasis === null) {
             delete this.quasis;
         }
@@ -237,7 +235,7 @@ class BasicEvaluatedExpression {
         return this;
     }
 
-    addOptions(options) {
+    addOptions(options: any[]) {
         if (!this.options) {
             this.options = [];
         }
@@ -247,7 +245,7 @@ class BasicEvaluatedExpression {
         return this;
     }
 
-    setRange(range) {
+    setRange(range: SourceRange) {
         this.range = range;
         return this;
     }

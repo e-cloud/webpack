@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-interface JsonSchema {
+interface JsonSchema<ExtendedSchema> {
   $ref?: string;
   /////////////////////////////////////////////////
   // Schema Metadata
@@ -36,7 +36,7 @@ interface JsonSchema {
    * It is recommended that the meta-schema is
    * included in the root of any JSON Schema
    */
-  $schema?: JsonSchema;
+  $schema?: ExtendedSchema;
   /**
    * Title of the schema
    */
@@ -84,8 +84,8 @@ interface JsonSchema {
   /////////////////////////////////////////////////
   // Array Validation
   /////////////////////////////////////////////////
-  additionalItems?: boolean | JsonSchema;
-  items?: JsonSchema | JsonSchema[];
+  additionalItems?: boolean | ExtendedSchema;
+  items?: ExtendedSchema | ExtendedSchema[];
   maxItems?: number;
   minItems?: number;
   uniqueItems?: boolean;
@@ -96,22 +96,22 @@ interface JsonSchema {
   maxProperties?: number;
   minProperties?: number;
   required?: string[];
-  additionalProperties?: boolean | JsonSchema;
+  additionalProperties?: boolean | ExtendedSchema;
   /**
    * Holds simple JSON Schema definitions for
    * referencing from elsewhere.
    */
-  definitions?: {[key: string]: JsonSchema};
+  definitions?: {[key: string]: ExtendedSchema};
   /**
    * The keys that can exist on the object with the
    * json schema that should validate their value
    */
-  properties?: {[property: string]: JsonSchema};
+  properties?: {[property: string]: ExtendedSchema};
   /**
    * The key of this object is a regex for which
    * properties the schema applies to
    */
-  patternProperties?: {[pattern: string]: JsonSchema};
+  patternProperties?: {[pattern: string]: ExtendedSchema};
   /**
    * If the key is present as a property then the
    * string of properties must also be present.
@@ -119,7 +119,7 @@ interface JsonSchema {
    * also be valid for the object if the key is
    * present.
    */
-  dependencies?: {[key: string]: JsonSchema | string[]};
+  dependencies?: {[key: string]: ExtendedSchema | string[]};
 
   /////////////////////////////////////////////////
   // Generic
@@ -141,11 +141,11 @@ interface JsonSchema {
   /////////////////////////////////////////////////
   // Combining Schemas
   /////////////////////////////////////////////////
-  allOf?: JsonSchema[];
-  anyOf?: JsonSchema[];
-  oneOf?: JsonSchema[];
+  allOf?: ExtendedSchema[];
+  anyOf?: ExtendedSchema[];
+  oneOf?: ExtendedSchema[];
   /**
    * The entity being validated must not match this schema
    */
-  not?: JsonSchema;
+  not?: ExtendedSchema;
 }

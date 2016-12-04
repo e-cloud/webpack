@@ -4,9 +4,11 @@
  */
 import AbstractPlugin = require('../AbstractPlugin');
 import RequireIncludeDependency = require('./RequireIncludeDependency');
+import { CallExpression } from 'estree'
+import Parser = require('../Parser')
 
 export = AbstractPlugin.create({
-    'call require.include'(expr) {
+    'call require.include'(this: Parser, expr: CallExpression) {
         if (expr.arguments.length !== 1) {
             return;
         }

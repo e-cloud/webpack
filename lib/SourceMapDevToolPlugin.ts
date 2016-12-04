@@ -3,41 +3,47 @@
  Author Tobias Koppers @sokra
  */
 import { ConcatSource, RawSource } from 'webpack-sources'
+import { FilenameTemplate } from '../typings/webpack-types'
 import path = require('path');
 import RequestShortener = require('./RequestShortener');
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
 import SourceMapDevToolModuleOptionsPlugin = require('./SourceMapDevToolModuleOptionsPlugin');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import Chunk = require('./Chunk')
+import SourceMap = require('source-map')
+import RawSourceMap = SourceMap.RawSourceMap
+import Module = require('./Module')
+
+interface Task {
+    asset: Compilation.Asset
+    chunk: Chunk
+    file: string
+    moduleFilenames: string[]
+    modules: (string | Module)[]
+    source: string
+    sourceMap: RawSourceMap
+}
 
 class SourceMapDevToolPlugin {
+    fallbackModuleFilenameTemplate: FilenameTemplate
+    moduleFilenameTemplate: FilenameTemplate
+    options: SourceMapDevToolPlugin.Option
     sourceMapFilename: string
     sourceMappingURLComment: string | boolean
-    moduleFilenameTemplate: string
-    fallbackModuleFilenameTemplate: string
-    options: {
-        module: boolean
-        lineToLine: boolean
-        filename: string
-        append: string | boolean
-        moduleFilenameTemplate: string
-        fallbackModuleFilenameTemplate: string
-        test: string | RegExp
-        noSources: boolean
-        sourceRoot: string
-    }
 
-    constructor(options) {
+    constructor(options: string | SourceMapDevToolPlugin.Option) {
         if (arguments.length > 1) {
             throw new Error('SourceMapDevToolPlugin only takes one argument (pass an options object)');
         }
         if (typeof options === 'string') {
+            // todo: here may be an error, no usage of options.sourceMapFilename
             options = {
                 sourceMapFilename: options
-            };
+            } as SourceMapDevToolPlugin.Option;
         }
         if (!options) {
-            options = {};
+            options = {} as SourceMapDevToolPlugin.Option;
         }
         this.sourceMapFilename = options.filename;
         this.sourceMappingURLComment = options.append === false
@@ -56,61 +62,69 @@ class SourceMapDevToolPlugin {
         const requestShortener = new RequestShortener(compiler.context);
         const options = this.options;
         options.test = options.test || /\.(js|css)($|\?)/i;
+
         compiler.plugin('compilation', function (compilation: Compilation) {
             new SourceMapDevToolModuleOptionsPlugin(options).apply(compilation);
-            compilation.plugin('after-optimize-chunk-assets', function (chunks) {
-                let allModules = [];
-                let allModuleFilenames = [];
-                const tasks = [];
-                chunks.forEach(function (chunk) {
-                    chunk.files.filter(ModuleFilenameHelpers.matchObject.bind(undefined, options)).map(function (file) {
-                        const asset = this.assets[file];
-                        if (asset.__SourceMapDevToolData) {
-                            const data = asset.__SourceMapDevToolData;
-                            for (const cachedFile in data) {
-                                this.assets[cachedFile] = data[cachedFile];
-                                if (cachedFile !== file) {
-                                    chunk.files.push(cachedFile);
+            compilation.plugin('after-optimize-chunk-assets', function (chunks: Chunk[]) {
+                let allModules: (string | Module)[] = [];
+                let allModuleFilenames: string[] = [];
+                const tasks: Task[] = [];
+                chunks.forEach((chunk) => {
+                    chunk.files.filter(ModuleFilenameHelpers.matchObject.bind(undefined, options))
+                        .map((file) => {
+                            const asset = this.assets[file];
+                            // todo: there is no assignment for compilation.assets[xxx].__SourceMapDevToolData
+                            if (asset.__SourceMapDevToolData) {
+                                const data = asset.__SourceMapDevToolData;
+                                for (const cachedFile in data) {
+                                    this.assets[cachedFile] = data[cachedFile];
+                                    if (cachedFile !== file) {
+                                        chunk.files.push(cachedFile);
+                                    }
                                 }
+                                return;
                             }
-                            return;
-                        }
-                        let source;
-                        let sourceMap;
-                        if (asset.sourceAndMap) {
-                            const sourceAndMap = asset.sourceAndMap(options);
-                            sourceMap = sourceAndMap.map;
-                            source = sourceAndMap.source;
-                        }
-                        else {
-                            sourceMap = asset.map(options);
-                            source = asset.source();
-                        }
-                        if (sourceMap) {
-                            return {
-                                chunk,
-                                file,
-                                asset,
-                                source,
-                                sourceMap
-                            };
-                        }
-                    }, this).filter(Boolean).map(task => {
-                        const modules = task.sourceMap.sources.map(source => {
-                            const module = compilation.findModule(source);
-                            return module || source;
+                            let source;
+                            let sourceMap;
+                            if (asset.sourceAndMap) {
+                                const sourceAndMap = asset.sourceAndMap(options);
+                                sourceMap = sourceAndMap.map;
+                                source = sourceAndMap.source;
+                            }
+                            else {
+                                sourceMap = asset.map(options);
+                                source = asset.source();
+                            }
+                            if (sourceMap) {
+                                return {
+                                    chunk,
+                                    file,
+                                    asset,
+                                    source,
+                                    sourceMap
+                                };
+                            }
+                        })
+                        .filter(Boolean)
+                        .map((task: Task) => {
+                            const modules = task.sourceMap.sources.map(source => {
+                                const module = compilation.findModule(source);
+                                return module || source;
+                            });
+                            const moduleFilenames = modules.map(module =>
+                                ModuleFilenameHelpers.createFilename(module, moduleFilenameTemplate, requestShortener)
+                            );
+                            task.modules = modules;
+                            task.moduleFilenames = moduleFilenames;
+                            return task;
+                        })
+                        .forEach(task => {
+                            allModules = allModules.concat(task.modules);
+                            allModuleFilenames = allModuleFilenames.concat(task.moduleFilenames);
+                            tasks.push(task);
                         });
-                        const moduleFilenames = modules.map(
-                            module => ModuleFilenameHelpers.createFilename(module, moduleFilenameTemplate, requestShortener));
-                        task.modules = modules;
-                        task.moduleFilenames = moduleFilenames;
-                        return task;
-                    }, this).forEach(task => {
-                        allModules = allModules.concat(task.modules);
-                        allModuleFilenames = allModuleFilenames.concat(task.moduleFilenames);
-                        tasks.push(task);
-                    }, this);
-                }, this);
+                });
+
                 allModuleFilenames = ModuleFilenameHelpers.replaceDuplicates(
                     allModuleFilenames,
                     (filename, i) =>
@@ -121,17 +135,21 @@ class SourceMapDevToolPlugin {
                         a = !a ? '' : typeof a === 'string' ? a : a.identifier();
                         b = !b ? '' : typeof b === 'string' ? b : b.identifier();
                         return a.length - b.length;
-                    });
+                    }
+                );
+
                 allModuleFilenames = ModuleFilenameHelpers.replaceDuplicates(allModuleFilenames, (filename, i, n) => {
                     for (let j = 0; j < n; j++) {
                         filename += '*'
                     }
                     return filename;
                 });
+
                 tasks.forEach(task => {
                     task.moduleFilenames = allModuleFilenames.slice(0, task.moduleFilenames.length);
                     allModuleFilenames = allModuleFilenames.slice(task.moduleFilenames.length);
                 }, this);
+
                 tasks.forEach(function (task) {
                     const chunk = task.chunk;
                     const file = task.file;
@@ -188,9 +206,24 @@ class SourceMapDevToolPlugin {
     }
 }
 
+declare namespace SourceMapDevToolPlugin {
+    interface Option {
+        module: boolean
+        lineToLine: boolean
+        filename: string
+        append: string | false
+        columns: boolean
+        moduleFilenameTemplate: FilenameTemplate
+        fallbackModuleFilenameTemplate: FilenameTemplate
+        test?: string | RegExp
+        noSources: boolean
+        sourceRoot?: string
+    }
+}
+
 export = SourceMapDevToolPlugin;
 
-function basename(name) {
+function basename(name: string) {
     if (!name.includes('/')) {
         return name;
     }

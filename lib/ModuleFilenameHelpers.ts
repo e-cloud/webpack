@@ -4,57 +4,58 @@
  */
 import crypto = require('crypto')
 import Module = require('./Module')
+import RequestShortener = require('./RequestShortener')
+import { FilenameTemplate } from '../typings/webpack-types'
 
-const ModuleFilenameHelpers: any = {};
+export const ALL_LOADERS_RESOURCE = '[all-loaders][resource]';
+export const REGEXP_ALL_LOADERS_RESOURCE = /\[all-?loaders\]\[resource\]/gi;
+export const LOADERS_RESOURCE = '[loaders][resource]';
+export const REGEXP_LOADERS_RESOURCE = /\[loaders\]\[resource\]/gi;
+export const RESOURCE = '[resource]';
+export const REGEXP_RESOURCE = /\[resource\]/gi;
+export const ABSOLUTE_RESOURCE_PATH = '[absolute-resource-path]';
+export const REGEXP_ABSOLUTE_RESOURCE_PATH = /\[abs(olute)?-?resource-?path\]/gi;
+export const RESOURCE_PATH = '[resource-path]';
+export const REGEXP_RESOURCE_PATH = /\[resource-?path\]/gi;
+export const ALL_LOADERS = '[all-loaders]';
+export const REGEXP_ALL_LOADERS = /\[all-?loaders\]/gi;
+export const LOADERS = '[loaders]';
+export const REGEXP_LOADERS = /\[loaders\]/gi;
+export const QUERY = '[query]';
+export const REGEXP_QUERY = /\[query\]/gi;
+export const ID = '[id]';
+export const REGEXP_ID = /\[id\]/gi;
+export const HASH = '[hash]';
+export const REGEXP_HASH = /\[hash\]/gi;
 
-ModuleFilenameHelpers.ALL_LOADERS_RESOURCE = '[all-loaders][resource]';
-ModuleFilenameHelpers.REGEXP_ALL_LOADERS_RESOURCE = /\[all-?loaders\]\[resource\]/gi;
-ModuleFilenameHelpers.LOADERS_RESOURCE = '[loaders][resource]';
-ModuleFilenameHelpers.REGEXP_LOADERS_RESOURCE = /\[loaders\]\[resource\]/gi;
-ModuleFilenameHelpers.RESOURCE = '[resource]';
-ModuleFilenameHelpers.REGEXP_RESOURCE = /\[resource\]/gi;
-ModuleFilenameHelpers.ABSOLUTE_RESOURCE_PATH = '[absolute-resource-path]';
-ModuleFilenameHelpers.REGEXP_ABSOLUTE_RESOURCE_PATH = /\[abs(olute)?-?resource-?path\]/gi;
-ModuleFilenameHelpers.RESOURCE_PATH = '[resource-path]';
-ModuleFilenameHelpers.REGEXP_RESOURCE_PATH = /\[resource-?path\]/gi;
-ModuleFilenameHelpers.ALL_LOADERS = '[all-loaders]';
-ModuleFilenameHelpers.REGEXP_ALL_LOADERS = /\[all-?loaders\]/gi;
-ModuleFilenameHelpers.LOADERS = '[loaders]';
-ModuleFilenameHelpers.REGEXP_LOADERS = /\[loaders\]/gi;
-ModuleFilenameHelpers.QUERY = '[query]';
-ModuleFilenameHelpers.REGEXP_QUERY = /\[query\]/gi;
-ModuleFilenameHelpers.ID = '[id]';
-ModuleFilenameHelpers.REGEXP_ID = /\[id\]/gi;
-ModuleFilenameHelpers.HASH = '[hash]';
-ModuleFilenameHelpers.REGEXP_HASH = /\[hash\]/gi;
-
-function getAfter(str, token) {
+function getAfter(str: string, token: string) {
     const idx = str.indexOf(token);
     return idx < 0 ? '' : str.substr(idx);
 }
 
-function getBefore(str, token) {
+function getBefore(str: string, token: string) {
     const idx = str.lastIndexOf(token);
     return idx < 0 ? '' : str.substr(0, idx);
 }
 
-function getHash(str) {
+function getHash(str: string) {
     const hash = crypto.createHash('md5');
     hash.update(str);
     return hash.digest('hex').substr(0, 4);
 }
 
-function asRegExp(test): RegExp {
+// todo does not check if not RegExp
+function asRegExp(test: string | RegExp): RegExp {
     if (typeof test === 'string') {
         return new RegExp(`^${test.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}`);
     }
     return test
 }
 
-ModuleFilenameHelpers.createFilename = function createFilename(
+export function createFilename(
     module: string | Module,
-    moduleFilenameTemplate: string,
-    requestShortener
+    moduleFilenameTemplate: FilenameTemplate,
+    requestShortener: RequestShortener
 ) {
     let absoluteResourcePath;
     let hash;
@@ -98,19 +99,19 @@ ModuleFilenameHelpers.createFilename = function createFilename(
         });
     }
     return moduleFilenameTemplate
-        .replace(ModuleFilenameHelpers.REGEXP_ALL_LOADERS_RESOURCE, identifier)
-        .replace(ModuleFilenameHelpers.REGEXP_LOADERS_RESOURCE, shortIdentifier)
-        .replace(ModuleFilenameHelpers.REGEXP_RESOURCE, resource)
-        .replace(ModuleFilenameHelpers.REGEXP_RESOURCE_PATH, resourcePath)
-        .replace(ModuleFilenameHelpers.REGEXP_ABSOLUTE_RESOURCE_PATH, absoluteResourcePath)
-        .replace(ModuleFilenameHelpers.REGEXP_ALL_LOADERS, allLoaders)
-        .replace(ModuleFilenameHelpers.REGEXP_LOADERS, loaders)
-        .replace(ModuleFilenameHelpers.REGEXP_QUERY, query)
-        .replace(ModuleFilenameHelpers.REGEXP_ID, moduleId as string)
-        .replace(ModuleFilenameHelpers.REGEXP_HASH, hash);
-};
+        .replace(REGEXP_ALL_LOADERS_RESOURCE, identifier)
+        .replace(REGEXP_LOADERS_RESOURCE, shortIdentifier)
+        .replace(REGEXP_RESOURCE, resource)
+        .replace(REGEXP_RESOURCE_PATH, resourcePath)
+        .replace(REGEXP_ABSOLUTE_RESOURCE_PATH, absoluteResourcePath)
+        .replace(REGEXP_ALL_LOADERS, allLoaders)
+        .replace(REGEXP_LOADERS, loaders)
+        .replace(REGEXP_QUERY, query)
+        .replace(REGEXP_ID, moduleId as string)
+        .replace(REGEXP_HASH, hash);
+}
 
-ModuleFilenameHelpers.createFooter = function createFooter(module, requestShortener) {
+export function createFooter(module: Module | string, requestShortener: RequestShortener) {
     if (!module) {
         module = '';
     }
@@ -123,9 +124,12 @@ ModuleFilenameHelpers.createFooter = function createFooter(module, requestShorte
             `// module id = ${module.id}`, `// module chunks = ${module.chunks.map(chunk => chunk.id).join(' ')}`
         ].join('\n');
     }
-};
+}
 
-ModuleFilenameHelpers.replaceDuplicates = function replaceDuplicates(array, fn, comparator?) {
+export function replaceDuplicates(
+    array: string[], fn: (filename: string, i: number, n: number) => string,
+    comparator?: (a: any, b: any) => number
+) {
     const countMap = {};
     const posMap = {};
     array.forEach((item, idx) => {
@@ -149,9 +153,11 @@ ModuleFilenameHelpers.replaceDuplicates = function replaceDuplicates(array, fn, 
             return item;
         }
     });
-};
+}
 
-ModuleFilenameHelpers.matchPart = function matchPart(str, test) {
+export type TestCondition = string | RegExp | (string | RegExp)[]
+
+export function matchPart(str: string, test: TestCondition) {
     if (!test) {
         return true;
     }
@@ -160,28 +166,32 @@ ModuleFilenameHelpers.matchPart = function matchPart(str, test) {
         return test.map(asRegExp).filter((regExp: RegExp) => regExp.test(str)).length > 0;
     }
     else {
-        test = asRegExp(test);
-        return test.test(str);
+        const testReg = asRegExp(test);
+        return testReg.test(str);
     }
-};
+}
 
-ModuleFilenameHelpers.matchObject = function matchObject(obj, str) {
+export function matchObject(
+    obj: {
+        test?: TestCondition
+        include?: TestCondition
+        exclude?: TestCondition
+    }, str: string
+) {
     if (obj.test) {
-        if (!ModuleFilenameHelpers.matchPart(str, obj.test)) {
+        if (!matchPart(str, obj.test)) {
             return false;
         }
     }
     if (obj.include) {
-        if (!ModuleFilenameHelpers.matchPart(str, obj.include)) {
+        if (!matchPart(str, obj.include)) {
             return false;
         }
     }
     if (obj.exclude) {
-        if (ModuleFilenameHelpers.matchPart(str, obj.exclude)) {
+        if (matchPart(str, obj.exclude)) {
             return false;
         }
     }
     return true;
-};
-
-export = ModuleFilenameHelpers
+}

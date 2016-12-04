@@ -3,9 +3,20 @@
  Author Tobias Koppers @sokra
  */
 import WebpackMissingModule = require('./WebpackMissingModule')
+import Dependency = require('../Dependency')
+import ContextDependency = require('./ContextDependency')
+import RequireResolveContextDependency = require('./RequireResolveContextDependency')
+import RequestShortener = require('../RequestShortener')
+import { WebpackOutputOptions } from '../../typings/webpack-types'
+import { ReplaceSource } from 'webpack-sources'
 
 class ContextDependencyTemplateAsId {
-    apply(dep, source, outputOptions, requestShortener) {
+    apply(
+        dep: RequireResolveContextDependency,
+        source: ReplaceSource,
+        outputOptions: WebpackOutputOptions,
+        requestShortener: RequestShortener
+    ) {
         let comment = '';
         if (outputOptions.pathinfo) {
             comment = `/*! ${requestShortener.shorten(dep.request)} */ `;

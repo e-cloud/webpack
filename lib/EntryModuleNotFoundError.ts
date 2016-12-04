@@ -2,10 +2,12 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-class EntryModuleNotFoundError extends Error {
-    details
+import ModuleNotFoundError = require('./ModuleNotFoundError');
 
-    constructor(public error: Error & { details: string }) {
+class EntryModuleNotFoundError extends Error {
+    details: string
+
+    constructor(public error: ModuleNotFoundError) {
         super();
         Error.captureStackTrace(this, EntryModuleNotFoundError);
         this.name = 'EntryModuleNotFoundError';

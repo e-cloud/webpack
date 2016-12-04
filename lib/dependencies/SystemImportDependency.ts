@@ -5,9 +5,18 @@
 import ModuleDependency = require('./ModuleDependency');
 import DepBlockHelpers = require('./DepBlockHelpers');
 import WebpackMissingModule = require('./WebpackMissingModule');
+import RequestShortener = require('../RequestShortener')
+import { WebpackOutputOptions } from '../../typings/webpack-types'
+import { ReplaceSource } from 'webpack-sources'
+import SystemImportDependenciesBlock = require('./SystemImportDependenciesBlock')
 
 class Template {
-    apply(dep, source, outputOptions, requestShortener) {
+    apply(
+        dep: SystemImportDependency,
+        source: ReplaceSource,
+        outputOptions: WebpackOutputOptions,
+        requestShortener: RequestShortener
+    ) {
         const depBlock = dep.block;
         const promise = DepBlockHelpers.getDepBlockPromise(depBlock, outputOptions, requestShortener, 'System.import');
         let comment = '';
@@ -27,7 +36,7 @@ class Template {
 }
 
 class SystemImportDependency extends ModuleDependency {
-    constructor(request, public block) {
+    constructor(request: string, public block: SystemImportDependenciesBlock) {
         super(request);
     }
 

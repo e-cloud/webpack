@@ -4,20 +4,25 @@
  */
 import Compilation = require('../Compilation')
 import Compiler = require('../Compiler')
+import Chunk = require('../Chunk')
+import ExternalModule = require('../ExternalModule')
 
 class EnsureChunkConditionsPlugin {
     apply(compiler: Compiler) {
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin(['optimize-chunks-basic', 'optimize-extracted-chunks-basic'], function (chunks) {
+            compilation.plugin([
+                'optimize-chunks-basic',
+                'optimize-extracted-chunks-basic'
+            ], function (chunks: Chunk[]) {
                 let changed = false;
                 chunks.forEach(chunk => {
-                    chunk.modules.slice().forEach(module => {
+                    chunk.modules.slice().forEach((module: ExternalModule) => {
                         if (!module.chunkCondition) {
                             return;
                         }
                         if (!module.chunkCondition(chunk)) {
                             const usedChunks = module._EnsureChunkConditionsPlugin_usedChunks = (module._EnsureChunkConditionsPlugin_usedChunks || []).concat(chunk);
-                            const newChunks = [];
+                            const newChunks: Chunk[] = [];
                             chunk.parents.forEach(parent => {
                                 if (!usedChunks.includes(parent)) {
                                     parent.addModule(module);

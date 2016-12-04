@@ -4,6 +4,11 @@
  */
 import Ajv = require('ajv');
 import defineKeywords = require('ajv-keywords')
+import Options = Ajv.Options
+
+type ErrorObject = Ajv.ErrorObject & {
+    children?: Ajv.ErrorObject[]
+}
 
 const ajv = new Ajv({
     errorDataPath: 'configuration',
@@ -13,7 +18,7 @@ const ajv = new Ajv({
 
 defineKeywords(ajv);
 
-function validateSchema(schema, options) {
+function validateSchema(schema: any, options: Options) {
     const validate = ajv.compile(schema);
     if (Array.isArray(options)) {
         const errors = options.map(validateObject);
@@ -32,15 +37,15 @@ function validateSchema(schema, options) {
         return validateObject(options);
     }
 
-    function validateObject(options) {
+    function validateObject(options: Options) {
         const valid = validate(options);
         return valid ? [] : filterErrors(validate.errors);
     }
 }
 
-function filterErrors(errors) {
+function filterErrors(errors: ErrorObject[]) {
     const errorsByDataPath = {};
-    const newErrors = [];
+    const newErrors: ErrorObject[] = [];
     errors.forEach(err => {
         const dataPath = err.dataPath;
         const key = `$${dataPath}`;

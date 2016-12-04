@@ -2,18 +2,37 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import { ModuleOptions, SourceRange } from '../../typings/webpack-types'
+import { Expression } from 'estree'
+import BasicEvaluatedExpression = require('../BasicEvaluatedExpression')
+import ContextDependency = require('./ContextDependency')
 
 /**
  * Escapes regular expression metacharacters
  * @param {string} str String to quote
  * @return {string} Escaped string
  */
-function quotemeta(str) {
+function quotemeta(str: string) {
     return str.replace(/[-[\]\\/{}()*+?.^$|]/g, '\\$&')
 }
 
-export function create(Dep, range, param, expr, options) {
-    let dep, prefix, postfix, prefixRange, valueRange, idx, context, regExp;
+export function create<T extends ContextDependency>(
+    Dep: {
+        new(request: string, recursive: boolean, regExp: RegExp, range: SourceRange, valueRange: SourceRange): T;
+    },
+    range: SourceRange,
+    param: BasicEvaluatedExpression,
+    expr: Expression,
+    options: ModuleOptions
+): T {
+    let dep;
+    let prefix;
+    let postfix;
+    let prefixRange: SourceRange;
+    let valueRange: SourceRange;
+    let idx;
+    let context;
+    let regExp;
     if (param.isTemplateString()) {
         prefix = param.quasis[0].string;
         postfix = param.quasis.length > 1 ? param.quasis[param.quasis.length - 1].string : '';

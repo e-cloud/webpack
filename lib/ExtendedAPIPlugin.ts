@@ -8,6 +8,10 @@ import NullFactory = require('./NullFactory');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Parser = require('./Parser')
+import { CompilationParams, ParserOptions } from '../typings/webpack-types'
+import { Hash } from 'crypto'
+import { Expression, UnaryExpression } from 'estree'
+import Chunk = require('./Chunk')
 
 const REPLACEMENTS = {
     __webpack_hash__: '__webpack_require__.h' // eslint-disable-line camelcase
@@ -18,10 +22,10 @@ const REPLACEMENT_TYPES = {
 
 class ExtendedAPIPlugin {
     apply(compiler: Compiler) {
-        compiler.plugin('compilation', function (compilation: Compilation, params) {
+        compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
             compilation.dependencyFactories.set(ConstDependency, new NullFactory());
             compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
-            compilation.mainTemplate.plugin('require-extensions', function (source, chunk, hash) {
+            compilation.mainTemplate.plugin('require-extensions', function (source: string, chunk: Chunk, hash: Hash) {
                 const buf = [source];
                 buf.push('');
                 buf.push('// __webpack_hash__');
@@ -30,15 +34,15 @@ class ExtendedAPIPlugin {
             });
             compilation.mainTemplate.plugin('global-hash', () => true);
 
-            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions: ParserOptions) {
                 Object.keys(REPLACEMENTS).forEach(key => {
-                    parser.plugin(`expression ${key}`, function (expr) {
+                    parser.plugin(`expression ${key}`, function (expr: Expression) {
                         const dep = new ConstDependency(REPLACEMENTS[key], expr.range);
                         dep.loc = expr.loc;
                         this.state.current.addDependency(dep);
                         return true;
                     });
-                    parser.plugin(`evaluate typeof ${key}`, function (expr) {
+                    parser.plugin(`evaluate typeof ${key}`, function (expr: UnaryExpression) {
                         return new BasicEvaluatedExpression()
                             .setString(REPLACEMENT_TYPES[key])
                             .setRange(expr.range)

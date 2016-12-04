@@ -2,10 +2,11 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import Module = require('../Module')
 class LocalModule {
     used: boolean
 
-    constructor(public module, public name, public idx) {
+    constructor(public module: Module, public name: string, public idx: number) {
         this.used = false;
     }
 

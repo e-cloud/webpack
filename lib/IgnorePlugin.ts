@@ -5,6 +5,7 @@
 import Compiler = require('./Compiler')
 import NormalModuleFactory = require('./NormalModuleFactory')
 import ContextModuleFactory = require('./ContextModuleFactory')
+import { NMFBeforeResolveResult, CMFBeforeResolveResult } from '../typings/webpack-types'
 
 class IgnorePlugin {
     constructor(public resourceRegExp: RegExp, public contextRegExp: RegExp) {
@@ -14,7 +15,7 @@ class IgnorePlugin {
         const resourceRegExp = this.resourceRegExp;
         const contextRegExp = this.contextRegExp;
         compiler.plugin('normal-module-factory', function (nmf: NormalModuleFactory) {
-            nmf.plugin('before-resolve', function (result, callback) {
+            nmf.plugin('before-resolve', function (result: NMFBeforeResolveResult, callback) {
                 if (!result) {
                     return callback();
                 }
@@ -25,7 +26,7 @@ class IgnorePlugin {
             });
         });
         compiler.plugin('context-module-factory', function (cmf: ContextModuleFactory) {
-            cmf.plugin('before-resolve', function (result, callback) {
+            cmf.plugin('before-resolve', function (result: CMFBeforeResolveResult, callback) {
                 if (!result) {
                     return callback();
                 }

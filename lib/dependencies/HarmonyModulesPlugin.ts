@@ -16,10 +16,11 @@ import HarmonyExportDependencyParserPlugin = require('./HarmonyExportDependencyP
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
+import { CompilationParams, ParserOptions } from '../../typings/webpack-types'
 
 class HarmonyModulesPlugin {
     apply(compiler: Compiler) {
-        compiler.plugin('compilation', function (compilation: Compilation, params) {
+        compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
             const normalModuleFactory = params.normalModuleFactory;
 
             compilation.dependencyFactories.set(HarmonyImportDependency, normalModuleFactory);
@@ -46,7 +47,7 @@ class HarmonyModulesPlugin {
             compilation.dependencyFactories.set(HarmonyAcceptImportDependency, normalModuleFactory);
             compilation.dependencyTemplates.set(HarmonyAcceptImportDependency, new HarmonyAcceptImportDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions: ParserOptions) {
 
                 if (typeof parserOptions.harmony !== 'undefined' && !parserOptions.harmony) {
                     return;

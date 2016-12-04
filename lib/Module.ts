@@ -7,36 +7,47 @@ import ModuleReason = require('./ModuleReason');
 import Template = require('./Template');
 import Chunk = require('./Chunk')
 import removeAndDo = require('./removeAndDo');
+import Dependency = require('./Dependency')
+import { Hash } from 'crypto'
+import { Source } from 'webpack-sources'
+import ModuleNotFoundError = require('./ModuleNotFoundError');
 
 let debugId = 1000;
 
 abstract class Module extends DependenciesBlock implements IRemoveAndDo {
-    context: {};
-    reasons: ModuleReason[];
-    debugId: number;
-    lastId: number;
-    id: number;
-    index: number;
-    // todo: what does this mean
-    index2 = null;
-    used: boolean;
-    usedExports: string | boolean;
-    providedExports: string[] | string | boolean;
-    chunks: Chunk[];
-    warnings: Error[];
-    dependenciesWarnings: string[];
-    errors: Error[];
-    dependenciesErrors: Error[];
-    strict: boolean;
-    meta: {
-        harmonyModule: Module
-    };
-    profile?
-    optional?: boolean
-    issuer: string
+    _source: Source
     building: Function[]
+    built: boolean
+    cacheable?: boolean
+    chunks: Chunk[];
+    context: string;
+    debugId: number;
+    dependenciesErrors: Error[];
+    dependenciesWarnings: string[];
     error: Error
-    _source
+    errors: Error[];
+    // todo: what does this mean
+    hotUpdate: boolean
+    id: number;
+    index2: number;
+    index: number;
+    issuer: Module
+    lastId: number;
+    lineToLine?: boolean
+    meta: Module.Meta;
+    optional?: boolean
+    parent: Module
+    prefetched: boolean
+    profile?: Module.Profile
+    providedExports: string[] | boolean;
+    reasons: ModuleReason[];
+    rebuilding: Function[]
+    resource?: string
+    strict: boolean;
+    used: boolean;
+    usedExports: string[] | boolean;
+    useSourceMap?: boolean
+    warnings: Error[];
 
     constructor() {
         super();
@@ -59,7 +70,7 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
         this.meta = {} as any;
     }
 
-    _removeAndDo(collection, thing, action) {
+    _removeAndDo(collection: string, thing: any, action: string) {
         return removeAndDo.call(this, collection, thing, action)
     }
 
@@ -93,22 +104,22 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
         super.unseal();
     }
 
-    addChunk(chunk) {
+    addChunk(chunk: Chunk) {
         const idx = this.chunks.indexOf(chunk);
         if (idx < 0) {
             this.chunks.push(chunk);
         }
     }
 
-    removeChunk(chunk) {
+    removeChunk(chunk: Chunk) {
         return this._removeAndDo('chunks', chunk, 'removeModule');
     }
 
-    addReason(module, dependency) {
+    addReason(module: Module, dependency: Dependency) {
         this.reasons.push(new ModuleReason(module, dependency));
     }
 
-    removeReason(module, dependency) {
+    removeReason(module: Module, dependency: Dependency) {
         for (let i = 0; i < this.reasons.length; i++) {
             const r = this.reasons[i];
             if (r.module === module && r.dependency === dependency) {
@@ -119,7 +130,7 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
         return false;
     }
 
-    hasReasonForChunk(chunk) {
+    hasReasonForChunk(chunk: Chunk) {
         for (let i = 0; i < this.reasons.length; i++) {
             const r = this.reasons[i];
             if (r.chunks) {
@@ -134,7 +145,7 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
         return false;
     }
 
-    rewriteChunkInReasons(oldChunk, newChunks) {
+    rewriteChunkInReasons(oldChunk: Chunk, newChunks: Chunk[]) {
         this.reasons.forEach(r => {
             if (!r.chunks) {
                 if (!r.module.chunks.includes(oldChunk)) {
@@ -149,7 +160,7 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
         });
     }
 
-    isUsed(exportName) {
+    isUsed(exportName: string) {
         if (this.used === null) {
             return exportName;
         }
@@ -175,7 +186,7 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
         return exportName;
     }
 
-    isProvided(exportName) {
+    isProvided(exportName: string) {
         if (!Array.isArray(this.providedExports)) {
             return null;
         }
@@ -186,11 +197,11 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
         return `Module[${this.id || this.debugId}]`;
     }
 
-    needRebuild(...args) {
+    needRebuild(...args: any[]) {
         return true;
     }
 
-    updateHash(hash) {
+    updateHash(hash: Hash) {
         hash.update(`${this.id}${this.used}`);
         hash.update(JSON.stringify(this.usedExports));
         super.updateHash(hash);
@@ -206,18 +217,30 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
 
     abstract identifier(): string;
 
-    abstract readableIdentifier(...args): string;
+    abstract readableIdentifier(...args: any[]): string;
 
-    abstract source(...args): any;
+    abstract source(...args: any[]): any;
 
-    abstract build(...args): void;
+    abstract build(...args: any[]): void;
 
-    nameForCondition?(...args): any;
+    nameForCondition?(...args: any[]): string;
+}
+
+declare namespace Module {
+    interface Meta {
+        harmonyModule: boolean
+    }
+
+    interface Profile {
+        factory: number
+        dependencies: number
+        building: number
+    }
 }
 
 export = Module;
 
-function addToSet(set, items) {
+function addToSet(set: any[], items: any[]) {
     items.forEach(item => {
         if (!set.includes(item)) {
             set.push(item);
@@ -225,7 +248,7 @@ function addToSet(set, items) {
     });
 }
 
-function byId(a, b) {
+function byId(a: any, b: any) {
     return a.id - b.id;
 }
 

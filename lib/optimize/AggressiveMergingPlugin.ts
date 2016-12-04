@@ -4,6 +4,8 @@
  */
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
+import Chunk = require('../Chunk')
+
 class AggressiveMergingPlugin {
     constructor(
         public options: {
@@ -21,13 +23,14 @@ class AggressiveMergingPlugin {
         const options = this.options;
         const minSizeReduce = options.minSizeReduce || 1.5;
 
-        function getParentsWeight(chunk) {
+        function getParentsWeight(chunk: Chunk) {
             return chunk.parents.map(p => p.isInitial() ? options.entryChunkMultiplicator || 10 : 1)
                 .reduce((a, b) => a + b, 0);
         }
 
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin('optimize-chunks-advanced', function (chunks) {
+            compilation.plugin('optimize-chunks-advanced', function (chunks: Chunk[]) {
+                // todo: the form of combinations is too flexible, unable to attach a type system
                 let combinations = [];
                 chunks.forEach((a, idx) => {
                     if (a.isInitial()) {
@@ -42,7 +45,7 @@ class AggressiveMergingPlugin {
                     }
                 });
 
-                combinations.forEach(pair => {
+                combinations.forEach((pair) => {
                     const a = pair[0].size({
                         chunkOverhead: 0
                     });

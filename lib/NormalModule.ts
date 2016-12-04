@@ -13,6 +13,14 @@ import {
 } from 'webpack-sources'
 import { runLoaders, getContext } from 'loader-runner'
 import { Hash } from 'crypto'
+import {
+    WebpackOptions,
+    LoaderContext,
+    WebpackOutputOptions,
+    TimeStampMap,
+    SourceRange,
+    ErrCallback, AbstractInputFileSystem
+} from '../typings/webpack-types'
 import crypto = require('crypto')
 import path = require('path');
 import ModuleParseError = require('./ModuleParseError');
@@ -23,6 +31,14 @@ import ModuleError = require('./ModuleError');
 import ModuleWarning = require('./ModuleWarning');
 import Module = require('./Module');
 import RequestShortener = require('./RequestShortener')
+import Compilation = require('./Compilation')
+import ArrayMap = require('./ArrayMap')
+import Dependency = require('./Dependency')
+import DependenciesBlockVariable = require('./DependenciesBlockVariable')
+import DependenciesBlock = require('./DependenciesBlock')
+import Parser = require('./Parser')
+import Resolver = require('enhanced-resolve/lib/Resolver')
+import * as Resolve from 'enhanced-resolve'
 
 function asString(buf: string | Buffer) {
     if (Buffer.isBuffer(buf)) {
@@ -32,31 +48,30 @@ function asString(buf: string | Buffer) {
 }
 
 class NormalModule extends Module {
-    fileDependencies: string[]
-    contextDependencies: string[]
-    error: Error
-    assets
-    _source: Source
-    built: boolean
     _cachedSource: {
         source: Source
         hash: string
     }
-    cacheable: boolean
-    useSourceMap: boolean
-    lineToLine: boolean
-    buildTimestamp: number
-    templateModules: Module[]
+    _source: Source
     _templateOrigin: NormalModule
     arguments: string[]
+    assets: Dictionary<Source>
+    buildTimestamp: number
+    cacheable: boolean
+    contextDependencies: string[]
+    error: Error
+    fileDependencies: string[]
+    lineToLine: boolean
+    templateModules: Module[]
+    useSourceMap: boolean
 
     constructor(
         public request: string,
         public userRequest: string,
         public rawRequest: string,
         public loaders,
-        public resource,
-        public parser
+        public resource: string,
+        public parser: Parser
     ) {
         super();
         this.context = getContext(resource);
@@ -79,7 +94,11 @@ class NormalModule extends Module {
         return requestShortener.shorten(this.userRequest);
     }
 
-    libIdent(options) {
+    libIdent(
+        options: {
+            context: string
+        }
+    ) {
         return contextify(options, this.userRequest);
     }
 
@@ -91,15 +110,15 @@ class NormalModule extends Module {
         return this.resource;
     }
 
-    doBuild(options, compilation, resolver, fs, callback) {
+    doBuild(options: WebpackOptions, compilation: Compilation, resolver: Resolver, fs: AbstractInputFileSystem, callback: ErrCallback) {
         this.cacheable = false;
         const self = this;
-        const loaderContext: any = {
+        const loaderContext: LoaderContext = {
             version: 2,
-            emitWarning(warning) {
+            emitWarning(warning: string) {
                 self.warnings.push(new ModuleWarning(self, warning));
             },
-            emitError(error) {
+            emitError(error: string) {
                 self.errors.push(new ModuleError(self, error));
             },
             exec(code, filename) {
@@ -117,7 +136,7 @@ class NormalModule extends Module {
                 return resolver.resolveSync({}, context, request);
             },
             options
-        };
+        } as LoaderContext;
         loaderContext.webpack = true;
         loaderContext.sourceMap = !!this.useSourceMap;
         loaderContext.emitFile = (name, content, sourceMap) => {
@@ -186,13 +205,13 @@ class NormalModule extends Module {
         super.disconnect();
     }
 
-    build(options, compilation, resolver, fs, callback) {
+    build(options: WebpackOptions, compilation: Compilation, resolver: Resolver, fs: AbstractInputFileSystem, callback: ErrCallback) {
         const self = this;
         self.buildTimestamp = new Date().getTime();
         self.built = true;
         self._source = null;
         self.error = null;
-        return self.doBuild(options, compilation, resolver, fs, function (err) {
+        return this.doBuild(options, compilation, resolver, fs, function (err) {
             self.dependencies.length = 0;
             self.variables.length = 0;
             self.blocks.length = 0;
@@ -201,7 +220,7 @@ class NormalModule extends Module {
                 return setError(err);
             }
 
-            function testRegExp(regExp) {
+            function testRegExp(regExp: string | RegExp) {
                 return typeof regExp === 'string'
                     ? self.request.indexOf(regExp) === 0
                     : regExp.test(self.request);
@@ -232,7 +251,7 @@ class NormalModule extends Module {
             return callback();
         });
 
-        function setError(err) {
+        function setError(err: Error) {
             self.meta = null;
             if (self.error) {
                 self.errors.push(self.error);
@@ -245,7 +264,7 @@ class NormalModule extends Module {
         }
     }
 
-    source(dependencyTemplates, outputOptions, requestShortener) {
+    source(dependencyTemplates: ArrayMap, outputOptions: WebpackOutputOptions, requestShortener: RequestShortener) {
         let hash: Hash | string = crypto.createHash('md5');
         this.updateHash(hash);
         hash = hash.digest('hex');
@@ -263,7 +282,7 @@ class NormalModule extends Module {
         };
         const topLevelBlock = this;
 
-        function doDep(dep) {
+        function doDep(dep: Dependency) {
             const template = dependencyTemplates.get(dep.constructor);
             if (!template) {
                 throw new Error(`No template for dependency: ${dep.constructor.name}`);
@@ -271,11 +290,18 @@ class NormalModule extends Module {
             template.apply(dep, source, outputOptions, requestShortener, dependencyTemplates);
         }
 
-        function doVariable(availableVars, vars, variable) {
+        type Var = {
+            name: string
+            expression: ReplaceSource
+        }
+
+        type Vars = Var[]
+
+        function doVariable(availableVars: Vars, vars: Vars, variable: DependenciesBlockVariable) {
             const name = variable.name;
             const expr = variable.expressionSource(dependencyTemplates, outputOptions, requestShortener);
 
-            function isEqual(v) {
+            function isEqual(v: Var) {
                 return v.name === name && v.expression.source() === expr.source();
             }
 
@@ -288,13 +314,17 @@ class NormalModule extends Module {
             });
         }
 
-        function doBlock(availableVars, block) {
+        function doBlock(
+            availableVars: Vars, block: DependenciesBlock & {
+                range?: SourceRange
+            }
+        ) {
             block.dependencies.forEach(doDep);
-            const vars = [];
+            const vars: Vars = [];
             if (block.variables.length > 0) {
                 block.variables.forEach(doVariable.bind(null, availableVars, vars));
-                const varNames = [];
-                const varExpressions = [];
+                const varNames: string[] = [];
+                const varExpressions: ReplaceSource[] = [];
                 let varStartCode = '';
                 let varEndCode = '';
 
@@ -340,7 +370,7 @@ class NormalModule extends Module {
         return new CachedSource(source);
     }
 
-    needRebuild(fileTimestamps, contextTimestamps) {
+    needRebuild(fileTimestamps: TimeStampMap, contextTimestamps: TimeStampMap) {
         let timestamp = 0;
         this.fileDependencies.forEach(file => {
             const ts = fileTimestamps[file];
@@ -367,7 +397,7 @@ class NormalModule extends Module {
         return this._source ? this._source.size() : -1;
     }
 
-    updateHash(hash) {
+    updateHash(hash: Hash) {
         if (this._source) {
             hash.update('source');
             this._source.updateHash(hash);
@@ -390,19 +420,19 @@ class NormalModule extends Module {
     }
 
     getAllModuleDependencies() {
-        const list = [];
+        const list: Module[] = [];
 
-        function doDep(dep) {
+        function doDep(dep: Dependency) {
             if (dep.module && !list.includes(dep.module)) {
                 list.push(dep.module);
             }
         }
 
-        function doVariable(variable) {
+        function doVariable(variable: DependenciesBlockVariable) {
             variable.dependencies.forEach(doDep);
         }
 
-        function doBlock(block) {
+        function doBlock(block: NormalModule) {
             block.variables.forEach(doVariable);
             block.dependencies.forEach(doDep);
             block.blocks.forEach(doBlock);
@@ -412,7 +442,7 @@ class NormalModule extends Module {
         return list;
     }
 
-    createTemplate(keepModules, roots) {
+    createTemplate(keepModules: Module[], roots: Module[]) {
         roots.sort((a, b) => {
             const ia = a.identifier();
             const ib = b.identifier();
@@ -438,9 +468,9 @@ class NormalModule extends Module {
             array.sort();
             return array.join('|');
         };
-        const args = template.arguments = [];
+        const args: string[] = template.arguments = [];
 
-        function doDeps(deps) {
+        function doDeps(deps: Dependency[]) {
             return deps.map(dep => {
                 if (dep.module && !keepModules.includes(dep.module)) {
                     const argName = `__webpack_module_template_argument_${args.length}__`;
@@ -453,13 +483,15 @@ class NormalModule extends Module {
             });
         }
 
-        function doBlock(block, newBlock) {
+        function doBlock(block: DependenciesBlock, newBlock: DependenciesBlock) {
             block.variables.forEach(variable => {
                 const newDependencies = doDeps(variable.dependencies);
                 newBlock.addVariable(variable.name, variable.expression, newDependencies);
             });
             newBlock.dependencies = doDeps(block.dependencies);
-            block.blocks.forEach(childBlock => {
+            block.blocks.forEach((childBlock: AsyncDependenciesBlock) => {
+                // todo: only AsyncDependenciesBlock has loc, so childBlock is assumed as AsyncDependenciesBlock
+                // but none of AsyncDependenciesBlock has name property, may be chunkName?
                 const newChildBlock = new AsyncDependenciesBlock(childBlock.name, childBlock.module, childBlock.loc);
                 newBlock.addBlock(newChildBlock);
                 doBlock(childBlock, newChildBlock);
@@ -470,20 +502,20 @@ class NormalModule extends Module {
         return template;
     }
 
-    getTemplateArguments(keepModules) {
-        const list = [];
+    getTemplateArguments(keepModules: Module[]) {
+        const list: Module[] = [];
 
-        function doDep(dep) {
+        function doDep(dep: Dependency) {
             if (dep.module && !keepModules.includes(dep.module)) {
                 list.push(dep.module);
             }
         }
 
-        function doVariable(variable) {
+        function doVariable(variable: DependenciesBlockVariable) {
             variable.dependencies.forEach(doDep);
         }
 
-        function doBlock(block) {
+        function doBlock(block: NormalModule) {
             block.variables.forEach(doVariable);
             block.dependencies.forEach(doDep);
             block.blocks.forEach(doBlock);
@@ -496,7 +528,11 @@ class NormalModule extends Module {
 
 export = NormalModule;
 
-function contextify(options, request) {
+function contextify(
+    options: {
+        context: string
+    }, request: string
+) {
     return request.split('!').map(r => {
         let rp = path.relative(options.context, r);
         if (path.sep === '\\') {

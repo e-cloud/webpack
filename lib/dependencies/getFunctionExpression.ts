@@ -4,9 +4,10 @@
  */
 import { FunctionExpression, Expression, ReturnStatement } from 'estree'
 
+// todo: export with default
 export = function (expr: Expression): {
     fn: FunctionExpression
-    expressions: any[]
+    expressions: Expression[]
     needThis?: boolean
 } {
     // <FunctionExpression>
@@ -26,7 +27,7 @@ export = function (expr: Expression): {
         && expr.arguments.length === 1) {
         return {
             fn: expr.callee.object,
-            expressions: [expr.arguments[0]]
+            expressions: [expr.arguments[0] as Expression]
         };
     }
     // (function(_this) {return <FunctionExpression>})(this) (Coffeescript)

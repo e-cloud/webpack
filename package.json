@@ -7,10 +7,13 @@
     "@types/acorn": "^1.0.31",
     "@types/async": "^2.0.32",
     "@types/colors": "^0.6.33",
+    "@types/enhanced-resolve": "^2.3.0",
     "@types/loader-runner": "^2.2.0",
     "@types/memory-fs": "^0.3.0",
+    "@types/mkdirp": "^0.3.29",
     "@types/node": "latest",
     "@types/tapable": "^0.2.0",
+    "@types/uglify-js": "^2.6.28",
     "@types/webpack-sources": "^0.1.0",
     "acorn": "^4.0.3",
     "ajv": "^4.7.0",
@@ -61,6 +64,7 @@
     "raw-loader": "~0.5.0",
     "react": "^15.2.1",
     "react-dom": "^15.2.1",
+    "rimraf": "latest",
     "script-loader": "~0.7.0",
     "should": "^11.1.1",
     "style-loader": "~0.13.0",
@@ -106,6 +110,7 @@
     "cover": "istanbul cover -x '**/*.runtime.js' node_modules/mocha/bin/_mocha",
     "beautify": "beautify-rewrite lib/**/*.js hot/**/*.js bin/**/*.js benchmark/*.js test/*.js",
     "publish-patch": "npm run lint && npm run beautify-lint && mocha && npm version patch && git push && git push --tags && npm publish",
-    "build": "tsc || true"
+    "build": "tsc || true",
+    "clean": "rimraf ./test/js ./test/browsertest/js"
   }
 }

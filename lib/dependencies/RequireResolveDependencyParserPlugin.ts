@@ -7,20 +7,23 @@ import RequireResolveContextDependency = require('./RequireResolveContextDepende
 import RequireResolveHeaderDependency = require('./RequireResolveHeaderDependency');
 import ContextDependencyHelpers = require('./ContextDependencyHelpers');
 import Parser = require('../Parser')
+import { CallExpression } from 'estree'
+import { ModuleOptions } from '../../typings/webpack-types'
+import BasicEvaluatedExpression = require('../BasicEvaluatedExpression')
 
 class RequireResolveDependencyParserPlugin {
-    constructor(public options) {
+    constructor(public options: ModuleOptions) {
     }
 
     apply(parser: Parser) {
         const options = this.options;
-        parser.plugin('call require.resolve', function (this: Parser, expr) {
+        parser.plugin('call require.resolve', function (expr: CallExpression) {
             return this.applyPluginsBailResult('call require.resolve(Weak)', expr, false);
         });
-        parser.plugin('call require.resolveWeak', function (expr) {
+        parser.plugin('call require.resolveWeak', function (expr: CallExpression) {
             return this.applyPluginsBailResult('call require.resolve(Weak)', expr, true);
         });
-        parser.plugin('call require.resolve(Weak)', function (expr, weak) {
+        parser.plugin('call require.resolve(Weak)', function (expr: CallExpression, weak: boolean) {
             if (expr.arguments.length !== 1) {
                 return;
             }
@@ -49,7 +52,11 @@ class RequireResolveDependencyParserPlugin {
                 return true;
             }
         });
-        parser.plugin('call require.resolve(Weak):item', function (expr, param, weak) {
+        parser.plugin('call require.resolve(Weak):item', function (
+            expr: CallExpression,
+            param: BasicEvaluatedExpression,
+            weak: boolean
+        ) {
             if (param.isString()) {
                 const dep = new RequireResolveDependency(param.string, param.range);
                 dep.loc = expr.loc;
@@ -59,7 +66,11 @@ class RequireResolveDependencyParserPlugin {
                 return true;
             }
         });
-        parser.plugin('call require.resolve(Weak):context', function (expr, param, weak) {
+        parser.plugin('call require.resolve(Weak):context', function (
+            expr: CallExpression,
+            param: BasicEvaluatedExpression,
+            weak: boolean
+        ) {
             const dep = ContextDependencyHelpers.create(RequireResolveContextDependency, param.range, param, expr, options);
             if (!dep) {
                 return;

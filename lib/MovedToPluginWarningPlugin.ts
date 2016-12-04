@@ -6,7 +6,7 @@ import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 
 class MovedToPluginWarningPlugin {
-    constructor(public optionName, public pluginName) {
+    constructor(public optionName: string, public pluginName: string) {
     }
 
     apply(compiler: Compiler) {

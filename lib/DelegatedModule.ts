@@ -3,22 +3,26 @@
  Author Tobias Koppers @sokra
  */
 import { OriginalSource, RawSource } from 'webpack-sources'
+import { WebpackOptions, ErrCallback } from '../typings/webpack-types'
 import Module = require('./Module');
 import WebpackMissingModule = require('./dependencies/WebpackMissingModule');
 import DelegatedSourceDependency = require('./dependencies/DelegatedSourceDependency');
 import Compilation = require('./Compilation')
+import LibManifestPlugin = require('./LibManifestPlugin')
 
 class DelegatedModule extends Module {
-    request: string
-    meta
-    built: boolean
-    usedExports: boolean
-    providedExports: boolean
     builtTime: number
-    useSourceMap: boolean
     delegated: boolean
+    meta: Module.Meta
+    providedExports: boolean
+    request: number
+    usedExports: boolean
+    useSourceMap: boolean
 
-    constructor(public sourceRequest: string, data, public type: string, public userRequest: string) {
+    constructor(
+        public sourceRequest: string, data: LibManifestPlugin.ManifestContentItem, public type: string,
+        public userRequest: string
+    ) {
         super();
         this.request = data.id;
         this.meta = data.meta;
@@ -39,7 +43,7 @@ class DelegatedModule extends Module {
         return false;
     }
 
-    build(options, compilation: Compilation, resolver, fs, callback) {
+    build(options: WebpackOptions, compilation: Compilation, resolver: any, fs: any, callback: ErrCallback) {
         this.builtTime = new Date().getTime();
         this.dependencies.length = 0;
         this.addDependency(new DelegatedSourceDependency(this.sourceRequest));

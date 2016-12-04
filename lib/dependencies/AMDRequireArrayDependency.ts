@@ -4,9 +4,18 @@
  */
 import Dependency = require('../Dependency');
 import WebpackMissingModule = require('./WebpackMissingModule');
+import { ReplaceSource } from 'webpack-sources'
+import { WebpackOutputOptions, SourceRange } from '../../typings/webpack-types'
+import RequestShortener = require('../RequestShortener')
+import ModuleDependency = require('./ModuleDependency')
 
 class Template {
-    apply(dep, source, outputOptions, requestShortener) {
+    apply(
+        dep: AMDRequireArrayDependency,
+        source: ReplaceSource,
+        outputOptions: WebpackOutputOptions,
+        requestShortener: RequestShortener
+    ) {
         const content = `[${dep.depsArray.map(dep => {
             if (typeof dep === 'string') {
                 return dep;
@@ -31,7 +40,7 @@ class Template {
 class AMDRequireArrayDependency extends Dependency {
     optional: boolean
 
-    constructor(public depsArray, public range) {
+    constructor(public depsArray: (string | ModuleDependency)[], public range: SourceRange) {
         super();
     }
 

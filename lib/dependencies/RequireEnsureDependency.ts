@@ -4,9 +4,19 @@
  */
 import NullDependency = require('./NullDependency');
 import DepBlockHelpers = require('./DepBlockHelpers');
+import { ReplaceSource } from 'webpack-sources'
+import { WebpackOutputOptions } from '../../typings/webpack-types'
+import RequestShortener = require('../RequestShortener')
+import DependenciesBlock = require('../DependenciesBlock')
+import RequireEnsureDependenciesBlock = require('./RequireEnsureDependenciesBlock')
 
 class Template {
-    apply(dep, source, outputOptions, requestShortener) {
+    apply(
+        dep: RequireEnsureDependency,
+        source: ReplaceSource,
+        outputOptions: WebpackOutputOptions,
+        requestShortener: RequestShortener
+    ) {
         const depBlock = dep.block;
         const wrapper = DepBlockHelpers.getLoadDepBlockWrapper(depBlock, outputOptions, requestShortener, /*require.e*/ 'nsure');
         source.replace(depBlock.expr.range[0], depBlock.expr.arguments[1].range[0] - 1, `${wrapper[0]}(`);
@@ -15,7 +25,7 @@ class Template {
 }
 
 class RequireEnsureDependency extends NullDependency {
-    constructor(public block) {
+    constructor(public block: RequireEnsureDependenciesBlock) {
         super();
     }
 

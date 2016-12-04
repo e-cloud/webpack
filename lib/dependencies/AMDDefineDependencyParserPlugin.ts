@@ -11,8 +11,23 @@ import LocalModuleDependency = require('./LocalModuleDependency');
 import ContextDependencyHelpers = require('./ContextDependencyHelpers');
 import LocalModulesHelpers = require('./LocalModulesHelpers');
 import Parser = require('../Parser')
+import {
+    Expression,
+    CallExpression,
+    FunctionExpression,
+    ObjectExpression,
+    Literal,
+    Pattern,
+    Identifier,
+    MemberExpression,
+    SimpleCallExpression
+} from 'estree'
+import { ModuleOptions } from '../../typings/webpack-types'
+import BasicEvaluatedExpression = require('../BasicEvaluatedExpression')
+import Dependency = require('../Dependency')
+import ModuleDependency = require('./ModuleDependency')
 
-function isBoundFunctionExpression(expr) {
+function isBoundFunctionExpression(expr: Expression) {
     if (expr.type !== 'CallExpression') {
         return false;
     }
@@ -34,105 +49,114 @@ function isBoundFunctionExpression(expr) {
     return true;
 }
 
+type BoundFunctionCallExpression = SimpleCallExpression & {
+    callee: MemberExpression & {
+        object: FunctionExpression
+        property: Identifier
+        name: 'bind'
+    }
+}
+
 class AMDDefineDependencyParserPlugin {
-    constructor(public options) {
+    constructor(public options: ModuleOptions) {
     }
 
     apply(parser: Parser) {
         const options = this.options;
-        parser.plugin('call define', function (this: Parser, expr) {
+        parser.plugin('call define', function (expr: CallExpression) {
             let array;
-            let fn;
-            let obj;
-            let namedModule;
+            let fn: BoundFunctionCallExpression | FunctionExpression;
+            let obj: ObjectExpression;
+            let namedModule: string;
             switch (expr.arguments.length) {
                 case 1:
-                    if (expr.arguments[0].type === 'FunctionExpression' || isBoundFunctionExpression(expr.arguments[0])) {
+                    if (expr.arguments[0].type === 'FunctionExpression' || isBoundFunctionExpression(expr.arguments[0] as FunctionExpression)) {
                         // define(f() {...})
-                        fn = expr.arguments[0];
+                        fn = expr.arguments[0] as BoundFunctionCallExpression;
                     }
                     else if (expr.arguments[0].type === 'ObjectExpression') {
                         // define({...})
-                        obj = expr.arguments[0];
+                        obj = expr.arguments[0] as ObjectExpression;
                     }
                     else {
                         // define(expr)
                         // unclear if function or object
-                        obj = fn = expr.arguments[0];
+                        obj = fn = expr.arguments[0] as any;
                     }
                     break;
                 case 2:
                     if (expr.arguments[0].type === 'Literal') {
-                        namedModule = expr.arguments[0].value;
+                        namedModule = (expr.arguments[0] as Literal).value as string;
                         // define("...", ...)
-                        if (expr.arguments[1].type === 'FunctionExpression' || isBoundFunctionExpression(expr.arguments[1])) {
+                        if (expr.arguments[1].type === 'FunctionExpression' || isBoundFunctionExpression((expr.arguments[1]) as FunctionExpression)) {
                             // define("...", f() {...})
-                            fn = expr.arguments[1];
+                            fn = expr.arguments[1] as BoundFunctionCallExpression;
                         }
                         else if (expr.arguments[1].type === 'ObjectExpression') {
                             // define("...", {...})
-                            obj = expr.arguments[1];
+                            obj = expr.arguments[1] as ObjectExpression;
                         }
                         else {
                             // define("...", expr)
                             // unclear if function or object
-                            obj = fn = expr.arguments[1];
+                            obj = fn = expr.arguments[1] as any;
                         }
                     }
                     else {
                         array = expr.arguments[0];
-                        if (expr.arguments[1].type === 'FunctionExpression' || isBoundFunctionExpression(expr.arguments[1])) {
+                        if (expr.arguments[1].type === 'FunctionExpression' || isBoundFunctionExpression((expr.arguments[1] as FunctionExpression))) {
                             // define([...], f() {})
-                            fn = expr.arguments[1];
+                            fn = expr.arguments[1] as BoundFunctionCallExpression;
                         }
                         else if (expr.arguments[1].type === 'ObjectExpression') {
                             // define([...], {...})
-                            obj = expr.arguments[1];
+                            obj = expr.arguments[1] as ObjectExpression;
                         }
                         else {
                             // define([...], expr)
                             // unclear if function or object
-                            obj = fn = expr.arguments[1];
+                            obj = fn = expr.arguments[1] as any;
                         }
                     }
                     break;
                 case 3:
                     // define("...", [...], f() {...})
-                    namedModule = expr.arguments[0].value;
+                    namedModule = (expr.arguments[0] as Literal).value as string;
                     array = expr.arguments[1];
-                    if (expr.arguments[2].type === 'FunctionExpression' || isBoundFunctionExpression(expr.arguments[2])) {
+                    if (expr.arguments[2].type === 'FunctionExpression' || isBoundFunctionExpression(expr.arguments[2] as FunctionExpression)) {
                         // define("...", [...], f() {})
-                        fn = expr.arguments[2];
+                        fn = expr.arguments[2] as BoundFunctionCallExpression;
                     }
                     else if (expr.arguments[2].type === 'ObjectExpression') {
                         // define("...", [...], {...})
-                        obj = expr.arguments[2];
+                        obj = expr.arguments[2] as ObjectExpression;
                     }
                     else {
                         // define("...", [...], expr)
                         // unclear if function or object
-                        obj = fn = expr.arguments[2];
+                        obj = fn = expr.arguments[2] as any;
                     }
                     break;
                 default:
                     return;
             }
-            let fnParams = null;
+            let fnParams: Pattern[] = null;
             let fnParamsOffset = 0;
             if (fn) {
                 if (fn.type === 'FunctionExpression') {
                     fnParams = fn.params;
                 }
                 else if (isBoundFunctionExpression(fn)) {
-                    fnParams = fn.callee.object.params;
-                    fnParamsOffset = fn.arguments.length - 1;
+                    let lcFn = fn as BoundFunctionCallExpression
+                    fnParams = lcFn.callee.object.params;
+                    fnParamsOffset = lcFn.arguments.length - 1;
                     if (fnParamsOffset < 0) {
                         fnParamsOffset = 0;
                     }
                 }
             }
             const fnRenames = Object.create(this.scope.renames);
-            let identifiers;
+            let identifiers: any;
             if (array) {
                 identifiers = {};
                 const param = this.evaluateExpression(array);
@@ -141,58 +165,64 @@ class AMDDefineDependencyParserPlugin {
                     return;
                 }
                 if (fnParams) {
-                    fnParams = fnParams.slice(fnParamsOffset).filter((param, idx) => {
-                        if (identifiers[idx]) {
-                            fnRenames[`$${param.name}`] = identifiers[idx];
-                            return false;
-                        }
-                        return true;
-                    });
+                    fnParams = fnParams.slice(fnParamsOffset)
+                        .filter((param: Identifier, idx) => {
+                            if (identifiers[idx]) {
+                                fnRenames[`$${param.name}`] = identifiers[idx];
+                                return false;
+                            }
+                            return true;
+                        });
                 }
             }
             else {
                 identifiers = ['require', 'exports', 'module'];
                 if (fnParams) {
-                    fnParams = fnParams.slice(fnParamsOffset).filter((param, idx) => {
-                        if (identifiers[idx]) {
-                            fnRenames[`$${param.name}`] = identifiers[idx];
-                            return false;
-                        }
-                        return true;
-                    });
+                    fnParams = fnParams.slice(fnParamsOffset)
+                        .filter((param: Identifier, idx) => {
+                            if (identifiers[idx]) {
+                                fnRenames[`$${param.name}`] = identifiers[idx];
+                                return false;
+                            }
+                            return true;
+                        });
                 }
             }
-            let inTry;
+            let inTry: boolean;
             if (fn && fn.type === 'FunctionExpression') {
                 inTry = this.scope.inTry;
+                let lcFn = fn as FunctionExpression
                 this.inScope(fnParams, () => {
                     this.scope.renames = fnRenames;
                     this.scope.inTry = inTry;
-                    if (fn.body.type === 'BlockStatement') {
-                        this.walkStatement(fn.body);
+                    if (lcFn.body.type === 'BlockStatement') {
+                        this.walkStatement(lcFn.body);
                     }
                     else {
-                        this.walkExpression(fn.body);
+                        this.walkExpression(lcFn.body);
                     }
                 });
             }
             else if (fn && isBoundFunctionExpression(fn)) {
                 inTry = this.scope.inTry;
+                let lcFn = fn as BoundFunctionCallExpression
                 this.inScope(
-                    fn.callee.object.params.filter(i => !['require', 'module', 'exports'].includes(i.name)),
+                    lcFn.callee.object.params.filter((i: Identifier) =>
+                        !['require', 'module', 'exports'].includes(i.name)
+                    ),
                     () => {
                         this.scope.renames = fnRenames;
                         this.scope.inTry = inTry;
-                        if (fn.callee.object.body.type === 'BlockStatement') {
-                            this.walkStatement(fn.callee.object.body);
+                        if (lcFn.callee.object.body.type === 'BlockStatement') {
+                            this.walkStatement(lcFn.callee.object.body);
                         }
                         else {
-                            this.walkExpression(fn.callee.object.body);
+                            this.walkExpression(lcFn.callee.object.body);
                         }
                     }
                 );
-                if (fn.arguments) {
-                    this.walkExpressions(fn.arguments);
+                if (lcFn.arguments) {
+                    this.walkExpressions(lcFn.arguments);
                 }
             }
             else if (fn || obj) {
@@ -208,7 +238,10 @@ class AMDDefineDependencyParserPlugin {
             this.state.current.addDependency(dep);
             return true;
         });
-        parser.plugin('call define:amd:array', function (expr, param, identifiers, namedModule) {
+        parser.plugin('call define:amd:array', function (
+            expr: CallExpression, param: BasicEvaluatedExpression,
+            identifiers: {}, namedModule: string
+        ) {
             if (param.isArray()) {
                 param.items.forEach(function (param, idx) {
                     if (param.isString() && ['require', 'module', 'exports'].includes(param.string)) {
@@ -222,7 +255,7 @@ class AMDDefineDependencyParserPlugin {
                 return true;
             }
             else if (param.isConstArray()) {
-                const deps = [];
+                const deps: (string | ModuleDependency)[] = [];
                 param.array.forEach(function (request, idx) {
                     let dep;
                     let localModule;
@@ -255,7 +288,10 @@ class AMDDefineDependencyParserPlugin {
                 return true;
             }
         });
-        parser.plugin('call define:amd:item', function (expr, param, namedModule) {
+        parser.plugin('call define:amd:item', function (
+            expr: CallExpression, param: BasicEvaluatedExpression,
+            namedModule: string
+        ) {
             if (param.isConditional()) {
                 param.options.forEach(function (param) {
                     const result = this.applyPluginsBailResult('call define:amd:item', expr, param);
@@ -287,7 +323,7 @@ class AMDDefineDependencyParserPlugin {
                 return true;
             }
         });
-        parser.plugin('call define:amd:context', function (expr, param) {
+        parser.plugin('call define:amd:context', function (expr: CallExpression, param: BasicEvaluatedExpression) {
             const dep = ContextDependencyHelpers.create(AMDRequireContextDependency, param.range, param, expr, options);
             if (!dep) {
                 return;

@@ -4,23 +4,21 @@
  */
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
+import Module = require('../Module')
 class ChunkModuleIdRangePlugin {
-    options
-
-    constructor(options) {
-        this.options = options;
+    constructor(public options: ChunkModuleIdRangePlugin.Option) {
     }
 
     apply(compiler: Compiler) {
         const options = this.options;
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin('module-ids', function (modules) {
+            compilation.plugin('module-ids', function (modules: Module[]) {
                 const chunk = this.chunks.filter(chunk => chunk.name === options.name)[0];
                 if (!chunk) {
                     throw new Error(`ChunkModuleIdRangePlugin: Chunk with name '${options.name}' was not found`);
                 }
                 let currentId = options.start;
-                let chunkModules;
+                let chunkModules: Module[];
                 if (options.order) {
                     chunkModules = chunk.modules.slice();
                     switch (options.order) {
@@ -49,6 +47,15 @@ class ChunkModuleIdRangePlugin {
                 }
             });
         });
+    }
+}
+
+declare namespace ChunkModuleIdRangePlugin {
+    interface Option {
+        name: string
+        order: 'index' | 'index2'
+        start: number
+        end: number
     }
 }
 

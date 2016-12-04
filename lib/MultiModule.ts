@@ -3,11 +3,13 @@
  Author Tobias Koppers @sokra
  */
 import { RawSource } from 'webpack-sources'
+import { WebpackOutputOptions, ErrCallback } from '../typings/webpack-types'
+import { Hash } from 'crypto'
 import Module = require('./Module');
 import ModuleDependency = require('./dependencies/ModuleDependency')
+import ArrayMap = require('./ArrayMap')
 
 class MultiModule extends Module {
-    built: boolean
     cacheable: boolean
 
     constructor(public context: string, public dependencies: ModuleDependency[], public name: string) {
@@ -29,13 +31,13 @@ class MultiModule extends Module {
         super.disconnect();
     }
 
-    build(options, compilation, resolver, fs, callback) {
+    build(options: any, compilation: any, resolver: any, fs: any, callback: ErrCallback) {
         this.built = true;
         return callback();
     }
 
-    source(dependencyTemplates, outputOptions) {
-        const str = [];
+    source(dependencyTemplates: ArrayMap, outputOptions: WebpackOutputOptions) {
+        const str: string[] = [];
         this.dependencies.forEach(function (dep, idx) {
             if (dep.module) {
                 if (idx === this.dependencies.length - 1) {
@@ -66,7 +68,7 @@ class MultiModule extends Module {
         return 16 + this.dependencies.length * 12;
     }
 
-    updateHash(hash) {
+    updateHash(hash: Hash) {
         hash.update('multi module');
         hash.update(this.name || '');
         super.updateHash(hash);

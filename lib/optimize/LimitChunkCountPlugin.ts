@@ -4,6 +4,7 @@
  */
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
+import Chunk = require('../Chunk')
 
 class LimitChunkCountPlugin {
     constructor(
@@ -19,7 +20,7 @@ class LimitChunkCountPlugin {
     apply(compiler: Compiler) {
         const options = this.options;
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin('optimize-chunks-advanced', function (chunks) {
+            compilation.plugin('optimize-chunks-advanced', function (chunks: Chunk[]) {
                 const maxChunks = options.maxChunks;
                 if (!maxChunks) {
                     return;
@@ -32,6 +33,7 @@ class LimitChunkCountPlugin {
                 }
 
                 if (chunks.length > maxChunks) {
+                    // todo: the form of combinations is too flexible, unable to attach a type system
                     let combinations = [];
                     chunks.forEach((a, idx) => {
                         for (let i = 0; i < idx; i++) {

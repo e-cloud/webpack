@@ -2,16 +2,17 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import { PlainObject } from '../typings/webpack-types'
 class OptionsDefaulter {
-    defaults: {}
-    config: {}
+    defaults: PlainObject
+    config: PlainObject
 
     constructor() {
         this.defaults = {};
         this.config = {};
     }
 
-    process(options: {}) {
+    process(options: PlainObject) {
         for (const name in this.defaults) {
             switch (this.config[name]) {
                 case undefined:
@@ -32,7 +33,7 @@ class OptionsDefaulter {
                     if (!Array.isArray(oldValue)) {
                         oldValue = [];
                     }
-                    this.defaults[name].forEach(item => {
+                    this.defaults[name].forEach((item: any) => {
                         oldValue.push(item);
                     });
                     setProperty(options, name, oldValue);
@@ -43,7 +44,7 @@ class OptionsDefaulter {
         }
     }
 
-    set(name: string, config: {} | boolean, def?: {}) {
+    set(name: string, config: any, def?: any) {
         if (arguments.length === 3) {
             this.defaults[name] = def;
             this.config[name] = config;
@@ -57,7 +58,7 @@ class OptionsDefaulter {
 
 export = OptionsDefaulter;
 
-function getProperty(obj, name: string) {
+function getProperty(obj: PlainObject, name: string) {
     const props = name.split('.');
     for (let prop of props.slice(0, props.length - 1)) {
         obj = obj[prop];
@@ -68,7 +69,7 @@ function getProperty(obj, name: string) {
     return obj[props.pop()];
 }
 
-function setProperty(obj, name: string, value) {
+function setProperty(obj: PlainObject, name: string, value: any) {
     const props = name.split('.');
     for (let prop of props.slice(0, props.length - 1)) {
         if (typeof obj[prop] !== 'object' || !obj[prop]) {
@@ -80,7 +81,7 @@ function setProperty(obj, name: string, value) {
 }
 
 // tslint:disable-next-line
-function hasProperty(obj, name) {
+function hasProperty(obj: PlainObject, name: string) {
     const props = name.split('.');
     for (let prop of props.slice(0, props.length - 1)) {
         obj = obj[prop];

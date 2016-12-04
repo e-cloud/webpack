@@ -4,8 +4,21 @@
  */
 
 import Dependency = require('../Dependency')
+import { ReplaceSource } from 'webpack-sources'
+import { WebpackOutputOptions } from '../../typings/webpack-types'
+import { Hash } from 'crypto'
+import RequireIncludeDependency = require('./RequireIncludeDependency')
+import RequestShortener = require('../RequestShortener')
+import ArrayMap = require('../ArrayMap')
+
 class Template {
-    apply(dep, source, outputOptions, requestShortener, dependencyTemplates) {
+    apply(
+        dep: TemplateArgumentDependency,
+        source: ReplaceSource,
+        outputOptions: WebpackOutputOptions,
+        requestShortener: RequestShortener,
+        dependencyTemplates: ArrayMap
+    ) {
         const d = dep.dep;
         const template = dependencyTemplates.get(d.constructor);
         if (!template) {
@@ -19,11 +32,11 @@ class Template {
 }
 
 class TemplateArgumentDependency extends Dependency {
-    constructor(public name, public dep) {
+    constructor(public name: string, public dep: Dependency) {
         super()
     }
 
-    updateHash(hash) {
+    updateHash(hash: Hash) {
         hash.update(this.name);
     }
 

@@ -3,14 +3,17 @@
  Author Tobias Koppers @sokra
  */
 import Template = require('../Template');
+import Chunk = require('../Chunk')
+import MainTemplate = require('../MainTemplate')
+import { Hash } from 'crypto'
 
 class NodeMainTemplatePlugin {
-    constructor(public asyncChunkLoading) {
+    constructor(public asyncChunkLoading: boolean) {
     }
 
-    apply(mainTemplate) {
+    apply(mainTemplate: MainTemplate) {
         const self = this;
-        mainTemplate.plugin('local-vars', function (source, chunk) {
+        mainTemplate.plugin('local-vars', function (source: string, chunk: Chunk) {
             if (chunk.chunks.length > 0) {
                 return this.asString([
                     source,
@@ -24,7 +27,7 @@ class NodeMainTemplatePlugin {
             }
             return source;
         });
-        mainTemplate.plugin('require-extensions', function (source, chunk) {
+        mainTemplate.plugin('require-extensions', function (source: string, chunk: Chunk) {
             if (chunk.chunks.length > 0) {
                 return this.asString([
                     source,
@@ -41,7 +44,7 @@ class NodeMainTemplatePlugin {
             }
             return source;
         });
-        mainTemplate.plugin('require-ensure', function (_, chunk, hash) {
+        mainTemplate.plugin('require-ensure', function (source: string, chunk: Chunk, hash: string) {
             const filename = this.outputOptions.filename;
             const chunkFilename = this.outputOptions.chunkFilename;
             const chunkMaps = chunk.getChunkMaps();
@@ -65,11 +68,11 @@ class NodeMainTemplatePlugin {
                         'installedChunks[chunkId] = [resolve, reject];',
                         `var filename = __dirname + ${this.applyPluginsWaterfall('asset-path', JSON.stringify('/' + chunkFilename), {
                             hash: '" + ' + this.renderCurrentHashCode(hash) + ' + "',
-                            hashWithLength: length => '" + ' + this.renderCurrentHashCode(hash, length) + ' + "',
+                            hashWithLength: (length: number) => '" + ' + this.renderCurrentHashCode(hash, length) + ' + "',
                             chunk: {
                                 id: '" + chunkId + "',
                                 hash: '" + ' + JSON.stringify(chunkMaps.hash) + '[chunkId] + "',
-                                hashWithLength(length) {
+                                hashWithLength(length: number) {
                                     const shortChunkHashMap = {};
                                     Object.keys(chunkMaps.hash).forEach(chunkId => {
                                         if (typeof chunkMaps.hash[chunkId] === 'string') {
@@ -108,11 +111,11 @@ class NodeMainTemplatePlugin {
             else {
                 const request = this.applyPluginsWaterfall('asset-path', JSON.stringify(`./${chunkFilename}`), {
                     hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
-                    hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
+                    hashWithLength: (length: number) => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
                     chunk: {
                         id: '" + chunkId + "',
                         hash: `" + ${JSON.stringify(chunkMaps.hash)}[chunkId] + "`,
-                        hashWithLength(length) {
+                        hashWithLength(length: number) {
                             const shortChunkHashMap = {};
                             Object.keys(chunkMaps.hash).forEach(chunkId => {
                                 if (typeof chunkMaps.hash[chunkId] === 'string') {
@@ -136,17 +139,17 @@ class NodeMainTemplatePlugin {
                 ]);
             }
         });
-        mainTemplate.plugin('hot-bootstrap', function (source, chunk, hash) {
+        mainTemplate.plugin('hot-bootstrap', function (source: string, chunk: Chunk, hash: string) {
             const hotUpdateChunkFilename = this.outputOptions.hotUpdateChunkFilename;
             const hotUpdateMainFilename = this.outputOptions.hotUpdateMainFilename;
             const chunkMaps = chunk.getChunkMaps();
             const currentHotUpdateChunkFilename = this.applyPluginsWaterfall('asset-path', JSON.stringify(hotUpdateChunkFilename), {
                 hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
-                hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
+                hashWithLength: (length: number) => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
                 chunk: {
                     id: '" + chunkId + "',
                     hash: `" + ${JSON.stringify(chunkMaps.hash)}[chunkId] + "`,
-                    hashWithLength(length) {
+                    hashWithLength(length: number) {
                         const shortChunkHashMap = {};
                         Object.keys(chunkMaps.hash).forEach(chunkId => {
                             if (typeof chunkMaps.hash[chunkId] === 'string') {
@@ -163,7 +166,7 @@ class NodeMainTemplatePlugin {
                 JSON.stringify(hotUpdateMainFilename),
                 {
                     hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
-                    hashWithLength: length => `" + ${this.renderCurrentHashCode(hash, length)} + "`
+                    hashWithLength: (length: number) => `" + ${this.renderCurrentHashCode(hash, length)} + "`
                 }
             );
             return Template
@@ -175,7 +178,7 @@ class NodeMainTemplatePlugin {
                 .replace(/\$hotMainFilename\$/g, currentHotUpdateMainFilename)
                 .replace(/\$hotChunkFilename\$/g, currentHotUpdateChunkFilename);
         });
-        mainTemplate.plugin('hash', function (hash) {
+        mainTemplate.plugin('hash', function (hash: Hash) {
             hash.update('node');
             hash.update('3');
             hash.update(`${this.outputOptions.filename}`);

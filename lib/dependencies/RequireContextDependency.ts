@@ -3,11 +3,12 @@
  Author Tobias Koppers @sokra
  */
 import ContextDependency = require('./ContextDependency');
+import { SourceRange } from '../../typings/webpack-types'
 
 class RequireContextDependency extends ContextDependency {
     optional: boolean
 
-    constructor(request, recursive, regExp, public range) {
+    constructor(request: string, recursive: boolean, regExp: RegExp, public range: SourceRange) {
         super(request, recursive, regExp);
     }
 

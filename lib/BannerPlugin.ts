@@ -6,6 +6,7 @@ import { ConcatSource } from 'webpack-sources'
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import Chunk = require('./Chunk')
 
 function wrapComment(str: string) {
     if (!str.includes('\n')) {
@@ -36,7 +37,7 @@ class BannerPlugin {
         const banner = this.banner;
 
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin('optimize-chunk-assets', function (chunks, callback) {
+            compilation.plugin('optimize-chunk-assets', function (chunks: Chunk[], callback) {
                 chunks.forEach(chunk => {
                     if (options.entryOnly && !chunk.isInitial()) {
                         return;

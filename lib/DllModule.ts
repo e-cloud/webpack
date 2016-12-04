@@ -4,10 +4,11 @@
  */
 import Module = require('./Module');
 import { RawSource } from 'webpack-sources'
+import { Hash } from 'crypto'
+import { ErrCallback } from '../typings/webpack-types'
 import ModuleDependency = require('./dependencies/ModuleDependency')
 
 class DllModule extends Module {
-    built: boolean
     cacheable: boolean
 
     constructor(
@@ -32,7 +33,7 @@ class DllModule extends Module {
         super.disconnect();
     }
 
-    build(options, compilation, resolver, fs, callback) {
+    build(options: any, compilation: any, resolver: any, fs: any, callback: ErrCallback) {
         this.built = true;
         return callback();
     }
@@ -49,7 +50,7 @@ class DllModule extends Module {
         return 12;
     }
 
-    updateHash(hash) {
+    updateHash(hash: Hash) {
         hash.update('dll module');
         hash.update(this.name || '');
         super.updateHash(hash);

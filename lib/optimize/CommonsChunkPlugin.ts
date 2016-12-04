@@ -6,19 +6,20 @@ import Chunk = require('../Chunk')
 import Module = require('../Module')
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
+import { FilenameTemplate } from '../../typings/webpack-types'
 
 let nextIdent = 0;
 
 class CommonsChunkPlugin {
-    chunkNames: string
-    filenameTemplate: string
+    chunkNames: string | string[]
+    filenameTemplate: FilenameTemplate
     minChunks: number | ((module: Module, count: number) => boolean)
-    selectedChunks: Chunk[] | boolean
+    selectedChunks: string[] | boolean
     async: boolean
     minSize: number
     ident: string
 
-    constructor(options) {
+    constructor(options: CommonsChunkPlugin.Option | string | string[]) {
         if (arguments.length > 1) {
             throw new Error(`Deprecation notice: CommonsChunkPlugin now only takes a single argument. Either an options object *or* the name of the chunk.
 Example: if your old code looked like this:
@@ -39,7 +40,7 @@ The available options are:
         if (Array.isArray(options) || typeof options === 'string') {
             options = {
                 name: options
-            };
+            } as CommonsChunkPlugin.Option;
         }
         this.chunkNames = options.name || options.names;
         this.filenameTemplate = options.filename;
@@ -62,14 +63,14 @@ The available options are:
         const minSize = this.minSize;
         const ident = this.ident;
         compiler.plugin('this-compilation', function (compilation: Compilation) {
-            compilation.plugin(['optimize-chunks', 'optimize-extracted-chunks'], function (chunks) {
+            compilation.plugin(['optimize-chunks', 'optimize-extracted-chunks'], function (chunks: Chunk[]) {
                 // only optimize once
                 if (compilation[ident]) {
                     return;
                 }
                 compilation[ident] = true;
 
-                let commonChunks;
+                let commonChunks: Chunk[];
                 if (!chunkNames && (selectedChunks === false || async)) {
                     commonChunks = chunks;
                 }
@@ -86,7 +87,7 @@ The available options are:
                     throw new Error('Invalid chunkNames argument');
                 }
                 commonChunks.forEach(function processCommonChunk(commonChunk, idx) {
-                    let usedChunks;
+                    let usedChunks: Chunk[];
                     if (Array.isArray(selectedChunks)) {
                         usedChunks = chunks.filter(chunk => {
                             if (chunk === commonChunk) {
@@ -112,7 +113,7 @@ The available options are:
                             return chunk.hasRuntime();
                         });
                     }
-                    let asyncChunk
+                    let asyncChunk: Chunk
                     if (async) {
                         asyncChunk = this.addChunk(typeof async === 'string' ? async : undefined);
                         asyncChunk.chunkReason = 'async commons chunk';
@@ -121,10 +122,10 @@ The available options are:
                         commonChunk.addChunk(asyncChunk);
                         commonChunk = asyncChunk;
                     }
-                    const reallyUsedModules = [];
+                    const reallyUsedModules: Module[] = [];
                     if (minChunks !== Infinity) {
-                        const commonModulesCount = [];
-                        const commonModules = [];
+                        const commonModulesCount: number[] = [];
+                        const commonModules: Module[] = [];
                         usedChunks.forEach(chunk => {
                             chunk.modules.forEach(module => {
                                 const idx = commonModules.indexOf(module);
@@ -157,7 +158,7 @@ The available options are:
                             return;
                         }
                     }
-                    const reallyUsedChunks = [];
+                    const reallyUsedChunks: Chunk[] = [];
                     reallyUsedModules.forEach(module => {
                         usedChunks.forEach(chunk => {
                             if (module.removeChunk(chunk)) {
@@ -208,6 +209,19 @@ The available options are:
                 return true;
             });
         });
+    }
+}
+
+declare namespace CommonsChunkPlugin {
+    interface Option {
+        name: string | string[]
+        names?: string[]
+        filename?: string
+        minChunks?: number
+        async?: boolean
+        minSize?: number
+        chunks?: string[]
+        children?: boolean
     }
 }
 

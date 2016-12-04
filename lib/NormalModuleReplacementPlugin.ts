@@ -5,6 +5,8 @@
 
 import path = require('path');
 import Compiler = require('./Compiler')
+import NormalModuleFactory = require('./NormalModuleFactory')
+import { NMFAfterResolveResult, NMFBeforeResolveResult } from '../typings/webpack-types'
 
 class NormalModuleReplacementPlugin {
     constructor(public resourceRegExp: RegExp, public newResource: string) {
@@ -13,8 +15,8 @@ class NormalModuleReplacementPlugin {
     apply(compiler: Compiler) {
         const resourceRegExp = this.resourceRegExp;
         const newResource = this.newResource;
-        compiler.plugin('normal-module-factory', function (nmf) {
-            nmf.plugin('before-resolve', function (result, callback) {
+        compiler.plugin('normal-module-factory', function (nmf: NormalModuleFactory) {
+            nmf.plugin('before-resolve', function (result: NMFBeforeResolveResult, callback) {
                 if (!result) {
                     return callback();
                 }
@@ -28,7 +30,7 @@ class NormalModuleReplacementPlugin {
                 }
                 return callback(null, result);
             });
-            nmf.plugin('after-resolve', function (result, callback) {
+            nmf.plugin('after-resolve', function (result: NMFAfterResolveResult, callback) {
                 if (!result) {
                     return callback();
                 }

@@ -9,21 +9,24 @@ import WebpackOptionsApply = require('./WebpackOptionsApply');
 import WebpackOptionsDefaulter = require('./WebpackOptionsDefaulter');
 import validateSchema = require('./validateSchema');
 import WebpackOptionsValidationError = require('./WebpackOptionsValidationError');
+import { WebpackOptions, WatchCallback, AbstractStats } from '../typings/webpack-types'
+import Watching = Compiler.Watching
+import MultiWatching = MultiCompiler.MultiWatching
 
 const webpackOptionsSchema = require('../schemas/webpackOptionsSchema.json');
 
-function webpack(options, callback): Compiler.Watching
-function webpack(options): MultiCompiler | Compiler
+function webpack(options: WebpackOptions, callback: WatchCallback<AbstractStats>): Watching | MultiWatching
+function webpack(options: WebpackOptions): MultiCompiler | Compiler
 
-function webpack(options, callback?) {
+function webpack(options: any, callback?: WatchCallback<AbstractStats>) {
     const webpackOptionsValidationErrors = validateSchema(webpackOptionsSchema, options);
     if (webpackOptionsValidationErrors.length) {
         throw new WebpackOptionsValidationError(webpackOptionsValidationErrors);
     }
 
-    let compiler;
+    let compiler: MultiCompiler | Compiler;
     if (Array.isArray(options)) {
-        compiler = new MultiCompiler(options.map(options => webpack(options)));
+        compiler = new MultiCompiler(options.map(options => webpack(options) as Compiler));
     }
     else if (typeof options === 'object') {
         new WebpackOptionsDefaulter().process(options);
@@ -63,7 +66,7 @@ webpack.validate = validateSchema.bind(this, webpackOptionsSchema);
 webpack.validateSchema = validateSchema;
 webpack.WebpackOptionsValidationError = WebpackOptionsValidationError;
 
-function exportPlugins(exports, path, plugins) {
+function exportPlugins(exports, path: string, plugins: string[]) {
     plugins.forEach(name => {
         Object.defineProperty(exports, name, {
             configurable: false,

@@ -5,9 +5,12 @@
 import NullDependency = require('./NullDependency');
 import ModuleDependency = require('./ModuleDependency')
 import { Expression } from 'estree'
+import { ReplaceSource } from 'webpack-sources'
+import { SourceRange } from '../../typings/webpack-types'
+import { Hash } from 'crypto'
 
 class Template {
-    apply(dep, source) {
+    apply(dep: HarmonyImportSpecifierDependency, source: ReplaceSource) {
         let content;
         const importedModule = dep.importDependency.module;
         const defaultImport = dep.directImport && dep.id === 'default' && !(importedModule && (!importedModule.meta || importedModule.meta.harmonyModule));
@@ -42,7 +45,13 @@ class HarmonyImportSpecifierDependency extends NullDependency {
     callArgs: any[]
     call: Expression
 
-    constructor(public importDependency: ModuleDependency, public importedVar, public id, public name, public range) {
+    constructor(
+        public importDependency: ModuleDependency,
+        public importedVar: string,
+        public id: string,
+        public name: string,
+        public range: SourceRange
+    ) {
         super();
     }
 
@@ -69,7 +78,7 @@ class HarmonyImportSpecifierDependency extends NullDependency {
         }
     }
 
-    updateHash(hash) {
+    updateHash(hash: Hash) {
         super.updateHash(hash);
         const importedModule = this.importDependency.module;
         hash.update(`${importedModule && importedModule.id}`);

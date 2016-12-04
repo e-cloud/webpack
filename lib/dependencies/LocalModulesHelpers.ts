@@ -3,8 +3,9 @@
  Author Tobias Koppers @sokra
  */
 import LocalModule = require('./LocalModule');
+import { ParserState } from '../../typings/webpack-types'
 
-export function addLocalModule(state, name) {
+export function addLocalModule(state: ParserState, name: string) {
     if (!state.localModules) {
         state.localModules = [];
     }
@@ -13,7 +14,7 @@ export function addLocalModule(state, name) {
     return m;
 }
 
-export function getLocalModule(state, name, namedModule?): LocalModule {
+export function getLocalModule(state: ParserState, name: string, namedModule?: string): LocalModule {
     if (!state.localModules) {
         return null;
     }
@@ -29,7 +30,7 @@ export function getLocalModule(state, name, namedModule?): LocalModule {
     return null;
 }
 
-function lookup(parent, mod) {
+function lookup(parent: string, mod: string) {
     if (mod.charAt(0) !== '.') {
         return mod;
     }

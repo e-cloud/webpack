@@ -4,13 +4,14 @@
  */
 import ExternalModuleFactoryPlugin = require('./ExternalModuleFactoryPlugin');
 import Compiler = require('./Compiler')
+import { CompilationParams, ExternalsElement } from '../typings/webpack-types'
 
 class ExternalsPlugin {
-    constructor(public type: string, public externals: string[]) {
+    constructor(public type: string, public externals: ExternalsElement) {
     }
 
     apply(compiler: Compiler) {
-        compiler.plugin('compile', params => {
+        compiler.plugin('compile', (params: CompilationParams) => {
             params.normalModuleFactory.apply(new ExternalModuleFactoryPlugin(this.type, this.externals));
         });
     }

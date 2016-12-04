@@ -8,9 +8,10 @@ import RequireContextDependencyParserPlugin = require('./RequireContextDependenc
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
+import { CompilationParams, AlternativeModule, ParserOptions } from '../../typings/webpack-types'
 
 class RequireContextPlugin {
-    constructor(public modulesDirectories, public extensions) {
+    constructor(public modulesDirectories: string[], public extensions: string[]) {
         if (!Array.isArray(modulesDirectories)) {
             throw new Error('modulesDirectories must be an array');
         }
@@ -22,7 +23,7 @@ class RequireContextPlugin {
     apply(compiler: Compiler) {
         const modulesDirectories = this.modulesDirectories;
         const extensions = this.extensions;
-        compiler.plugin('compilation', function (compilation: Compilation, params) {
+        compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
             const contextModuleFactory = params.contextModuleFactory;
             const normalModuleFactory = params.normalModuleFactory;
 
@@ -31,7 +32,7 @@ class RequireContextPlugin {
 
             compilation.dependencyFactories.set(ContextElementDependency, normalModuleFactory);
 
-            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions: ParserOptions) {
 
                 if (typeof parserOptions.requireContext !== 'undefined' && !parserOptions.requireContext) {
                     return;
@@ -40,7 +41,7 @@ class RequireContextPlugin {
                 parser.apply(new RequireContextDependencyParserPlugin());
             });
 
-            params.contextModuleFactory.plugin('alternatives', function (items, callback) {
+            params.contextModuleFactory.plugin('alternatives', function (items: AlternativeModule[], callback) {
                 if (items.length === 0) {
                     return callback(null, items);
                 }
@@ -63,12 +64,12 @@ class RequireContextPlugin {
                 );
             });
 
-            params.contextModuleFactory.plugin('alternatives', function (items, callback) {
+            params.contextModuleFactory.plugin('alternatives', function (items: AlternativeModule[], callback) {
                 if (items.length === 0) {
                     return callback(null, items);
                 }
 
-                callback(null, items.map(obj => {
+                callback(null, items.map(function (obj) {
                     for (let i = 0; i < modulesDirectories.length; i++) {
                         const dir = modulesDirectories[i];
                         const idx = obj.request.indexOf(`./${dir}/`);

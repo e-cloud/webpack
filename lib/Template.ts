@@ -3,8 +3,12 @@
  Author Tobias Koppers @sokra
  */
 import { ConcatSource } from 'webpack-sources'
+import { WebpackOutputOptions } from '../typings/webpack-types'
 import Tapable = require('tapable');
 import Module = require('./Module')
+import Chunk = require('./Chunk')
+import ModuleTemplate = require('./ModuleTemplate')
+import ArrayMap = require('./ArrayMap')
 
 const A_CODE = 'a'.charCodeAt(0);
 const Z_CODE = 'z'.charCodeAt(0);
@@ -13,12 +17,12 @@ const A2_CODE = 'A'.charCodeAt(0);
 const Z2_CODE = 'Z'.charCodeAt(0);
 const AZ2_COUNT = Z2_CODE - A2_CODE + 1;
 
-function moduleIdIsNumber(module) {
+function moduleIdIsNumber(module: Module) {
     return typeof module.id === 'number';
 }
 
 class Template extends Tapable {
-    constructor(public outputOptions: {} = {}) {
+    constructor(public outputOptions: WebpackOutputOptions = {} as WebpackOutputOptions) {
         super()
     }
 
@@ -44,12 +48,12 @@ class Template extends Tapable {
         return `_${n - AZ_COUNT - AZ2_COUNT}`;
     }
 
-    indent(str: string) {
+    indent(str: (string[] | string)[] | string): string {
         if (Array.isArray(str)) {
             return str.map(this.indent.bind(this)).join('\n');
         }
         else {
-            str = str.trimRight();
+            str = str.trimRight() as string;
             if (!str) {
                 return '';
             }
@@ -81,42 +85,10 @@ class Template extends Tapable {
         return str;
     }
 
-    getModulesArrayBounds(modules: Module[]) {
-        if (!modules.every(moduleIdIsNumber)) {
-            return false;
-        }
-
-        let maxId = -Infinity;
-        let minId = Infinity;
-
-        modules.forEach(module => {
-            if (maxId < module.id) {
-                maxId = module.id;
-            }
-            if (minId > module.id) {
-                minId = module.id;
-            }
-        });
-
-        if (minId < 16 + ('' + minId).length) {
-            // add minId x ',' instead of 'Array(minId).concat(...)'
-            minId = 0;
-        }
-
-        const objectOverhead = modules.map(module => {
-            const idLength = (`${module.id}`).length;
-            return idLength + 2;
-        }).reduce((a, b) => a + b, -1);
-
-        const arrayOverhead = minId === 0 ? maxId : 16 + ('' + minId).length + maxId;
-
-        return arrayOverhead < objectOverhead ? [minId, maxId] : false;
-    }
-
-    renderChunkModules(chunk, moduleTemplate, dependencyTemplates, prefix?) {
-        if (!prefix) {
-            prefix = '';
-        }
+    renderChunkModules(
+        chunk: Chunk, moduleTemplate: ModuleTemplate, dependencyTemplates: ArrayMap,
+        prefix = ''
+    ): ConcatSource {
         const source = new ConcatSource();
         if (chunk.modules.length === 0) {
             source.add('[]');
@@ -201,6 +173,38 @@ class Template extends Tapable {
             source.add(`\n\n${prefix}}`);
         }
         return source;
+    }
+
+    getModulesArrayBounds(modules: Module[]) {
+        if (!modules.every(moduleIdIsNumber)) {
+            return false;
+        }
+
+        let maxId = -Infinity;
+        let minId = Infinity;
+
+        modules.forEach(module => {
+            if (maxId < module.id) {
+                maxId = module.id;
+            }
+            if (minId > module.id) {
+                minId = module.id;
+            }
+        });
+
+        if (minId < 16 + ('' + minId).length) {
+            // add minId x ',' instead of 'Array(minId).concat(...)'
+            minId = 0;
+        }
+
+        const objectOverhead = modules.map(module => {
+            const idLength = (`${module.id}`).length;
+            return idLength + 2;
+        }).reduce((a, b) => a + b, -1);
+
+        const arrayOverhead = minId === 0 ? maxId : 16 + ('' + minId).length + maxId;
+
+        return arrayOverhead < objectOverhead ? [minId, maxId] : false;
     }
 }
 

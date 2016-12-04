@@ -3,9 +3,18 @@
  Author Tobias Koppers @sokra
  */
 import WebpackMissingModule = require('./WebpackMissingModule')
+import ModuleDependency = require('./ModuleDependency')
+import { ReplaceSource } from 'webpack-sources'
+import { WebpackOutputOptions } from '../../typings/webpack-types'
+import RequestShortener = require('../RequestShortener')
 
 class ModuleDependencyTemplateAsId {
-    apply(dep, source, outputOptions, requestShortener) {
+    apply(
+        dep: ModuleDependency,
+        source: ReplaceSource,
+        outputOptions: WebpackOutputOptions,
+        requestShortener: RequestShortener
+    ) {
         if (!dep.range) {
             return;
         }
@@ -23,7 +32,7 @@ class ModuleDependencyTemplateAsId {
         source.replace(dep.range[0], dep.range[1] - 1, content);
     }
 
-    applyAsTemplateArgument(name, dep, source) {
+    applyAsTemplateArgument(name: string, dep: ModuleDependency, source: ReplaceSource) {
         if (!dep.range) {
             return;
         }

@@ -8,7 +8,7 @@ import NormalModule = require('../NormalModule')
 class LoaderDependency extends ModuleDependency {
     module: NormalModule
 
-    constructor(request) {
+    constructor(request: string) {
         super(request);
     }
 }

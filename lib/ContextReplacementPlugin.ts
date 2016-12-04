@@ -5,15 +5,40 @@
 import path = require('path');
 import ContextElementDependency = require('./dependencies/ContextElementDependency');
 import Compiler = require('./Compiler')
+import ContextModuleFactory = require('./ContextModuleFactory')
+import ContextDependency = require('./dependencies/ContextDependency')
+import {
+    CMFAfterResolveResult, CMFBeforeResolveResult, ErrCallback,
+    AbstractInputFileSystem
+} from '../typings/webpack-types'
+import * as Resolve from 'enhanced-resolve'
+
+interface CreateContextMap {
+    (fs: AbstractInputFileSystem, callback: (err: Error, recursive: boolean) => any): void
+}
 
 class ContextReplacementPlugin {
-    newContentCallback
-    newContentCreateContextMap: (fs, callback: (something, recursive: boolean) => any) => void
-    newContentResource: string
+    newContentCallback: (result: CMFBeforeResolveResult | CMFAfterResolveResult) => void
+    newContentCreateContextMap: CreateContextMap
     newContentRecursive: boolean
     newContentRegExp: RegExp
+    newContentResource: string
 
-    constructor(public resourceRegExp: RegExp, newContentResource, newContentRecursive, newContentRegExp) {
+    constructor(resourceRegExp: RegExp, newContentCallback: Function);
+    constructor(resourceRegExp: RegExp, newContentResource: string, newContentCreateContext: Object);
+    constructor(resourceRegExp: RegExp, newContentResource: string, newContentCreateContextMap: Function);
+    constructor(resourceRegExp: RegExp, newContentRegExp: RegExp);
+    constructor(resourceRegExp: RegExp, newContentRecursive: boolean, newContentRegExp: RegExp);
+    constructor(resourceRegExp: RegExp, newContentResource: string, newContentRegExp: RegExp);
+    constructor(
+        resourceRegExp: RegExp, newContentResource: string, newContentRecursive: boolean,
+        newContentRegExp: RegExp
+    );
+
+    constructor(
+        public resourceRegExp: RegExp, newContentResource: any, newContentRecursive?: any,
+        newContentRegExp?: any
+    ) {
         if (typeof newContentResource === 'function') {
             this.newContentCallback = newContentResource;
         }
@@ -50,8 +75,8 @@ class ContextReplacementPlugin {
         const newContentRecursive = this.newContentRecursive;
         const newContentRegExp = this.newContentRegExp;
         const newContentCreateContextMap = this.newContentCreateContextMap;
-        compiler.plugin('context-module-factory', function (cmf) {
-            cmf.plugin('before-resolve', (result, callback) => {
+        compiler.plugin('context-module-factory', function (cmf: ContextModuleFactory) {
+            cmf.plugin('before-resolve', (result: CMFBeforeResolveResult, callback) => {
                 if (!result) {
                     return callback();
                 }
@@ -78,7 +103,9 @@ class ContextReplacementPlugin {
                 }
                 return callback(null, result);
             });
-            cmf.plugin('after-resolve', function (result, callback) {
+            cmf.plugin('after-resolve', function (
+                result: CMFAfterResolveResult, callback
+            ) {
                 if (!result) {
                     return callback();
                 }
@@ -118,8 +145,14 @@ class ContextReplacementPlugin {
 
 export = ContextReplacementPlugin;
 
-function createResolveDependenciesFromContextMap(createContextMap) {
-    return function resolveDependenciesFromContextMap(fs, resource, recursive, regExp, callback) {
+function createResolveDependenciesFromContextMap(createContextMap: CreateContextMap) {
+    return function resolveDependenciesFromContextMap(
+        fs: Resolve.CachedInputFileSystem,
+        resource: string,
+        recursive: boolean,
+        regExp: RegExp,
+        callback: ErrCallback
+    ) {
         createContextMap(fs, (err, map) => {
             if (err) {
                 return callback(err);

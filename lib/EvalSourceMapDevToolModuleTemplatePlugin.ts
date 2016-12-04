@@ -4,19 +4,22 @@
  */
 import { Source, RawSource } from 'webpack-sources'
 import { RawSourceMap } from 'source-map'
+import { Hash } from 'crypto'
+import { FilenameTemplate } from '../typings/webpack-types'
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
 import Compilation = require('./Compilation');
 import ModuleTemplate = require('./ModuleTemplate')
+import Module = require('./Module')
 
 class EvalSourceMapDevToolModuleTemplatePlugin {
     sourceMapComment: string
-    moduleFilenameTemplate: string
+    moduleFilenameTemplate: FilenameTemplate
 
     constructor(
         public compilation: Compilation, public options: {
-            append: string
-            moduleFilenameTemplate: string
-            sourceRoot: string
+            append: string | false
+            moduleFilenameTemplate: FilenameTemplate
+            sourceRoot?: string
         }
     ) {
         this.sourceMapComment = options.append || '//# sourceMappingURL=[url]';
@@ -26,7 +29,7 @@ class EvalSourceMapDevToolModuleTemplatePlugin {
     apply(moduleTemplate: ModuleTemplate) {
         const self = this;
         const options = this.options;
-        moduleTemplate.plugin('module', function (source: Source, module) {
+        moduleTemplate.plugin('module', function (source: Source, module: Module) {
             if (source.__EvalSourceMapDevToolData) {
                 return source.__EvalSourceMapDevToolData;
             }
@@ -76,7 +79,7 @@ class EvalSourceMapDevToolModuleTemplatePlugin {
             source.__EvalSourceMapDevToolData = new RawSource(`eval(${JSON.stringify(content + footer)});`);
             return source.__EvalSourceMapDevToolData;
         });
-        moduleTemplate.plugin('hash', function (hash) {
+        moduleTemplate.plugin('hash', function (hash: Hash) {
             hash.update('eval-source-map');
             hash.update('1');
         });

@@ -2,8 +2,22 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import AMDRequireContextDependency = require('./AMDRequireContextDependency')
+import { ReplaceSource } from 'webpack-sources'
+import { WebpackOutputOptions } from '../../typings/webpack-types'
+import RequestShortener = require('../RequestShortener')
+import SystemImportContextDependency = require('./SystemImportContextDependency')
+import CommonJsRequireContextDependency = require('./CommonJsRequireContextDependency')
+
+type RequireContextDependency = AMDRequireContextDependency | SystemImportContextDependency | CommonJsRequireContextDependency
+
 class ContextDependencyTemplateAsRequireCall {
-    apply(dep, source, outputOptions, requestShortener) {
+    apply(
+        dep: RequireContextDependency,
+        source: ReplaceSource,
+        outputOptions: WebpackOutputOptions,
+        requestShortener: RequestShortener
+    ) {
         let comment = '';
         if (outputOptions.pathinfo) {
             comment = `/*! ${requestShortener.shorten(dep.request)} */ `;
@@ -32,7 +46,7 @@ class ContextDependencyTemplateAsRequireCall {
         }
     }
 
-    applyAsTemplateArgument(name, dep, source) {
+    applyAsTemplateArgument(name: string, dep: RequireContextDependency, source: ReplaceSource) {
         if (dep.valueRange) {
             source.replace(dep.valueRange[1], dep.range[1] - 1, ')');
             source.replace(dep.range[0],

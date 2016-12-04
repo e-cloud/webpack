@@ -9,7 +9,7 @@ const loaderFlag = 'LOADER_EXECUTION';
 class ModuleBuildError extends Error {
     details: string
 
-    constructor(public module: Module, public err: Error & { hideStack?: boolean}) {
+    constructor(public module: Module, public err: Error & { hideStack?: boolean }) {
         super();
         Error.captureStackTrace(this, ModuleBuildError);
         this.name = 'ModuleBuildError';

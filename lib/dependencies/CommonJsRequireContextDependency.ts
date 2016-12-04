@@ -4,12 +4,19 @@
  */
 import ContextDependency = require('./ContextDependency');
 import CriticalDependencyWarning = require('./CriticalDependencyWarning');
+import { SourceRange } from '../../typings/webpack-types'
 
 class CommonJsRequireContextDependency extends ContextDependency {
-    critical: boolean | string
+    critical: false | string
     optional: boolean
 
-    constructor(request, recursive, regExp, public range, public valueRange?) {
+    constructor(
+        request: string,
+        recursive: boolean,
+        regExp: RegExp,
+        public range: SourceRange,
+        public valueRange?: SourceRange
+    ) {
         super(request, recursive, regExp);
     }
 

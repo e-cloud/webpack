@@ -3,9 +3,10 @@
  Author Tobias Koppers @sokra
  */
 import ModuleDependency = require('./ModuleDependency');
+import { SourceRange } from '../../typings/webpack-types'
 
 class CommonJsRequireDependency extends ModuleDependency {
-    constructor(request, public range) {
+    constructor(request: string, public range: SourceRange) {
         super(request);
     }
 

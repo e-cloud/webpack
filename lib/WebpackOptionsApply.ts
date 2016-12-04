@@ -37,10 +37,11 @@ import OccurrenceOrderPlugin = require('./optimize/OccurrenceOrderPlugin');
 import FlagDependencyUsagePlugin = require('./FlagDependencyUsagePlugin');
 import FlagDependencyExportsPlugin = require('./FlagDependencyExportsPlugin');
 import { ResolverFactory } from 'enhanced-resolve'
+import { WebpackOptions } from '../typings/webpack-types'
 import Compiler = require('./Compiler')
 
 class WebpackOptionsApply extends OptionsApply {
-    process(options, compiler: Compiler) {
+    process(options: WebpackOptions, compiler: Compiler) {
         let ExternalsPlugin;
         compiler.context = options.context;
 
@@ -222,7 +223,7 @@ class WebpackOptionsApply extends OptionsApply {
                         append: hidden ? false : comment,
                         module: moduleMaps ? true : cheap ? false : true,
                         columns: cheap ? false : true,
-                        lineToLine: options.output.devtoolLineToLine,
+                        lineToLine: options.output.devtoolLineToLine as boolean,
                         noSources
                     }
                 )

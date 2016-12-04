@@ -3,7 +3,7 @@
  Author Tobias Koppers @sokra
  */
 class NullFactory {
-    create(data, callback) {
+    create(data: any, callback: Function) {
         return callback();
     }
 }

@@ -3,9 +3,17 @@
  Author Tobias Koppers @sokra
  */
 import ModuleDependency = require('./ModuleDependency');
+import RequestShortener = require('../RequestShortener')
+import { ReplaceSource } from 'webpack-sources'
+import { WebpackOutputOptions, SourceRange } from '../../typings/webpack-types'
 
 class Template {
-    apply(dep, source, outputOptions, requestShortener) {
+    apply(
+        dep: RequireIncludeDependency,
+        source: ReplaceSource,
+        outputOptions: WebpackOutputOptions,
+        requestShortener: RequestShortener
+    ) {
         let comment = '';
         if (outputOptions.pathinfo && dep.module) {
             comment = `/*! require.include ${requestShortener.shorten(dep.request)} */`;
@@ -15,7 +23,7 @@ class Template {
 }
 
 class RequireIncludeDependency extends ModuleDependency {
-    constructor(request, public range) {
+    constructor(request: string, public range: SourceRange) {
         super(request);
     }
 

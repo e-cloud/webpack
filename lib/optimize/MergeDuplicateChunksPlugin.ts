@@ -4,11 +4,12 @@
  */
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
+import Chunk = require('../Chunk')
 
 class MergeDuplicateChunksPlugin {
     apply(compiler: Compiler) {
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin('optimize-chunks-basic', function (chunks) {
+            compilation.plugin('optimize-chunks-basic', function (chunks: Chunk[]) {
                 const map = {};
                 chunks.slice().forEach(chunk => {
                     if (chunk.hasRuntime() || chunk.hasEntryModule()) {
@@ -30,7 +31,7 @@ class MergeDuplicateChunksPlugin {
 
 export = MergeDuplicateChunksPlugin;
 
-function getChunkIdentifier(chunk) {
+function getChunkIdentifier(chunk: Chunk) {
     return chunk.modules
         .map(m => m.identifier())
         .sort()

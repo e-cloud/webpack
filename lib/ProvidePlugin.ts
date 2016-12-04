@@ -8,20 +8,22 @@ import NullFactory = require('./NullFactory');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Parser = require('./Parser')
+import { CompilationParams, PlainObject, ParserOptions } from '../typings/webpack-types'
+import { Expression } from 'estree'
 
 class ProvidePlugin {
-    constructor(public definitions: {}) {
+    constructor(public definitions: PlainObject) {
     }
 
     apply(compiler: Compiler) {
         const definitions = this.definitions;
-        compiler.plugin('compilation', function (compilation: Compilation, params) {
+        compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
             compilation.dependencyFactories.set(ConstDependency, new NullFactory());
             compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions: ParserOptions) {
                 Object.keys(definitions)
-                    .forEach(name => {
+                    .forEach((name: string) => {
                         const request = definitions[name];
                         const splitName = name.split('.');
                         if (splitName.length > 0) {
@@ -30,7 +32,7 @@ class ProvidePlugin {
                                 parser.plugin(`can-rename ${name}`, () => true);
                             });
                         }
-                        parser.plugin(`expression ${name}`, function (expr) {
+                        parser.plugin(`expression ${name}`, function (expr: Expression) {
                             let nameIdentifier = name;
                             const scopedName = name.includes('.');
                             if (scopedName) {

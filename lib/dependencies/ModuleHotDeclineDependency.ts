@@ -4,12 +4,17 @@
  */
 import ModuleDependency = require('./ModuleDependency');
 import ModuleDependencyTemplateAsId = require('./ModuleDependencyTemplateAsId')
+import { SourceLocation } from 'estree'
+import { SourceRange } from '../../typings/webpack-types'
 
 class ModuleHotDeclineDependency extends ModuleDependency {
     type: string
     weak: boolean
+    loc: SourceLocation & {
+        index?: number
+    }
 
-    constructor(request, public range: string) {
+    constructor(request: string, public range: SourceRange) {
         super(request);
         this.weak = true;
     }

@@ -8,7 +8,7 @@ class ContextElementDependency extends ModuleDependency {
     type: string
     optional: boolean
 
-    constructor(request, userRequest?) {
+    constructor(request: string, userRequest?: string) {
         super(request);
         if (userRequest) {
             this.userRequest = userRequest

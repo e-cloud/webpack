@@ -5,12 +5,13 @@
 import PrefetchDependency = require('./dependencies/PrefetchDependency');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import { CompilationParams } from '../typings/webpack-types'
 
 class PrefetchPlugin {
     request: string
     context: string
 
-    constructor(context, request) {
+    constructor(context: string, request: string) {
         if (!request) {
             this.request = context;
         }
@@ -21,7 +22,7 @@ class PrefetchPlugin {
     }
 
     apply(compiler: Compiler) {
-        compiler.plugin('compilation', function (compilation: Compilation, params) {
+        compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
             const normalModuleFactory = params.normalModuleFactory;
 
             compilation.dependencyFactories.set(PrefetchDependency, normalModuleFactory);

@@ -5,14 +5,14 @@
 /* tslint:disable:no-unused-variable no-unused-expression */
 
 // just for eliminating the compiler error, ignore it
-declare var $hash$
-declare var installedModules
-declare var $require$
-declare var hotDownloadManifest
-declare var chunkId
-declare var hotDownloadUpdateChunk
-declare var hotDisposeChunk
-declare var modules
+declare var $hash$: any
+declare var installedModules: any
+declare var $require$: any
+declare var hotDownloadManifest: any
+declare var chunkId: any
+declare var hotDownloadUpdateChunk: any
+declare var hotDisposeChunk: any
+declare var modules: any
 
 export = function () {
     let hotApplyOnUpdate = true;
@@ -22,13 +22,13 @@ export = function () {
     let hotCurrentParents = []; // eslint-disable-line no-unused-vars
     let hotCurrentParentsTemp = []; // eslint-disable-line no-unused-vars
 
-    function hotCreateRequire(moduleId) {
+    function hotCreateRequire(moduleId: any) {
         // eslint-disable-line no-unused-vars
         const me = installedModules[moduleId];
         if (!me) {
             return $require$;
         }
-        const fn = request => {
+        const fn = function (request: string) {
             if (me.hot.active) {
                 if (installedModules[request]) {
                     if (!installedModules[request].parents.includes(moduleId)) {
@@ -59,7 +59,7 @@ export = function () {
                         return $require$[name];
                     },
 
-                    set(value) {
+                    set(value: any) {
                         $require$[name] = value;
                     }
                 }))(name));
@@ -67,13 +67,13 @@ export = function () {
         }
         Object.defineProperty(fn, 'e', {
             enumerable: true,
-            value(chunkId) {
+            value(chunkId: number) {
                 if (hotStatus === 'ready') {
                     hotSetStatus('prepare');
                 }
                 hotChunksLoading++;
                 return $require$.e(chunkId)
-                    .then(finishChunkLoading, err => {
+                    .then(finishChunkLoading, (err: Error) => {
                         finishChunkLoading();
                         throw err;
                     });
@@ -94,7 +94,7 @@ export = function () {
         return fn;
     }
 
-    function hotCreateModule(moduleId) {
+    function hotCreateModule(moduleId: number) {
         // eslint-disable-line no-unused-vars
         const hot = {
             // private stuff
@@ -102,12 +102,12 @@ export = function () {
             _declinedDependencies: {},
             _selfAccepted: false,
             _selfDeclined: false,
-            _disposeHandlers: [],
+            _disposeHandlers: [] as Function[],
             _main: hotMainModule,
 
             // Module API
             active: true,
-            accept(dep, callback) {
+            accept(dep: any, callback: Function) {
                 if (typeof dep === 'undefined') {
                     hot._selfAccepted = true;
                 }
@@ -123,7 +123,7 @@ export = function () {
                     hot._acceptedDependencies[dep] = callback || (() => {});
                 }
             },
-            decline(dep) {
+            decline(dep: any) {
                 if (typeof dep === 'undefined') {
                     hot._selfDeclined = true;
                 }
@@ -136,13 +136,13 @@ export = function () {
                     hot._declinedDependencies[dep] = true;
                 }
             },
-            dispose(callback) {
+            dispose(callback: Function) {
                 hot._disposeHandlers.push(callback);
             },
-            addDisposeHandler(callback) {
+            addDisposeHandler(callback: Function) {
                 hot._disposeHandlers.push(callback);
             },
-            removeDisposeHandler(callback) {
+            removeDisposeHandler(callback: Function) {
                 const idx = hot._disposeHandlers.indexOf(callback);
                 if (idx >= 0) {
                     hot._disposeHandlers.splice(idx, 1);
@@ -152,16 +152,16 @@ export = function () {
             // Management API
             check: hotCheck,
             apply: hotApply,
-            status(l) {
+            status(l: Function) {
                 if (!l) {
                     return hotStatus;
                 }
                 hotStatusHandlers.push(l);
             },
-            addStatusHandler(l) {
+            addStatusHandler(l: Function) {
                 hotStatusHandlers.push(l);
             },
-            removeStatusHandler(l) {
+            removeStatusHandler(l: Function) {
                 const idx = hotStatusHandlers.indexOf(l);
                 if (idx >= 0) {
                     hotStatusHandlers.splice(idx, 1);
@@ -175,10 +175,10 @@ export = function () {
         return hot;
     }
 
-    let hotStatusHandlers = [];
+    let hotStatusHandlers: Function[] = [];
     let hotStatus = 'idle';
 
-    function hotSetStatus(newStatus) {
+    function hotSetStatus(newStatus: string) {
         hotStatus = newStatus;
         for (let i = 0; i < hotStatusHandlers.length; i++) {
             hotStatusHandlers[i].call(null, newStatus);
@@ -191,25 +191,27 @@ export = function () {
     let hotWaitingFilesMap = {};
     let hotRequestedFilesMap = {};
     let hotAvailableFilesMap = {};
-    let hotDeferred;
+    let hotDeferred: any;
 
     // The update info
-    let hotUpdate;
+    let hotUpdate: {
+        [name: string]: string
+    };
 
-    let hotUpdateNewHash;
+    let hotUpdateNewHash: string;
 
-    function toModuleId(id) {
+    function toModuleId(id: string): number {
         const isNumber = `${+id}` === id;
         return isNumber ? +id : id;
     }
 
-    function hotCheck(apply) {
+    function hotCheck(apply: boolean) {
         if (hotStatus !== 'idle') {
             throw new Error('check() is only allowed in idle status');
         }
         hotApplyOnUpdate = apply;
         hotSetStatus('check');
-        return hotDownloadManifest().then(update => {
+        return hotDownloadManifest().then((update: any) => {
             if (!update) {
                 hotSetStatus('idle');
                 return null;
@@ -241,7 +243,7 @@ export = function () {
         });
     }
 
-    function hotAddUpdateChunk(chunkId, moreModules) {
+    function hotAddUpdateChunk(chunkId: number, moreModules: any[]) {
         // eslint-disable-line no-unused-vars
         if (!hotAvailableFilesMap[chunkId] || !hotRequestedFilesMap[chunkId]) {
             return;
@@ -257,7 +259,7 @@ export = function () {
         }
     }
 
-    function hotEnsureUpdateChunk(chunkId) {
+    function hotEnsureUpdateChunk(chunkId: number) {
         if (!hotAvailableFilesMap[chunkId]) {
             hotWaitingFilesMap[chunkId] = true;
         }
@@ -293,7 +295,7 @@ export = function () {
         }
     }
 
-    function hotApply(options) {
+    function hotApply(options: any) {
         if (hotStatus !== 'ready') {
             throw new Error('apply() is only allowed in ready status');
         }
@@ -305,7 +307,7 @@ export = function () {
         let module;
         let moduleId;
 
-        function getAffectedStuff(updateModuleId) {
+        function getAffectedStuff(updateModuleId: number) {
             const outdatedModules = [updateModuleId];
             const outdatedDependencies = {};
 
@@ -376,7 +378,7 @@ export = function () {
             };
         }
 
-        function addAllToSet(a, b) {
+        function addAllToSet(a: any[], b: any[]) {
             for (let i = 0; i < b.length; i++) {
                 const item = b[i];
                 if (!a.includes(item)) {
@@ -388,7 +390,7 @@ export = function () {
         // at begin all updates modules are outdated
         // the "outdated" status can propagate to parents if they don't accept the children
         const outdatedDependencies = {};
-        const outdatedModules = [];
+        const outdatedModules: any[] = [];
         const appliedUpdate = {};
         for (const id in hotUpdate) {
             if (Object.prototype.hasOwnProperty.call(hotUpdate, id)) {
@@ -570,7 +572,7 @@ export = function () {
             if (Object.prototype.hasOwnProperty.call(outdatedDependencies, moduleId)) {
                 module = installedModules[moduleId];
                 moduleOutdatedDependencies = outdatedDependencies[moduleId];
-                const callbacks = [];
+                const callbacks: Function[] = [];
                 for (i = 0; i < moduleOutdatedDependencies.length; i++) {
                     dependency = moduleOutdatedDependencies[i];
                     cb = module.hot._acceptedDependencies[dependency];

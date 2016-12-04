@@ -3,15 +3,26 @@
  Author Tobias Koppers @sokra
  */
 import async = require('async');
-
 import objectAssign = require('object-assign');
 import Tapable = require('tapable');
 import NormalModule = require('./NormalModule');
 import RawModule = require('./RawModule');
 import Parser = require('./Parser');
 import RuleSet = require('./RuleSet');
+import {
+    ModuleOptions,
+    NMFBeforeResolveResult,
+    ErrCallback,
+    NMFAfterResolveResult,
+    ParserOptions
+} from '../typings/webpack-types'
+import { ResolveError } from 'enhanced-resolve/lib/common-types'
+import Dependency = require('./Dependency')
+import Module = require('./Module')
+import Resolver = require('enhanced-resolve/lib/Resolver')
+import Compiler = require('./Compiler')
 
-function loaderToIdent(data) {
+function loaderToIdent(data: Loader) {
     if (!data.options) {
         return data.loader;
     }
@@ -29,20 +40,35 @@ function loaderToIdent(data) {
 
 type Loader = {
     loader: string,
-    options: string
+    options: string | {
+        ident: string
+    }
+}
+
+interface NotRawModule {
+    context: string
+    dependencies: Dependency[]
+    loaders: Loader[]
+    parser: Parser
+    rawRequest: string
+    request: string
+    resource: string
+    source?: never
+    userRequest: string
 }
 
 class NormalModuleFactory extends Tapable {
     ruleSet: RuleSet
-    parserCache: {}
+    parserCache: Dictionary<Parser>
 
-    constructor(public context = '', public resolvers, options) {
+    constructor(public context = '', public resolvers: Compiler.Resolvers, options: ModuleOptions) {
         super();
+        // todo: is it legal to use loaders in webpack 2.0
         this.ruleSet = new RuleSet(options.rules || options.loaders);
         this.parserCache = {};
         this.plugin('factory', function () {
             const self = this;
-            return (result, callback) => {
+            return (result: NMFBeforeResolveResult, callback: ErrCallback) => {
                 const resolver = self.applyPluginsWaterfall0('resolver', null);
 
                 // Ignored
@@ -50,7 +76,7 @@ class NormalModuleFactory extends Tapable {
                     return callback();
                 }
 
-                resolver(result, function onDoneResolving(err, data) {
+                resolver(result, function onDoneResolving(err: ResolveError, data: RawModule | NotRawModule) {
                     if (err) {
                         return callback(err);
                     }
@@ -65,7 +91,7 @@ class NormalModuleFactory extends Tapable {
                         return callback(null, data);
                     }
 
-                    self.applyPluginsAsyncWaterfall('after-resolve', data, (err, result) => {
+                    self.applyPluginsAsyncWaterfall('after-resolve', data, (err, result: NMFAfterResolveResult) => {
                         if (err) {
                             return callback(err);
                         }
@@ -93,7 +119,7 @@ class NormalModuleFactory extends Tapable {
             };
         });
         this.plugin('resolver', () => {
-            return (data, callback) => {
+            return (data: NMFBeforeResolveResult, callback: (err: Error, data?: RawModule | NotRawModule) => void) => {
                 const contextInfo = data.contextInfo;
                 const context = data.context;
                 const request = data.request;
@@ -101,9 +127,11 @@ class NormalModuleFactory extends Tapable {
                 const noAutoLoaders = /^-?!/.test(request);
                 const noPrePostAutoLoaders = /^!!/.test(request);
                 const noPostAutoLoaders = /^-!/.test(request);
-                let elements = request.replace(/^-?!+/, '').replace(/!!+/g, '!').split('!');
-                let resource = elements.pop();
-                elements = elements.map(element => {
+                let elements = request.replace(/^-?!+/, '')
+                    .replace(/!!+/g, '!')
+                    .split('!');
+                let resource: any = elements.pop();
+                const loaderMap = elements.map(element => {
                     const idx = element.indexOf('?');
                     let options;
                     if (idx >= 0) {
@@ -118,29 +146,32 @@ class NormalModuleFactory extends Tapable {
 
                 async.parallel([
                     callback => {
-                        this.resolveRequestArray(contextInfo, context, elements, this.resolvers.loader, callback);
+                        this.resolveRequestArray(contextInfo, context, loaderMap, this.resolvers.loader, callback);
                     },
                     callback => {
                         if (resource === '' || resource[0] === '?') {
                             return callback(null, resource);
                         }
-                        this.resolvers.normal.resolve(contextInfo, context, resource, (err, result) => {
+                        this.resolvers.normal.resolve(contextInfo, context, resource, (
+                            err: ResolveError,
+                            result: string | boolean
+                        ) => {
                             if (err) {
                                 return callback(err);
                             }
                             callback(null, result);
                         });
                     }
-                ], (err, results: any[][]) => {
+                ], (err: ResolveError, results: [any, string | boolean]) => {
                     if (err) {
                         return callback(err);
                     }
-                    let loaders = results[0];
-                    resource = results[1];
+                    let loaders = results[0] as Loader[];
+                    resource = results[1] as string | boolean;
 
                     // translate option idents
                     try {
-                        loaders.forEach(item => {
+                        loaders.forEach((item: Loader) => {
                             if (typeof item.options === 'string' && /^\?/.test(item.options)) {
                                 item.options = this.ruleSet.findOptionsByIdent(item.options.substr(1));
                             }
@@ -155,7 +186,7 @@ class NormalModuleFactory extends Tapable {
 
                     const userRequest = loaders.map(loaderToIdent).concat([resource]).join('!');
 
-                    let resourcePath = resource;
+                    let resourcePath: string = resource;
                     let resourceQuery = '';
                     const queryIndex = resourcePath.indexOf('?');
                     if (queryIndex >= 0) {
@@ -169,9 +200,9 @@ class NormalModuleFactory extends Tapable {
                         issuer: contextInfo.issuer
                     });
                     const settings: any = {};
-                    const useLoadersPost = [];
-                    const useLoaders = [];
-                    const useLoadersPre = [];
+                    const useLoadersPost: Loader[] = [];
+                    const useLoaders: Loader[] = [];
+                    const useLoadersPre: Loader[] = [];
                     result.forEach(r => {
                         if (r.type === 'use') {
                             if (r.enforce === 'post' && !noPostAutoLoaders && !noPrePostAutoLoaders) {
@@ -189,7 +220,16 @@ class NormalModuleFactory extends Tapable {
                         }
                     });
 
-                    const onDoneResolving = () => {
+                    async.parallel([
+                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoadersPost, this.resolvers.loader),
+                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoaders, this.resolvers.loader),
+                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoadersPre, this.resolvers.loader)
+                    ], (err: Error, results: Loader[][]) => {
+                        if (err) {
+                            return callback(err);
+                        }
+                        loaders = results[0].concat(loaders).concat(results[1]).concat(results[2]);
+
                         callback(null, {
                             context,
                             request: loaders.map(loaderToIdent).concat([resource]).join('!'),
@@ -200,25 +240,21 @@ class NormalModuleFactory extends Tapable {
                             resource,
                             parser: this.getParser(settings.parser)
                         });
-                    }
-
-                    async.parallel([
-                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoadersPost, this.resolvers.loader),
-                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoaders, this.resolvers.loader),
-                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoadersPre, this.resolvers.loader)
-                    ], (err, results: string[][]) => {
-                        if (err) {
-                            return callback(err);
-                        }
-                        loaders = results[0].concat(loaders).concat(results[1]).concat(results[2]);
-                        onDoneResolving();
                     });
                 });
             };
         });
     }
 
-    create(data, callback) {
+    create(
+        data: {
+            context: string
+            dependencies: [NormalModule]
+            contextInfo: {
+                issuer: string
+            }
+        }, callback: ErrCallback
+    ) {
         const self = this;
         const context = data.context || this.context;
         const dependencies = data.dependencies;
@@ -229,7 +265,7 @@ class NormalModuleFactory extends Tapable {
             context,
             request,
             dependencies
-        }, (err, result) => {
+        }, (err, result: NMFBeforeResolveResult) => {
             if (err) {
                 return callback(err);
             }
@@ -250,14 +286,22 @@ class NormalModuleFactory extends Tapable {
         });
     }
 
-    resolveRequestArray(contextInfo, context, array, resolver, callback) {
+    resolveRequestArray(
+        contextInfo: {
+            issuer: string
+        },
+        context: string,
+        array: Loader[],
+        resolver: Resolver,
+        callback: ErrCallback
+    ) {
         if (array.length === 0) {
             return callback(null, []);
         }
-        async.map(array, function (item: Loader, callback: (err, ...args) => any) {
-            resolver.resolve(contextInfo, context, item.loader, (err, result) => {
+        async.map(array, function (item: Loader, callback: ErrCallback) {
+            resolver.resolve(contextInfo, context, item.loader, (err: Error, result: string) => {
                 if (err && /^[^/]*$/.test(item.loader) && !/-loader$/.test(item.loader)) {
-                    return resolver.resolve(contextInfo, context, item.loader + '-loader', function (err2) {
+                    return resolver.resolve(contextInfo, context, item.loader + '-loader', function (err2: Error) {
                         if (!err2) {
                             err.message = `${err.message}
 BREAKING CHANGE: It's no longer allowed to omit the '-loader' suffix when using loaders.
@@ -276,7 +320,8 @@ BREAKING CHANGE: It's no longer allowed to omit the '-loader' suffix when using 
         }, callback);
     }
 
-    getParser(parserOptions) {
+    // todo: parser options is not clear yet
+    getParser(parserOptions: ParserOptions) {
         let ident = 'null';
         if (parserOptions) {
             if (parserOptions.ident) {
@@ -293,7 +338,7 @@ BREAKING CHANGE: It's no longer allowed to omit the '-loader' suffix when using 
         return this.parserCache[ident] = this.createParser(parserOptions);
     }
 
-    createParser(parserOptions) {
+    createParser(parserOptions: ParserOptions) {
         const parser = new Parser({});
         this.applyPlugins('parser', parser, parserOptions || {});
         return parser;

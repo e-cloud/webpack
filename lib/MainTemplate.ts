@@ -3,7 +3,12 @@
  Author Tobias Koppers @sokra
  */
 import { ConcatSource, OriginalSource, PrefixSource } from 'webpack-sources'
+import { WebpackOutputOptions } from '../typings/webpack-types'
+import { Hash } from 'crypto'
 import Template = require('./Template');
+import Chunk = require('./Chunk')
+import ModuleTemplate = require('./ModuleTemplate')
+import ArrayMap = require('./ArrayMap')
 
 // require function shortcuts:
 // __webpack_require__.s = the module id of the entry point
@@ -22,9 +27,9 @@ import Template = require('./Template');
 class MainTemplate extends Template {
     requireFn: string
 
-    constructor(outputOptions) {
+    constructor(outputOptions: WebpackOutputOptions) {
         super(outputOptions);
-        this.plugin('startup', function (source, chunk, hash) {
+        this.plugin('startup', (source: string, chunk: Chunk, hash: string) => {
             const buf = [];
             if (chunk.entryModule) {
                 buf.push('// Load entry module and return exports');
@@ -32,7 +37,10 @@ class MainTemplate extends Template {
             }
             return this.asString(buf);
         });
-        this.plugin('render', function (bootstrapSource, chunk, hash, moduleTemplate, dependencyTemplates) {
+        this.plugin('render', function (
+            bootstrapSource: OriginalSource, chunk: Chunk, hash: string,
+            moduleTemplate: ModuleTemplate, dependencyTemplates
+        ) {
             const source = new ConcatSource();
             source.add('/******/ (function(modules) { // webpackBootstrap\n');
             source.add(new PrefixSource('/******/', bootstrapSource));
@@ -44,10 +52,10 @@ class MainTemplate extends Template {
             source.add(')');
             return source;
         });
-        this.plugin('local-vars', function (source /*, chunk, hash*/) {
+        this.plugin('local-vars', function (source: string /*, chunk, hash*/) {
             return this.asString([source, '// The module cache', 'var installedModules = {};']);
         });
-        this.plugin('require', function (source, chunk, hash) {
+        this.plugin('require', function (source: string, chunk: Chunk, hash: string) {
             return this.asString([
                 source,
                 '// Check if module is in cache',
@@ -87,7 +95,7 @@ class MainTemplate extends Template {
         this.plugin('module-obj', function () /*source, chunk, hash, varModuleId*/ {
             return this.asString(['i: moduleId,', 'l: false,', 'exports: {}']);
         });
-        this.plugin('require-extensions', function (source, chunk, hash) {
+        this.plugin('require-extensions', function (source: string, chunk: Chunk, hash: string) {
             const buf = [];
             if (chunk.chunks.length > 0) {
                 buf.push('// This file contains only the entry chunk.');
@@ -146,7 +154,7 @@ class MainTemplate extends Template {
         });
     }
 
-    render(hash, chunk, moduleTemplate, dependencyTemplates) {
+    render(hash: string, chunk: Chunk, moduleTemplate: ModuleTemplate, dependencyTemplates: ArrayMap) {
         const buf = [];
         buf.push(this.applyPluginsWaterfall('bootstrap', '', chunk, hash, moduleTemplate, dependencyTemplates));
         buf.push(this.applyPluginsWaterfall('local-vars', '', chunk, hash));
@@ -170,20 +178,20 @@ class MainTemplate extends Template {
         return new ConcatSource(source, ';');
     }
 
-    renderRequireFunctionForModule(hash, chunk, varModuleId) {
+    renderRequireFunctionForModule(hash: string, chunk: Chunk, varModuleId: string) {
         return this.applyPluginsWaterfall('module-require', this.requireFn, chunk, hash, varModuleId);
     }
 
-    renderAddModule(hash, chunk, varModuleId, varModule) {
+    renderAddModule(hash: string, chunk: Chunk, varModuleId: string, varModule: string) {
         return this.applyPluginsWaterfall('add-module', `modules[${varModuleId}] = ${varModule};`, chunk, hash, varModuleId, varModule);
     }
 
-    renderCurrentHashCode(hash, length = Infinity) {
+    renderCurrentHashCode(hash: string, length = Infinity) {
         return this.applyPluginsWaterfall('current-hash', JSON.stringify(hash.substr(0, length)), length);
     }
 
-    entryPointInChildren(chunk) {
-        function checkChildren(chunk, alreadyCheckedChunks) {
+    entryPointInChildren(chunk: Chunk) {
+        function checkChildren(chunk: Chunk, alreadyCheckedChunks: Chunk[]): boolean {
             return chunk.chunks.some(child => {
                 if (alreadyCheckedChunks.includes(child)) {
                     return;
@@ -196,27 +204,30 @@ class MainTemplate extends Template {
         return checkChildren(chunk, []);
     }
 
-    getPublicPath(options) {
+    getPublicPath(
+        options: {
+            hash: string
+        }
+    ) {
         return this.applyPluginsWaterfall('asset-path', this.outputOptions.publicPath || '', options);
     }
 
-    updateHash(hash) {
+    updateHash(hash: Hash) {
         hash.update('maintemplate');
         hash.update('3');
         hash.update(`${this.outputOptions.publicPath}`);
         this.applyPlugins('hash', hash);
     }
 
-    updateHashForChunk(hash, chunk) {
+    updateHashForChunk(hash: Hash, chunk: Chunk) {
         this.updateHash(hash);
         this.applyPlugins('hash-for-chunk', hash, chunk);
     }
 
-    useChunkHash(chunk) {
+    useChunkHash(chunk: Chunk) {
         const paths = this.applyPluginsWaterfall('global-hash-paths', []);
         return !this.applyPluginsBailResult('global-hash', chunk, paths);
     }
-
 }
 
 MainTemplate.prototype.requireFn = '__webpack_require__';

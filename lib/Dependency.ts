@@ -5,18 +5,20 @@
 import compareLocations = require('./compareLocations')
 import Module = require('./Module')
 import { Hash } from 'crypto'
+import { SourceLocation } from 'estree'
 
 abstract class Dependency {
+    loc: SourceLocation | string
     module: Module
-    loc: any
-    userRequest: string
+    optional?: boolean
     type: string
+    userRequest: string
 
     constructor() {
         this.module = null;
     }
 
-    isEqualResource(other) {
+    isEqualResource(other: Dependency) {
         return false;
     }
 
@@ -35,11 +37,15 @@ abstract class Dependency {
     }
 
     // Returns the exported names
-    getExports() {
+    getExports(): {
+        exports: string[] | boolean
+        // todo: dependencies may rename to modules, coz they are not Dependencies
+        dependencies?: Module[]
+    } {
         return null;
     }
 
-    getWarnings() {
+    getWarnings(): Error[] {
         return null;
     }
 
@@ -55,6 +61,7 @@ abstract class Dependency {
         return Dependency.compareLocations(a.loc, b.loc);
     }
 
+    // todo: this might be useless
     static compareLocations = compareLocations
 }
 

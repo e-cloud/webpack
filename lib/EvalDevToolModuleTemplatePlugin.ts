@@ -2,20 +2,23 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { RawSource } from 'webpack-sources'
+import { RawSource, Source } from 'webpack-sources'
+import { Hash } from 'crypto'
+import { FilenameTemplate } from '../typings/webpack-types'
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
 import ModuleTemplate = require('./ModuleTemplate')
+import Module = require('./Module')
 
 class EvalDevToolModuleTemplatePlugin {
     constructor(
         public sourceUrlComment = '\n//# sourceURL=[url]',
-        public moduleFilenameTemplate = 'webpack:///[resourcePath]?[loaders]'
+        public moduleFilenameTemplate: FilenameTemplate = 'webpack:///[resourcePath]?[loaders]'
     ) {
     }
 
     apply(moduleTemplate: ModuleTemplate) {
         const self = this;
-        moduleTemplate.plugin('module', function (source, module) {
+        moduleTemplate.plugin('module', function (source: Source, module: Module) {
             const content = source.source();
             const str = ModuleFilenameHelpers.createFilename(module, self.moduleFilenameTemplate, this.requestShortener);
             const footer = [
@@ -32,7 +35,7 @@ class EvalDevToolModuleTemplatePlugin {
             ].join('\n');
             return new RawSource(`eval(${JSON.stringify(content + footer)});`);
         });
-        moduleTemplate.plugin('hash', function (hash) {
+        moduleTemplate.plugin('hash', function (hash: Hash) {
             hash.update('EvalDevToolModuleTemplatePlugin');
             hash.update('2');
         });

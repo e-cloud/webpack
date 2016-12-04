@@ -7,38 +7,25 @@ import DelegatedModuleFactoryPlugin = require('./DelegatedModuleFactoryPlugin');
 import ExternalModuleFactoryPlugin = require('./ExternalModuleFactoryPlugin');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import { CompilationParams } from '../typings/webpack-types'
+import LibManifestPlugin = require('./LibManifestPlugin')
 
 interface DllManifest {
     name: string
-    content: string
+    content: LibManifestPlugin.ManifestContent
 }
 
 class DllReferencePlugin {
-    options: {
-        manifest: string | {
-            name: string
-            content: string
-        }
-        name: string
-        sourceType: string
-        type: string
-        scope: string
-        context: string
-        content: string
-        extensions: string[]
-    }
-
-    constructor(options) {
-        this.options = options;
+    constructor(public options: DllReferencePlugin.Option) {
     }
 
     apply(compiler: Compiler) {
-        compiler.plugin('compilation', function (compilation: Compilation, params) {
+        compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
             const normalModuleFactory = params.normalModuleFactory;
 
             compilation.dependencyFactories.set(DelegatedSourceDependency, normalModuleFactory);
         });
-        compiler.plugin('before-compile', (params, callback) => {
+        compiler.plugin('before-compile', (params: CompilationParams, callback) => {
             const manifest = this.options.manifest;
             if (typeof manifest === 'string') {
                 params.compilationDependencies.push(manifest);
@@ -54,12 +41,12 @@ class DllReferencePlugin {
                 return callback();
             }
         });
-        compiler.plugin('compile', params => {
-            let manifest = this.options.manifest;
-            if (typeof manifest === 'string') {
-                manifest = params[`dll reference ${manifest}`];
-            }
-            const name = this.options.name || (manifest as DllManifest).name;
+        compiler.plugin('compile', (params: CompilationParams) => {
+            const optionsManifest = this.options.manifest
+            let manifest = typeof optionsManifest === 'string'
+                ? params[`dll reference ${optionsManifest}`]
+                : optionsManifest;
+            const name = this.options.name || manifest.name;
             const sourceType = this.options.sourceType || 'var';
             const externals = {};
             const source = `dll-reference ${name}`;
@@ -70,10 +57,23 @@ class DllReferencePlugin {
                 type: this.options.type,
                 scope: this.options.scope,
                 context: this.options.context || compiler.options.context,
-                content: this.options.content || (manifest as DllManifest).content,
+                content: this.options.content || manifest.content,
                 extensions: this.options.extensions
             }));
         });
+    }
+}
+
+declare namespace DllReferencePlugin {
+    interface Option {
+        manifest: string | DllManifest
+        name: string
+        sourceType: string
+        type: string
+        scope: string
+        context: string
+        content: string
+        extensions: string[]
     }
 }
 

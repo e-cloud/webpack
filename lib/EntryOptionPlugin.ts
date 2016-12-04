@@ -5,11 +5,12 @@
 import SingleEntryPlugin = require('./SingleEntryPlugin');
 import MultiEntryPlugin = require('./MultiEntryPlugin');
 import Compiler = require('./Compiler')
+import { Entry } from '../typings/webpack-types'
 
 class EntryOptionPlugin {
     apply(compiler: Compiler) {
-        compiler.plugin('entry-option', function (context, entry) {
-            function itemToPlugin(item, name) {
+        compiler.plugin('entry-option', function (context: string, entry: Entry) {
+            function itemToPlugin(item: string | string[], name: string) {
                 if (Array.isArray(item)) {
                     return new MultiEntryPlugin(context, item, name);
                 }

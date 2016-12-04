@@ -4,9 +4,11 @@
  */
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import Chunk = require('./Chunk')
+import Module = require('./Module')
 
 interface ProgressPluginHandler {
-    (percentage, msg, ...details: string[]): void
+    (percentage: number, msg: string, ...details: string[]): void
 }
 
 class ProgressPlugin {
@@ -33,8 +35,8 @@ class ProgressPlugin {
         const profile = this.profile;
         if (compiler.compilers) {
             const states = new Array(compiler.compilers.length);
-            compiler.compilers.forEach((compiler: Compiler, idx) => {
-                compiler.apply(new ProgressPlugin(function (p, msg, ...rest) {
+            compiler.compilers.forEach((compiler: Compiler, idx: number) => {
+                compiler.apply(new ProgressPlugin(function (p: number, msg: string, ...rest) {
                     states[idx] = Array.prototype.slice.apply(arguments);
                     handler(
                         states.map(state => state && state[0] || 0).reduce((a, b) => a + b) / states.length,
@@ -48,7 +50,7 @@ class ProgressPlugin {
             let lastModulesCount = 0;
             let moduleCount = 500;
             let doneModules = 0;
-            const activeModules = [];
+            const activeModules: string[] = [];
 
             function update() {
                 handler(
@@ -60,7 +62,7 @@ class ProgressPlugin {
                 );
             }
 
-            function moduleDone(module) {
+            function moduleDone(module: Module) {
                 doneModules++;
                 const ident = module.identifier();
                 if (ident) {
@@ -80,7 +82,7 @@ class ProgressPlugin {
                 moduleCount = 0;
                 doneModules = 0;
                 handler(0, 'compiling');
-                compilation.plugin('build-module', module => {
+                compilation.plugin('build-module', (module: Module) => {
                     moduleCount++;
                     const ident = module.identifier();
                     if (ident) {
@@ -124,7 +126,7 @@ class ProgressPlugin {
                         }
                     });
                 });
-                compilation.plugin('optimize-tree', function (chunks, modules, callback) {
+                compilation.plugin('optimize-tree', function (chunks: Chunk[], modules: Module[], callback) {
                     handler(0.79, 'module and chunk tree optimization');
                     callback();
                 });
@@ -151,10 +153,10 @@ class ProgressPlugin {
         }
 
         let chars = 0;
-        let lastState;
-        let lastStateTime;
+        let lastState: string;
+        let lastStateTime: number;
 
-        function defaultHandler(percentage, msg, ...details: string[]) {
+        function defaultHandler(percentage: number, msg: string, ...details: string[]) {
             let state = msg;
             if (percentage < 1) {
                 percentage = Math.floor(percentage * 100);
@@ -197,7 +199,7 @@ class ProgressPlugin {
             process.stderr.write(msg);
         }
 
-        function goToLineStart(nextMessage) {
+        function goToLineStart(nextMessage: string) {
             let str = '';
             for (; chars > nextMessage.length; chars--) {
                 str += '\b \b';

@@ -4,29 +4,22 @@
  */
 import { SourceMapConsumer } from 'source-map'
 import { SourceMapSource, RawSource } from 'webpack-sources'
+import { PlainObject } from '../../typings/webpack-types'
 import uglify = require('uglify-js');
 import RequestShortener = require('../RequestShortener');
 import ModuleFilenameHelpers = require('../ModuleFilenameHelpers');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
+import Chunk = require('../Chunk')
+import Module = require('../Module')
+import SourceMap = uglify.SourceMap
 
 class UglifyJsPlugin {
-    options: {
-        compress: boolean
-        compressor?: boolean
-        test: RegExp
-        sourceMap: boolean
-        mangle: {
-            props: any
-        } | false
-        comments: RegExp
-        beautify: boolean
-        output: {}
-    }
+    options: UglifyJsPlugin.Option
 
-    constructor(options) {
+    constructor(options: UglifyJsPlugin.Option) {
         if (typeof options !== 'object') {
-            options = {};
+            options = {} as any;
         }
         if (typeof options.compressor !== 'undefined') {
             options.compress = options.compressor;
@@ -41,13 +34,13 @@ class UglifyJsPlugin {
         const requestShortener = new RequestShortener(compiler.context);
         compiler.plugin('compilation', function (compilation: Compilation) {
             if (options.sourceMap) {
-                compilation.plugin('build-module', module => {
+                compilation.plugin('build-module', (module: Module) => {
                     // to get detailed location info about errors
                     module.useSourceMap = true;
                 });
             }
-            compilation.plugin('optimize-chunk-assets', function (chunks, callback) {
-                let files = [];
+            compilation.plugin('optimize-chunk-assets', function (chunks: Chunk[], callback) {
+                let files: string[] = [];
                 chunks.forEach(chunk => {
                     chunk.files.forEach(file => {
                         files.push(file);
@@ -59,7 +52,7 @@ class UglifyJsPlugin {
                 files = files.filter(ModuleFilenameHelpers.matchObject.bind(undefined, options));
                 files.forEach(file => {
                     const oldWarnFunction = uglify.AST_Node.warn_function;
-                    const warnings = [];
+                    const warnings: string[] = [];
                     let sourceMap: SourceMapConsumer
                     try {
                         const asset = compilation.assets[file];
@@ -79,7 +72,7 @@ class UglifyJsPlugin {
                                 input = asset.source();
                             }
                             sourceMap = new SourceMapConsumer(inputSourceMap);
-                            uglify.AST_Node.warn_function = warning => {
+                            uglify.AST_Node.warn_function = (warning: string) => {
                                 // eslint-disable-line camelcase
                                 const match = /\[.+:([0-9]+),([0-9]+)\]/.exec(warning);
                                 const line = +match[1];
@@ -96,7 +89,7 @@ class UglifyJsPlugin {
                         }
                         else {
                             input = asset.source();
-                            uglify.AST_Node.warn_function = warning => {
+                            uglify.AST_Node.warn_function = (warning: string) => {
                                 // eslint-disable-line camelcase
                                 warnings.push(warning);
                             };
@@ -128,7 +121,8 @@ class UglifyJsPlugin {
                         for (const k in options.output) {
                             output[k] = options.output[k];
                         }
-                        let map
+                        let map: SourceMap
+                        let mapToString: string
                         if (options.sourceMap) {
                             map = uglify.SourceMap({ // eslint-disable-line new-cap
                                 file,
@@ -136,15 +130,15 @@ class UglifyJsPlugin {
                             });
                             output.source_map = map; // eslint-disable-line camelcase
                         }
-                        let stream = uglify.OutputStream(output); // eslint-disable-line new-cap
+                        const stream = uglify.OutputStream(output); // eslint-disable-line new-cap
                         ast.print(stream);
                         if (map) {
-                            map = `${map}`;
+                            mapToString = `${map}`;
                         }
-                        stream = `${stream}`;
-                        asset.__UglifyJsPlugin = compilation.assets[file] = map
-                            ? new SourceMapSource(stream, file, JSON.parse(map), input, inputSourceMap)
-                            : new RawSource(stream);
+                        const streamToString = `${stream}`;
+                        asset.__UglifyJsPlugin = compilation.assets[file] = mapToString
+                            ? new SourceMapSource(streamToString, file, JSON.parse(mapToString), input, inputSourceMap)
+                            : new RawSource(streamToString);
                         if (warnings.length > 0) {
                             compilation.warnings.push(new Error(`${file} from UglifyJs\n${warnings.join('\n')}`));
                         }
@@ -174,6 +168,21 @@ class UglifyJsPlugin {
                 callback();
             });
         });
+    }
+}
+
+declare namespace UglifyJsPlugin {
+    interface Option {
+        compress: boolean
+        compressor?: boolean
+        test: RegExp
+        sourceMap: boolean
+        mangle: {
+            props: any
+        } | false
+        comments: RegExp
+        beautify: boolean
+        output: PlainObject
     }
 }
 

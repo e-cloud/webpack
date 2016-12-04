@@ -6,14 +6,16 @@ import SystemImportContextDependency = require('./SystemImportContextDependency'
 import SystemImportDependenciesBlock = require('./SystemImportDependenciesBlock');
 import ContextDependencyHelpers = require('./ContextDependencyHelpers');
 import Parser = require('../Parser')
+import { CallExpression } from 'estree'
+import { ModuleOptions } from '../../typings/webpack-types'
 
 class SystemImportParserPlugin {
-    constructor(public options) {
+    constructor(public options: ModuleOptions) {
     }
 
     apply(parser: Parser) {
         const options = this.options;
-        parser.plugin('call System.import', function (this: Parser, expr) {
+        parser.plugin('call System.import', function (expr: CallExpression) {
             if (expr.arguments.length !== 1) {
                 throw new Error('Incorrect number of arguments provided to \'System.import(module: string) -> Promise\'.');
             }

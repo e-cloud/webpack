@@ -5,6 +5,7 @@
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import NormalModule = require('./NormalModule')
+import Module = require('./Module')
 
 class NamedModulesPlugin {
     constructor(
@@ -16,7 +17,7 @@ class NamedModulesPlugin {
 
     apply(compiler: Compiler) {
         compiler.plugin('compilation', (compilation: Compilation) => {
-            compilation.plugin('before-module-ids', modules => {
+            compilation.plugin('before-module-ids', (modules: Module[]) => {
                 modules.forEach((module: NormalModule) => {
                     if (module.id === null && module.libIdent) {
                         module.id = module.libIdent({

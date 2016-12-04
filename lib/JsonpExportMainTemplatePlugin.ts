@@ -3,7 +3,9 @@
  Author Tobias Koppers @sokra
  */
 import { ConcatSource } from 'webpack-sources'
+import { Hash } from 'crypto'
 import Compilation = require('./Compilation')
+import Chunk = require('./Chunk')
 
 class JsonpExportMainTemplatePlugin {
     constructor(public name: string) {
@@ -11,20 +13,20 @@ class JsonpExportMainTemplatePlugin {
 
     apply(compilation: Compilation) {
         const mainTemplate = compilation.mainTemplate;
-        compilation.templatesPlugin('render-with-entry', (source, chunk, hash) => {
+        compilation.templatesPlugin('render-with-entry', (source: string, chunk: Chunk, hash: string) => {
             const name = mainTemplate.applyPluginsWaterfall('asset-path', this.name || '', {
                 hash,
                 chunk
             });
             return new ConcatSource(`${name}(`, source, ');');
         });
-        mainTemplate.plugin('global-hash-paths', paths => {
+        mainTemplate.plugin('global-hash-paths', (paths: string[]) => {
             if (this.name) {
                 paths.push(this.name);
             }
             return paths;
         });
-        mainTemplate.plugin('hash', hash => {
+        mainTemplate.plugin('hash', (hash: Hash) => {
             hash.update('jsonp export');
             hash.update(`${this.name}`);
         });

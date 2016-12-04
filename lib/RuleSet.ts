@@ -2,6 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+// @formatter:off
 /**
 <rules>: <rule>
 <rules>: [<rule>]
@@ -68,77 +69,113 @@ normalized:
     <any>: <any>,
 }
 
- */
+*/
+// @formatter:on
+import { PlainObject, ParserOptions } from '../typings/webpack-types'
 
-type ConditionFunc = (arg) => boolean
-type AndCondition = {
-    and: Condition[]
+interface ConditionFunc {
+    (arg: string): boolean
 }
-type OrCondition = {
-    or: Condition[]
+
+interface AndCondition {
+    and: ConditionArray
 }
-type NotCondition = {
-    not: Condition[]
+
+interface OrCondition {
+    or: ConditionArray
 }
-type DetailCondition = {
+
+interface NotCondition {
+    not: ConditionArray
+}
+
+interface DetailCondition {
     test: Condition
     include: Condition
     exclude: Condition
 }
-type Condition = RegExp | string | ConditionFunc | Condition[] | AndCondition | OrCondition | NotCondition | DetailCondition
 
-type Loader = {
+interface ConditionArray extends Array<Condition> {}
+
+type Condition = RegExp | string | ConditionFunc | ConditionArray | AndCondition | OrCondition | NotCondition | DetailCondition
+
+type RuleQuery = {
+    ident?: string
+} | string
+
+interface UseItemObject {
+    [other: string]: any
     loader: string
-    options: {
-        ident?
-    }
+    options: RuleQuery
+    query: RuleQuery
 }
 
-type UseItem = Loader[]
+type UseItem = string | UseItemObject
 
 interface Rule {
-    resource: Condition, // -> resource.test
-    test: Condition // -> resource.test
-    include: Condition // -> resource.include
-    exclude: Condition // -> resource.exclude
-    resourceQuery: Condition
-    issuer: Condition, // -> issuer.test
-    use: UseItem // -> use[0].loader
-    loader: Loader // -> use[0].loader
-    loaders: UseItem // -> use
-    options: {} // -> use[0].options,
-    query: {} // -> options
-    parser: {}
-    rules: Rule[]
-    oneOf: Rule[]
+    enforce?: 'pre' | 'post'
+    exclude?: Condition
+    include?: Condition
+    issuer?: DetailCondition | ConditionFunc
+    loader?: string
+    loaders?: string | string[]
+    oneOf?: Rule[]
+    options?: PlainObject
+    parser: ParserOptions
+    query?: PlainObject
+    resource?: AndCondition | OrCondition | NotCondition | ConditionArray
+    resourceQuery?: Condition
+    rules?: Rule[]
+    test?: Condition
+    use?: UseItem[]
 }
 
-type NormalizedLoader = {
-    loader: string
-    options?: {
-        ident?
-    }| string
+interface RuleExecResult {
+    enforce?: string
+    type: string
+    value: any
 }
+
+interface RuleExecData {
+    issuer?: string
+    resource: string
+    resourceQuery?: string
+}
+
+interface NormalizedUseItemObject {
+    loader: string
+    options?: RuleQuery
+    [other: string]: any
+}
+
+type NormalizedUseItem = ((data: RuleExecData) => any) | NormalizedUseItemObject
 
 interface NormalizedRule {
-    resource: Function
-    resourceQuery: Function
-    issuer: Function
-    use: NormalizedLoader[],
-    rules: NormalizedRule[],
-    oneOf: NormalizedRule[],
+    enforce?: string
+    issuer?: ConditionFunc
+    oneOf?: NormalizedRule[]
+    resource?: ConditionFunc
+    resourceQuery?: ConditionFunc
+    rules: NormalizedRule[]
+    use?: NormalizedUseItem[]
+}
+
+interface RuleSetRefs {
+    [id: string]: {
+        ident: string
+    }
 }
 
 class RuleSet {
     rules: NormalizedRule[]
-    references
+    references: RuleSetRefs
 
-    constructor(rules: Rule[]) {
+    constructor(rules: (Rule | string)[]) {
         this.references = {};
         this.rules = RuleSet.normalizeRules(rules, this.references);
     }
 
-    static normalizeRules(rules, refs): NormalizedRule[] {
+    static normalizeRules(rules: (Rule | string)[], refs: RuleSetRefs): NormalizedRule[] {
         if (Array.isArray(rules)) {
             return rules.map(rule => RuleSet.normalizeRule(rule, refs));
         }
@@ -150,7 +187,7 @@ class RuleSet {
         }
     }
 
-    static normalizeRule(rule, refs): NormalizedRule {
+    static normalizeRule(rule: Rule | string, refs: RuleSetRefs): NormalizedRule {
         if (typeof rule === 'string') {
             return {
                 use: [
@@ -168,8 +205,8 @@ class RuleSet {
         }
 
         const newRule = {} as NormalizedRule;
-        let useSource;
-        let resourceSource;
+        let useSource: string;
+        let resourceSource: string;
 
         if (rule.test || rule.include || rule.exclude) {
             checkResourceSource('test + include + exclude');
@@ -241,11 +278,11 @@ class RuleSet {
         }
 
         if (rule.rules) {
-            newRule.rules = RuleSet.normalizeRules(rule.rules, refs) as NormalizedRule[];
+            newRule.rules = RuleSet.normalizeRules(rule.rules, refs);
         }
 
         if (rule.oneOf) {
-            newRule.oneOf = RuleSet.normalizeRules(rule.oneOf, refs) as NormalizedRule[];
+            newRule.oneOf = RuleSet.normalizeRules(rule.oneOf, refs);
         }
 
         const keys = Object.keys(rule)
@@ -260,14 +297,14 @@ class RuleSet {
             newRule[key] = rule[key];
         });
 
-        function checkUseSource(newSource) {
+        function checkUseSource(newSource: string) {
             if (useSource && useSource !== newSource) {
                 throw new Error(`Rule can only have one result source (provided ${newSource} and ${useSource})`);
             }
             useSource = newSource;
         }
 
-        function checkResourceSource(newSource) {
+        function checkResourceSource(newSource: string) {
             if (resourceSource && resourceSource !== newSource) {
                 throw new Error(`Rule can only have one resource source (provided ${newSource} and ${resourceSource})`);
             }
@@ -275,9 +312,9 @@ class RuleSet {
         }
 
         if (Array.isArray(newRule.use)) {
-            newRule.use.forEach(function (item: NormalizedLoader) {
+            newRule.use.forEach(function (item: NormalizedUseItemObject) {
                 if (typeof item.options === 'object' && item.options && item.options.ident) {
-                    refs[`$${item.options.ident}`] = item.options;
+                    refs[`$${item.options.ident}`] = item.options as { ident: string };
                 }
             });
         }
@@ -285,14 +322,14 @@ class RuleSet {
         return newRule;
     }
 
-    static normalizeUse(use) {
+    static normalizeUse(use: UseItem | UseItem[]): NormalizedUseItem[] {
         if (Array.isArray(use)) {
             return use.map(RuleSet.normalizeUse).reduce((arr, items) => arr.concat(items), []);
         }
         return [RuleSet.normalizeUseItem(use)];
     }
 
-    static normalizeUseItem(item) {
+    static normalizeUseItem(item: UseItem): NormalizedUseItem {
         if (typeof item === 'function') {
             return item;
         }
@@ -310,7 +347,7 @@ class RuleSet {
             };
         }
 
-        const newItem = {} as NormalizedLoader;
+        const newItem = {} as NormalizedUseItemObject;
 
         if (item.options && item.query) {
             throw new Error('Provided options and query in use');
@@ -331,7 +368,7 @@ class RuleSet {
         return newItem;
     }
 
-    static normalizeCondition(condition) {
+    static normalizeCondition(condition: Condition): ConditionFunc {
         if (!condition) {
             throw new Error('Expected condition but got falsy value');
         }
@@ -351,10 +388,10 @@ class RuleSet {
         if (typeof condition !== 'object') {
             throw Error(`Unexcepted ${typeof condition} when condition was expected (${condition})`);
         }
-        const matchers = [];
+        const matchers: any = [];
         Object.keys(condition)
             .forEach(key => {
-                const value = condition[key];
+                const value: any = condition[key];
                 switch (key) {
                     case 'or':
                     case 'include':
@@ -365,7 +402,7 @@ class RuleSet {
                         break;
                     case 'and':
                         if (value) {
-                            const items = value.map(c => RuleSet.normalizeCondition(c));
+                            const items = (value as ConditionArray).map(c => RuleSet.normalizeCondition(c));
                             matchers.push(andMatcher(items));
                         }
                         break;
@@ -389,7 +426,7 @@ class RuleSet {
         return andMatcher(matchers);
     }
 
-    static buildErrorMessage(condition, error) {
+    static buildErrorMessage(condition: Condition, error: Error) {
         const conditionAsText = JSON.stringify(
             condition,
             (key, value) => value === undefined ? 'undefined' : value,
@@ -398,15 +435,15 @@ class RuleSet {
         return `${error.message} in ${conditionAsText}`;
     }
 
-    exec(data) {
-        const result = [];
+    exec(data: RuleExecData) {
+        const result: RuleExecResult[] = [];
         this._run(data, {
             rules: this.rules
         }, result);
         return result;
     }
 
-    _run(data, rule, result) {
+    _run(data: RuleExecData, rule: NormalizedRule, result: RuleExecResult[]) {
         // test conditions
         if (rule.resource && !data.resource) {
             return false;
@@ -465,7 +502,7 @@ class RuleSet {
         return true;
     }
 
-    findOptionsByIdent(ident) {
+    findOptionsByIdent(ident: string) {
         const options = this.references[`$${ident}`];
         if (!options) {
             throw new Error(`Can't find options with ident '${ident}'`);
@@ -476,12 +513,12 @@ class RuleSet {
 
 export = RuleSet;
 
-function notMatcher(matcher) {
-    return (str) => !matcher(str);
+function notMatcher(matcher: ConditionFunc) {
+    return (str: string) => !matcher(str);
 }
 
-function orMatcher(items) {
-    return (str) => {
+function orMatcher(items: ConditionFunc[]) {
+    return (str: string) => {
         for (let item of items) {
             if (item(str)) {
                 return true;
@@ -491,8 +528,8 @@ function orMatcher(items) {
     };
 }
 
-function andMatcher(items) {
-    return (str) => {
+function andMatcher(items: ConditionFunc[]) {
+    return (str: string) => {
         for (let item of items) {
             if (!item(str)) {
                 return false;

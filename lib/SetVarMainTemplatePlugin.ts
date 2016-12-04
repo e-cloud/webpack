@@ -3,7 +3,9 @@
  Author Tobias Koppers @sokra
  */
 import { ConcatSource } from 'webpack-sources'
+import { Hash } from 'crypto'
 import Compilation = require('./Compilation')
+import Chunk = require('./Chunk')
 
 class SetVarMainTemplatePlugin {
     constructor(public varExpression: string, public copyObject?: boolean) {
@@ -11,7 +13,7 @@ class SetVarMainTemplatePlugin {
 
     apply(compilation: Compilation) {
         const mainTemplate = compilation.mainTemplate;
-        compilation.templatesPlugin('render-with-entry', (source, chunk, hash) => {
+        compilation.templatesPlugin('render-with-entry', (source: string, chunk: Chunk, hash: string) => {
             const varExpression = mainTemplate.applyPluginsWaterfall('asset-path', this.varExpression, {
                 hash,
                 chunk
@@ -24,13 +26,14 @@ class SetVarMainTemplatePlugin {
                 return new ConcatSource(prefix, source);
             }
         });
-        mainTemplate.plugin('global-hash-paths', function (paths) {
+        mainTemplate.plugin('global-hash-paths', function (paths: string[]) {
+            // todo: this is no varExpression in MainTemplate, may refer wrongly
             if (this.varExpression) {
                 paths.push(this.varExpression);
             }
             return paths;
         });
-        mainTemplate.plugin('hash', hash => {
+        mainTemplate.plugin('hash', (hash: Hash) => {
             hash.update('set var');
             hash.update(`${this.varExpression}`);
             hash.update(`${this.copyObject}`);

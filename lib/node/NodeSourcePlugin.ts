@@ -10,15 +10,17 @@ import ModuleParserHelpers = require('../ModuleParserHelpers');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
+import Module = require('../Module')
+import { CompilationParams, NodeOption, ParserOptions } from '../../typings/webpack-types'
 
 class NodeSourcePlugin {
-    constructor(public options) {
+    constructor(public options: NodeOption) {
     }
 
     apply(compiler: Compiler) {
         const options = this.options;
 
-        function getPathToModule(module, type) {
+        function getPathToModule(module: string, type: boolean | string) {
             if (type === true || type === undefined && nodeLibsBrowser[module]) {
                 if (!nodeLibsBrowser[module]) {
                     throw new Error(`No browser version for node.js core module '${module}' available`);
@@ -36,7 +38,7 @@ class NodeSourcePlugin {
             }
         }
 
-        function buildExpression(context, pathToModule) {
+        function buildExpression(context: string, pathToModule: string) {
             let moduleJsPath = path.relative(context, pathToModule);
             if (!/^[A-Z]:/i.test(moduleJsPath)) {
                 moduleJsPath = `./${moduleJsPath.replace(/\\/g, '/')}`;
@@ -44,7 +46,7 @@ class NodeSourcePlugin {
             return `require(${JSON.stringify(moduleJsPath)})`;
         }
 
-        function addExpression(parser, name, module, type, suffix = '') {
+        function addExpression(parser: Parser, name: string, module: string, type: string | boolean, suffix = '') {
             parser.plugin(`expression ${name}`, function () {
                 if (this.state.module && this.state.module.resource === getPathToModule(module, type)) {
                     return;
@@ -53,8 +55,8 @@ class NodeSourcePlugin {
             });
         }
 
-        compiler.plugin('compilation', function (compilation: Compilation, params) {
-            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
+        compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions: ParserOptions) {
                 if (parserOptions.node === false) {
                     return;
                 }
@@ -89,7 +91,7 @@ class NodeSourcePlugin {
                 }
             });
         });
-        compiler.plugin('after-resolvers', function (compiler) {
+        compiler.plugin('after-resolvers', function (compiler: Compiler) {
             const alias = {};
             Object.keys(nodeLibsBrowser).forEach(lib => {
                 if (options[lib] !== false) {

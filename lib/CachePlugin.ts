@@ -5,6 +5,8 @@
 import async = require('async');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import { Stats } from 'fs'
+import ErrnoException = NodeJS.ErrnoException
 
 class CachePlugin {
     FS_ACCURENCY: number
@@ -29,11 +31,11 @@ class CachePlugin {
                     compilation.warnings.push(new Error(`CachePlugin - Cache cannot be used because of: ${compilation.notCacheable}`));
                 }
             });
-            compiler.plugin('watch-run', (compiler, callback) => {
+            compiler.plugin('watch-run', (compiler: Compiler, callback) => {
                 this.watching = true;
                 callback();
             });
-            compiler.plugin('run', (compiler, callback) => {
+            compiler.plugin('run', (compiler: Compiler, callback) => {
                 if (!compiler._lastCompilationFileDependencies) {
                     return callback();
                 }
@@ -42,7 +44,7 @@ class CachePlugin {
                 async.each(
                     compiler._lastCompilationFileDependencies,
                     (file: string, callback) => {
-                        fs.stat(file, (err, stat) => {
+                        fs.stat(file, (err: ErrnoException, stat: Stats) => {
                             if (err) {
                                 if (err.code === 'ENOENT') {
                                     return callback();

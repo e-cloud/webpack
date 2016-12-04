@@ -8,16 +8,14 @@ import DllModuleFactory = require('./DllModuleFactory');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import NormalModuleFactory = require('./NormalModuleFactory')
+import { CompilationParams } from '../typings/webpack-types'
 
 class DllEntryPlugin {
     constructor(public context: string, public entries: string[], public name: string, public type?: string) {
     }
 
     apply(compiler: Compiler) {
-        compiler.plugin('compilation', (
-            compilation: Compilation,
-            params: {normalModuleFactory: NormalModuleFactory}
-        ) => {
+        compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
             const dllModuleFactory = new DllModuleFactory();
             const normalModuleFactory = params.normalModuleFactory;
 
@@ -25,6 +23,7 @@ class DllEntryPlugin {
 
             compilation.dependencyFactories.set(SingleEntryDependency, normalModuleFactory);
         });
+
         compiler.plugin('make', (compilation: Compilation, callback) => {
             compilation.addEntry(
                 this.context,

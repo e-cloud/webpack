@@ -6,9 +6,16 @@
     "noEmit": false,
     "sourceMap": true,
     "lib": [
-      "es2016"
+      "es2016",
+      "dom"
     ],
-    "declaration": false
+    "declaration": false,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "suppressImplicitAnyIndexErrors": true,
+    "pretty": true,
+    "noImplicitReturns": false,
+    "strictNullChecks": false
   },
   "exclude": [
     "node_modules"

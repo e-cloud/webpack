@@ -3,18 +3,27 @@
  Author Tobias Koppers @sokra
  */
 import Dependency = require('../Dependency');
+import { SourceRange } from '../../typings/webpack-types'
+import ContextModule = require('../ContextModule')
 
 class ContextDependency extends Dependency {
     async: boolean
     userRequest: string
+    critical?: false | string
+    replaces: {
+        range: SourceRange
+        value: string
+    }[]
+    prepend?: string
+    module: ContextModule
 
-    constructor(public request: string, public recursive: string, public regExp: RegExp) {
+    constructor(public request: string, public recursive: boolean, public regExp: RegExp) {
         super();
         this.userRequest = request;
         this.async = false;
     }
 
-    isEqualResource(other: Dependency) {
+    isEqualResource(other: Dependency): boolean {
         if (!(other instanceof ContextDependency)) {
             return false;
         }

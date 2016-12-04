@@ -6,11 +6,12 @@ import DependenciesBlock = require('./DependenciesBlock');
 import Chunk = require('./Chunk')
 import Module = require('./Module')
 import { Hash } from 'crypto'
+import { SourceLocation } from 'estree'
 
 class AsyncDependenciesBlock extends DependenciesBlock {
     chunks: Chunk[]
 
-    constructor(public chunkName: string, public module: Module, public loc) {
+    constructor(public chunkName: string, public module: Module, public loc: SourceLocation) {
         super();
         this.chunks = null;
 

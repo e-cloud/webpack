@@ -3,6 +3,8 @@
  Author Tobias Koppers @sokra
  */
 import Watchpack = require('watchpack');
+import { WatchOptions, ErrCallback, AbstractInputFileSystem } from '../../typings/webpack-types'
+import * as Resolve from 'enhanced-resolve'
 
 class NodeWatchFileSystem {
     watcherOptions: {
@@ -10,14 +12,22 @@ class NodeWatchFileSystem {
     }
     watcher: Watchpack
 
-    constructor(public inputFileSystem) {
+    constructor(public inputFileSystem: AbstractInputFileSystem) {
         this.watcherOptions = {
             aggregateTimeout: 0
         };
         this.watcher = new Watchpack(this.watcherOptions);
     }
 
-    watch(files, dirs, missing, startTime, options, callback, callbackUndelayed) {
+    watch(
+        files: string[],
+        dirs: string[],
+        missing: string[],
+        startTime: number,
+        options: WatchOptions,
+        callback: ErrCallback,
+        callbackUndelayed: (fileName: string, changeTime: number) => any
+    ) {
         if (!Array.isArray(files)) {
             throw new Error('Invalid arguments: \'files\'');
         }
@@ -46,16 +56,16 @@ class NodeWatchFileSystem {
             this.watcher.once('change', callbackUndelayed);
         }
 
-        this.watcher.once('aggregated', changes => {
+        this.watcher.once('aggregated', (changes: string[]) => {
             if (this.inputFileSystem && this.inputFileSystem.purge) {
                 this.inputFileSystem.purge(changes);
             }
             const times = this.watcher.getTimes();
             callback(
                 null,
-                changes.filter(file => files.includes(file)).sort(),
-                changes.filter(file => dirs.includes(file)).sort(),
-                changes.filter(file => missing.includes(file)).sort(),
+                changes.filter((file: string) => files.includes(file)).sort(),
+                changes.filter((file: string) => dirs.includes(file)).sort(),
+                changes.filter((file: string) => missing.includes(file)).sort(),
                 times,
                 times
             );

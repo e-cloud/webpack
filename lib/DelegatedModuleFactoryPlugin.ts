@@ -4,6 +4,9 @@
  */
 import DelegatedModule = require('./DelegatedModule');
 import NormalModuleFactory = require('./NormalModuleFactory')
+import NormalModule = require('./NormalModule')
+import DelegatedPlugin = require('./DelegatedPlugin')
+import { NMFBeforeResolveResult, ErrCallback } from '../typings/webpack-types'
 
 // options.source
 // options.type
@@ -11,16 +14,7 @@ import NormalModuleFactory = require('./NormalModuleFactory')
 // options.scope
 // options.content
 class DelegatedModuleFactoryPlugin {
-    constructor(
-        public options: {
-            type: string
-            extensions: string[]
-            scope: string
-            content: {}
-            context: string
-            source: string
-        }
-    ) {
+    constructor(public options: DelegatedPlugin.Option) {
         options.type = options.type || 'require';
         options.extensions = options.extensions || ['', '.js'];
     }
@@ -29,7 +23,7 @@ class DelegatedModuleFactoryPlugin {
         const scope = this.options.scope;
         if (scope) {
             normalModuleFactory.plugin('factory', factory =>
-                (data, callback) => {
+                (data: NMFBeforeResolveResult, callback: ErrCallback) => {
                     const dependency = data.dependencies[0];
                     const request = dependency.request;
                     if (request && request.indexOf(`${scope}/`) === 0) {
@@ -47,7 +41,7 @@ class DelegatedModuleFactoryPlugin {
             );
         }
         else {
-            normalModuleFactory.plugin('module', module => {
+            normalModuleFactory.plugin('module', (module: NormalModule) => {
                 if (module.libIdent) {
                     const request = module.libIdent(this.options);
                     if (request && request in this.options.content) {

@@ -8,17 +8,21 @@ import Tapable = require('tapable');
 import ContextModule = require('./ContextModule');
 import ContextElementDependency = require('./dependencies/ContextElementDependency');
 import ContextDependency = require('./dependencies/ContextDependency')
+import { CMFBeforeResolveResult, ErrCallback, AlternativeModule, AbstractInputFileSystem } from '../typings/webpack-types'
+import { Stats } from 'fs'
+import Compiler = require('./Compiler')
+import * as Resolve from 'enhanced-resolve'
 
 class ContextModuleFactory extends Tapable {
-    constructor(public resolvers) {
+    constructor(public resolvers: Compiler.Resolvers) {
         super();
     }
 
     create(
         data: {
             context: string
-            dependencies: ContextDependency[]
-        }, callback
+            dependencies: [ContextDependency]
+        }, callback: ErrCallback
     ) {
         const module = this;
         const context = data.context;
@@ -31,7 +35,7 @@ class ContextModuleFactory extends Tapable {
             regExp: dependency.regExp,
             async: dependency.async,
             dependencies
-        }, (err, result) => {
+        } as CMFBeforeResolveResult, (err, result: CMFBeforeResolveResult) => {
             if (err) {
                 return callback(err);
             }
@@ -48,22 +52,22 @@ class ContextModuleFactory extends Tapable {
             const asyncContext = result.async;
             const dependencies = result.dependencies;
 
-            let loaders;
-            let resource;
+            let loaders: string[];
+            let resource: string;
             let loadersPrefix = '';
             const idx = request.lastIndexOf('!');
             if (idx >= 0) {
-                loaders = request.substr(0, idx + 1);
+                let loaderStr = request.substr(0, idx + 1);
                 let i = 0
-                for (; i < loaders.length && loaders[i] === '!'; i++) {
+                for (; i < loaderStr.length && loaderStr[i] === '!'; i++) {
                     loadersPrefix += '!';
                 }
-                loaders = loaders.substr(i).replace(/!+$/, '').replace(/!!+/g, '!');
-                if (loaders === '') {
+                loaderStr = loaderStr.substr(i).replace(/!+$/, '').replace(/!!+/g, '!');
+                if (loaderStr === '') {
                     loaders = [];
                 }
                 else {
-                    loaders = loaders.split('!');
+                    loaders = loaderStr.split('!');
                 }
                 resource = request.substr(idx + 1);
             }
@@ -76,7 +80,7 @@ class ContextModuleFactory extends Tapable {
 
             async.parallel([
                 callback => {
-                    resolvers.context.resolve({}, context, resource, (err, result) => {
+                    resolvers.context.resolve({}, context, resource, (err: Error, result) => {
                         if (err) {
                             return callback(err);
                         }
@@ -85,7 +89,7 @@ class ContextModuleFactory extends Tapable {
                 },
                 callback => {
                     async.map(loaders, (loader, callback) => {
-                        resolvers.loader.resolve({}, context, loader, (err, result) => {
+                        resolvers.loader.resolve({}, context, loader, (err: Error, result) => {
                             if (err) {
                                 return callback(err, null);
                             }
@@ -93,7 +97,7 @@ class ContextModuleFactory extends Tapable {
                         });
                     }, callback);
                 }
-            ], (err, result: string[][]) => {
+            ], (err: Error, result: string[][]) => {
                 if (err) {
                     return callback(err);
                 }
@@ -122,12 +126,12 @@ class ContextModuleFactory extends Tapable {
         });
     }
 
-    resolveDependencies(fs, resource, recursive, regExp, callback) {
+    resolveDependencies(fs: AbstractInputFileSystem, resource: string, recursive: boolean, regExp: RegExp, callback: ErrCallback) {
         if (!regExp || !resource) {
             return callback(null, []);
         }
-        (function addDirectory(directory, callback) {
-            fs.readdir(directory, (err, files) => {
+        (function addDirectory(directory: string, callback: ErrCallback) {
+            fs.readdir(directory, (err: Error, files: string[]) => {
                 if (err) {
                     return callback(err);
                 }
@@ -136,10 +140,10 @@ class ContextModuleFactory extends Tapable {
                 }
                 async.map(
                     files.filter(p => p.indexOf('.') !== 0),
-                    (seqment, callback: (err?: Error, result?) => void) => {
+                    (seqment, callback: (err?: Error, result?: any) => void) => {
                         const subResource = path.join(directory, seqment);
 
-                        fs.stat(subResource, (err, stat) => {
+                        fs.stat(subResource, (err: Error, stat: Stats) => {
                             if (err) {
                                 return callback(err);
                             }
@@ -158,16 +162,21 @@ class ContextModuleFactory extends Tapable {
                                     request: `.${subResource.substr(resource.length).replace(/\\/g, '/')}`
                                 };
 
-                                this.applyPluginsAsyncWaterfall('alternatives', [obj], (err, alternatives) => {
+                                this.applyPluginsAsyncWaterfall('alternatives', [obj], (
+                                    err: Error,
+                                    alternatives: AlternativeModule[]
+                                ) => {
                                     if (err) {
                                         return callback(err);
                                     }
-                                    alternatives = alternatives.filter(obj => regExp.test(obj.request)).map(obj => {
-                                        const dep = new ContextElementDependency(obj.request);
-                                        dep.optional = true;
-                                        return dep;
-                                    });
-                                    callback(null, alternatives);
+                                    const newAlternatives = alternatives
+                                        .filter(obj => regExp.test(obj.request))
+                                        .map(obj => {
+                                            const dep = new ContextElementDependency(obj.request);
+                                            dep.optional = true;
+                                            return dep;
+                                        });
+                                    callback(null, newAlternatives);
                                 });
                             }
                             else {

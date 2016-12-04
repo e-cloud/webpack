@@ -28,7 +28,7 @@ class WarnCaseSensitiveModulesPlugin {
                             this.warnings.push(new CaseSensitiveModulesWarning(moduleWithoutCase[key]));
                         }
                     }
-                );
+                    , this);
             });
         });
     }

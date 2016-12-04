@@ -9,9 +9,11 @@ import HarmonyExportSpecifierDependency = require('./HarmonyExportSpecifierDepen
 import HarmonyExportImportedSpecifierDependency = require('./HarmonyExportImportedSpecifierDependency');
 import HarmonyImportDependency = require('./HarmonyImportDependency');
 import HarmonyModulesHelpers = require('./HarmonyModulesHelpers');
+import { Statement, ExportNamedDeclaration, ExportDefaultDeclaration, Expression, Node } from 'estree'
+import Parser = require('../Parser')
 
 export = AbstractPlugin.create({
-    'export'(statement) {
+    'export'(this: Parser, statement: ExportNamedDeclaration | ExportDefaultDeclaration) {
         const dep = new HarmonyExportHeaderDependency(statement.declaration && statement.declaration.range, statement.range);
         dep.loc = statement.loc;
         this.state.current.addDependency(dep);
@@ -19,25 +21,29 @@ export = AbstractPlugin.create({
         this.state.module.strict = true;
         return true;
     },
-    'export import'(statement, source) {
+    'export import'(this: Parser, statement: Statement, source: string) {
         const dep = new HarmonyImportDependency(source, HarmonyModulesHelpers.getNewModuleVar(this.state, source), statement.range);
         dep.loc = statement.loc;
         this.state.current.addDependency(dep);
+        // todo: typo
         this.state.lastHarmoryImport = dep;
         this.state.module.meta.harmonyModule = true;
         this.state.module.strict = true;
         return true;
     },
-    'export expression'(statement, expr) {
+    'export expression'(this: Parser, statement: Statement, expr: Expression) {
         const dep = new HarmonyExportExpressionDependency(this.state.module, expr.range, statement.range);
         dep.loc = statement.loc;
         this.state.current.addDependency(dep);
         this.state.module.strict = true;
         return true;
     },
-    'export declaration'(statement) {
+    'export declaration'(statement: any) {
     },
-    'export specifier'(statement, id, name) {
+    'export specifier'(
+        this: Parser, statement: ExportDefaultDeclaration | ExportNamedDeclaration, id: number,
+        name: string
+    ) {
         const rename = this.scope.renames[`$${id}`];
         let dep;
         if (rename === 'imported var') {
@@ -55,7 +61,8 @@ export = AbstractPlugin.create({
         this.state.current.addDependency(dep);
         return true;
     },
-    'export import specifier'(statement, source, id, name) {
+    'export import specifier'(this: Parser, statement: Statement, source: string, id: string, name: string) {
+        // todo: here has typo
         const dep = new HarmonyExportImportedSpecifierDependency(this.state.module, this.state.lastHarmoryImport, HarmonyModulesHelpers.getModuleVar(this.state, source), id, name, 0);
         dep.loc = statement.loc;
         this.state.current.addDependency(dep);
@@ -63,7 +70,7 @@ export = AbstractPlugin.create({
     }
 });
 
-function isImmutableStatement(statement) {
+function isImmutableStatement(statement: Node) {
     if (statement.type === 'FunctionDeclaration') {
         return true;
     }
@@ -76,7 +83,7 @@ function isImmutableStatement(statement) {
     return false;
 }
 
-function isHoistedStatement(statement) {
+function isHoistedStatement(statement: Node) {
     if (statement.type === 'FunctionDeclaration') {
         return true;
     }

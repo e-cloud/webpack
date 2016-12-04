@@ -8,14 +8,15 @@ import NullFactory = require('./NullFactory');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Parser = require('./Parser')
+import { CompilationParams, PlainObject } from '../typings/webpack-types'
 
 class DefinePlugin {
-    constructor(public definitions: {}) {
+    constructor(public definitions: PlainObject) {
     }
 
     apply(compiler: Compiler) {
         const definitions = this.definitions;
-        compiler.plugin('compilation', function (compilation: Compilation, params) {
+        compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
             compilation.dependencyFactories.set(ConstDependency, new NullFactory());
             compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
 
@@ -33,14 +34,14 @@ class DefinePlugin {
                     });
                 })(definitions, '');
 
-                function stringifyObj(obj) {
+                function stringifyObj(obj: PlainObject): string {
                     return `{${Object.keys(obj).map(key => {
                         const code = obj[key];
                         return JSON.stringify(key) + ':' + toCode(code);
                     }).join(',')}}`;
                 }
 
-                function toCode(code) {
+                function toCode(code: any): string {
                     if (code === null) {
                         return 'null';
                     }
@@ -61,7 +62,7 @@ class DefinePlugin {
                     }
                 }
 
-                function applyDefineKey(prefix, key) {
+                function applyDefineKey(prefix: string, key: string) {
                     const splittedKey = key.split('.');
                     splittedKey.slice(1).forEach((_, i) => {
                         const fullKey = prefix + splittedKey.slice(0, i + 1).join('.');
@@ -69,7 +70,7 @@ class DefinePlugin {
                     });
                 }
 
-                function applyDefine(key, code) {
+                function applyDefine(key: string, code: any) {
                     const isTypeof = /^typeof\s+/.test(key);
                     if (isTypeof) {
                         key = key.replace(/^typeof\s+/, '');
@@ -79,7 +80,7 @@ class DefinePlugin {
                     code = toCode(code);
                     if (!isTypeof) {
                         parser.plugin(`can-rename ${key}`, () => true);
-                        parser.plugin(`evaluate Identifier ${key}`, function (this: Parser, expr) {
+                        parser.plugin(`evaluate Identifier ${key}`, function (expr) {
                             if (recurse) {
                                 return;
                             }
@@ -89,7 +90,7 @@ class DefinePlugin {
                             res.setRange(expr.range);
                             return res;
                         });
-                        parser.plugin(`expression ${key}`, function (this: Parser, expr) {
+                        parser.plugin(`expression ${key}`, function (expr) {
                             const dep = new ConstDependency(code, expr.range);
                             dep.loc = expr.loc;
                             this.state.current.addDependency(dep);
@@ -97,7 +98,7 @@ class DefinePlugin {
                         });
                     }
                     const typeofCode = isTypeof ? code : `typeof (${code})`;
-                    parser.plugin(`evaluate typeof ${key}`, function (this: Parser, expr) {
+                    parser.plugin(`evaluate typeof ${key}`, function (expr) {
                         if (recurseTypeof) {
                             return;
                         }
@@ -107,7 +108,7 @@ class DefinePlugin {
                         res.setRange(expr.range);
                         return res;
                     });
-                    parser.plugin(`typeof ${key}`, function (this: Parser, expr) {
+                    parser.plugin(`typeof ${key}`, function (expr) {
                         const res = this.evaluate(typeofCode);
                         if (!res.isString()) {
                             return;
@@ -119,20 +120,20 @@ class DefinePlugin {
                     });
                 }
 
-                function applyObjectDefine(key, obj) {
+                function applyObjectDefine(key: string, obj: PlainObject) {
                     const code = stringifyObj(obj);
                     parser.plugin(`can-rename ${key}`, () => true);
                     parser.plugin(`evaluate Identifier ${key}`,
                         expr => new BasicEvaluatedExpression().setRange(expr.range));
                     parser.plugin(`evaluate typeof ${key}`,
                         expr => new BasicEvaluatedExpression().setString('object').setRange(expr.range));
-                    parser.plugin(`expression ${key}`, function (this: Parser, expr) {
+                    parser.plugin(`expression ${key}`, function (expr) {
                         const dep = new ConstDependency(code, expr.range);
                         dep.loc = expr.loc;
                         this.state.current.addDependency(dep);
                         return true;
                     });
-                    parser.plugin(`typeof ${key}`, function (this: Parser, expr) {
+                    parser.plugin(`typeof ${key}`, function (expr) {
                         const dep = new ConstDependency('"object"', expr.range);
                         dep.loc = expr.loc;
                         this.state.current.addDependency(dep);

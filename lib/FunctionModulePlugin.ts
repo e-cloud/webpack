@@ -6,9 +6,10 @@ import FunctionModuleTemplatePlugin = require('./FunctionModuleTemplatePlugin');
 import RequestShortener = require('./RequestShortener');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import { WebpackOutputOptions } from '../typings/webpack-types'
 
 class FunctionModulePlugin {
-    constructor(public options, public requestShortener?: RequestShortener) {
+    constructor(public options: WebpackOutputOptions, public requestShortener?: RequestShortener) {
     }
 
     apply(compiler: Compiler) {

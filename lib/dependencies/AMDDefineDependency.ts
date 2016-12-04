@@ -4,9 +4,12 @@
  */
 import NullDependency = require('./NullDependency');
 import LocalModule = require('./LocalModule')
+import Dependency = require('../Dependency')
+import { ReplaceSource } from 'webpack-sources'
+import { SourceRange } from '../../typings/webpack-types'
 
 class Template {
-    apply(dep, source) {
+    apply(dep: AMDDefineDependency, source: ReplaceSource) {
         const localModuleVar = dep.localModule && dep.localModule.used && dep.localModule.variableName();
 
         function replace(def: string, text: string) {
@@ -44,9 +47,7 @@ class Template {
             + (dep.objectRange ? 'o' : '')
             + (dep.functionRange ? 'f' : '');
 
-        const defs: {
-            [prop: string]: [string, string]
-        } = {
+        const defs: Dictionary<[string, string]> = {
             f: [
                 'var __WEBPACK_AMD_DEFINE_RESULT__;',
                 '!(__WEBPACK_AMD_DEFINE_RESULT__ = #.call(exports, __webpack_require__, exports, module), ' +
@@ -101,7 +102,12 @@ class AMDDefineDependency extends NullDependency {
     type: string
     localModule: LocalModule
 
-    constructor(public range, public arrayRange, public functionRange, public objectRange) {
+    constructor(
+        public range: SourceRange,
+        public arrayRange: SourceRange,
+        public functionRange: SourceRange,
+        public objectRange: SourceRange
+    ) {
         super();
     }
 

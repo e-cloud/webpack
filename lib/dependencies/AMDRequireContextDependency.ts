@@ -4,11 +4,18 @@
  */
 import ContextDependency = require('./ContextDependency');
 import CriticalDependencyWarning = require('./CriticalDependencyWarning');
+import { SourceRange } from '../../typings/webpack-types'
 
 class AMDRequireContextDependency extends ContextDependency {
-    critical: boolean
+    critical: false | string
 
-    constructor(request, recursive, regExp, public range, public valueRange) {
+    constructor(
+        request: string,
+        recursive: boolean,
+        regExp: RegExp,
+        public range: SourceRange,
+        public valueRange: SourceRange
+    ) {
         super(request, recursive, regExp);
     }
 

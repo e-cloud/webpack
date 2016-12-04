@@ -4,6 +4,7 @@
  */
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
 import Compilation = require('./Compilation')
+import Module = require('./Module')
 
 class SourceMapDevToolModuleOptionsPlugin {
     constructor(
@@ -16,17 +17,17 @@ class SourceMapDevToolModuleOptionsPlugin {
 
     apply(compilation: Compilation) {
         if (this.options.module !== false) {
-            compilation.plugin('build-module', function (module) {
+            compilation.plugin('build-module', function (module: Module) {
                 module.useSourceMap = true;
             });
         }
         if (this.options.lineToLine === true) {
-            compilation.plugin('build-module', function (module) {
+            compilation.plugin('build-module', function (module: Module) {
                 module.lineToLine = true;
             });
         }
         else if (this.options.lineToLine) {
-            compilation.plugin('build-module', module => {
+            compilation.plugin('build-module', (module: Module) => {
                 if (!module.resource) {
                     return;
                 }

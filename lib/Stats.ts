@@ -4,22 +4,130 @@
  */
 import RequestShortener = require('./RequestShortener');
 import Compilation = require('./Compilation')
+import { StatsOptions, PlainObject, WebpackError } from '../typings/webpack-types'
+import Module = require('./Module')
+import NormalModule = require('./NormalModule')
+import ModuleNotFoundError = require('./ModuleNotFoundError');
+import ModuleError = require('./ModuleError');
+import ModuleBuildError = require('./ModuleBuildError');
+import ModuleParseError = require('./ModuleParseError');
+import ModuleWarning = require('./ModuleWarning');
+import ModuleDependencyWarning = require('./ModuleDependencyWarning');
+import Dependency = require('./Dependency');
+import Chunk = require('./Chunk');
 
 interface Colors {
-    bold(str: string): void
-    yellow(str: string): void
-    red(str: string): void
-    green(str: string): void
-    cyan(str: string): void
-    magenta(str: string): void
-    normal(str: string): void
+    bold(str: string | number): void
+    cyan(str: string| number): void
+    green(str: string| number): void
+    magenta(str: string| number): void
+    normal(str: string| number): void
+    red(str: string| number): void
+    yellow(str: string| number): void
+}
+
+interface StatsChunkOrigin {
+    loc: string
+    module: string
+    moduleId: number
+    moduleIdentifier: string
+    moduleName: string
+    name: string
+    reasons: string[]
+}
+
+interface StatsReason {
+    loc?: string
+    module: string
+    moduleId: number
+    moduleIdentifier: string
+    moduleName: string
+    type: string
+    userRequest: string
+}
+
+interface StatsModule {
+    assets: string[]
+    built: boolean
+    cacheable: boolean
+    chunks: number[]
+    errors: number
+    failed: boolean
+    id: number
+    identifier: string
+    index2: number
+    index: number
+    issuer: string
+    issuerId: number
+    issuerName: string
+    name: string
+    optional: boolean
+    prefetched: boolean
+    profile: Module.Profile
+    reasons?: StatsReason[]
+    size: number
+    warnings: number
+    usedExports?: string[] | boolean
+    providedExports?: string[]
+    source?: string
+}
+
+interface StatsChunk {
+    entry: boolean
+    extraAsync: boolean
+    files: string[]
+    filteredModules?: number
+    hash: string
+    id: number
+    initial: boolean
+    loc?: string
+    modules?: StatsModule[]
+    names: string[]
+    origins?: StatsChunkOrigin[]
+    parents: number[]
+    recorded: boolean
+    rendered: boolean
+    size: number
+}
+
+interface StatsAsset {
+    chunkNames: string[]
+    chunks: number[]
+    emitted: boolean
+    name: string
+    size: number
+}
+
+interface StatsEntryPoint {
+    chunks: number[]
+    assets: string[]
+}
+
+interface StatsJson {
+    _showErrors: boolean
+    _showWarnings: boolean
+    assets: StatsAsset[]
+    assetsByChunkName: Dictionary<string[] | string>
+    children: StatsJson[]
+    chunks: StatsChunk[]
+    entrypoints: Dictionary<StatsEntryPoint>
+    errors: string[]
+    filteredModules: number
+    hash: string
+    modules: StatsModule[]
+    name: string
+    needAdditionalPass: boolean
+    publicPath: string
+    time: number
+    version: string
+    warnings: string[]
 }
 
 class Stats {
     compilation: Compilation
+    endTime: number
     hash: string
     startTime: number
-    endTime: number
 
     constructor(compilation: Compilation) {
         this.compilation = compilation;
@@ -34,15 +142,15 @@ class Stats {
         return this.compilation.errors.length > 0;
     }
 
-    toJson(options, forToString: boolean) {
+    toJson(options: StatsOptions, forToString: boolean) {
         if (typeof options === 'boolean' || typeof options === 'string') {
             options = Stats.presetToOptions(options);
         }
         else if (!options) {
-            options = {};
+            options = {} as StatsOptions;
         }
 
-        function d(v, def) {
+        function d(v: any, def: any) {
             return v === undefined ? def : v;
         }
 
@@ -78,7 +186,7 @@ class Stats {
         const sortChunks = d(options.chunksSort, 'id');
         const sortAssets = d(options.assetsSort, '');
 
-        function moduleFilter(module) {
+        function moduleFilter(module: Module) {
             if (!showCachedModules && !module.built) {
                 return false;
             }
@@ -89,20 +197,20 @@ class Stats {
             return !excludeModules.some(regExp => regExp.test(ident));
         }
 
-        function sortByField(field) {
+        function sortByField(field: string) {
             if (!field) {
                 return () => 0;
             }
             if (field[0] === '!') {
                 field = field.substr(1);
-                return (a, b) => {
+                return (a: PlainObject, b: PlainObject) => {
                     if (a[field] === b[field]) {
                         return 0;
                     }
                     return a[field] < b[field] ? 1 : -1;
                 };
             }
-            return (a, b) => {
+            return (a: PlainObject, b: PlainObject) => {
                 if (a[field] === b[field]) {
                     return 0;
                 }
@@ -110,36 +218,34 @@ class Stats {
             };
         }
 
-        function formatError(e) {
+        function formatError(e: WebpackError | string) {
             let text = '';
-            if (typeof e === 'string') {
-                e = {
-                    message: e
-                };
-            }
-            if (e.chunk) {
-                text += `chunk ${e.chunk.name || e.chunk.id}${e.chunk.hasRuntime()
+            let err: WebpackError = typeof e === 'string' ? {
+                message: e
+            } : e;
+            if (err.chunk) {
+                text += `chunk ${err.chunk.name || err.chunk.id}${err.chunk.hasRuntime()
                     ? ' [entry]'
-                    : e.chunk.isInitial()
+                    : err.chunk.isInitial()
                     ? ' [initial]'
                     : ''}\n`;
             }
-            if (e.file) {
-                text += `${e.file}\n`;
+            if (err.file) {
+                text += `${err.file}\n`;
             }
-            if (e.module && e.module.readableIdentifier && typeof e.module.readableIdentifier === 'function') {
-                text += `${e.module.readableIdentifier(requestShortener)}\n`;
+            if (err.module && err.module.readableIdentifier && typeof err.module.readableIdentifier === 'function') {
+                text += `${err.module.readableIdentifier(requestShortener)}\n`;
             }
-            text += e.message;
-            if (showErrorDetails && e.details) {
-                text += `\n${e.details}`;
+            text += err.message;
+            if (showErrorDetails && err.details) {
+                text += `\n${err.details}`;
             }
-            if (showErrorDetails && e.missing) {
-                text += e.missing.map(item => `\n[${item}]`).join('');
+            if (showErrorDetails && err.missing) {
+                text += err.missing.map(item => `\n[${item}]`).join('');
             }
-            if (e.dependencies && e.origin) {
-                text += `\n @ ${e.origin.readableIdentifier(requestShortener)}`;
-                e.dependencies.forEach(dep => {
+            if (err.dependencies && err.origin) {
+                text += `\n @ ${err.origin.readableIdentifier(requestShortener)}`;
+                err.dependencies.forEach(dep => {
                     if (!dep.loc) {
                         return;
                     }
@@ -156,7 +262,7 @@ class Stats {
                         ? dep.loc.end.line + ':'
                         : ''}${dep.loc.end.column}`;
                 });
-                let current = e.origin;
+                let current = err.origin;
                 while (current.issuer) {
                     current = current.issuer;
                     text += `\n @ ${current.readableIdentifier(requestShortener)}`;
@@ -166,10 +272,10 @@ class Stats {
         }
 
         // todo: remove any type
-        const obj: any = {
+        const obj: StatsJson = {
             errors: compilation.errors.map(formatError),
             warnings: compilation.warnings.map(formatError)
-        };
+        } as any;
 
         // We just hint other renderers since actually omitting
         // errors/warnings from the JSON would be kind of weird.
@@ -203,17 +309,20 @@ class Stats {
         if (showAssets) {
             const assetsByFile = {};
             obj.assetsByChunkName = {};
-            obj.assets = Object.keys(compilation.assets).map(asset => {
-                const obj = {
-                    name: asset,
-                    size: compilation.assets[asset].size(),
-                    chunks: [],
-                    chunkNames: [],
-                    emitted: compilation.assets[asset].emitted
-                };
-                assetsByFile[asset] = obj;
-                return obj;
-            }).filter(asset => showCachedAssets || asset.emitted);
+            obj.assets = Object.keys(compilation.assets)
+                .map(asset => {
+                    const obj = {
+                        name: asset,
+                        size: compilation.assets[asset].size(),
+                        chunks: [] as number[],
+                        chunkNames: [] as string[],
+                        emitted: compilation.assets[asset].emitted
+                    };
+                    assetsByFile[asset] = obj;
+                    return obj;
+                })
+                .filter(asset => showCachedAssets || asset.emitted);
+
             compilation.chunks.forEach(chunk => {
                 chunk.files.forEach(asset => {
                     if (assetsByFile[asset]) {
@@ -247,9 +356,9 @@ class Stats {
             });
         }
 
-        function fnModule(module) {
+        function fnModule(module: NormalModule) {
             // todo: remove any type
-            const obj: any = {
+            const obj: StatsModule = {
                 id: module.id,
                 identifier: module.identifier(),
                 name: module.readableIdentifier(requestShortener),
@@ -271,27 +380,31 @@ class Stats {
                 warnings: module.errors && module.dependenciesErrors && module.warnings.length + module.dependenciesWarnings.length
             };
             if (showReasons) {
-                obj.reasons = module.reasons.filter(reason => reason.dependency && reason.module).map(reason => {
-                    // todo: remove any type
-                    const obj: any = {
-                        moduleId: reason.module.id,
-                        moduleIdentifier: reason.module.identifier(),
-                        module: reason.module.readableIdentifier(requestShortener),
-                        moduleName: reason.module.readableIdentifier(requestShortener),
-                        type: reason.dependency.type,
-                        userRequest: reason.dependency.userRequest
-                    };
-                    const dep = reason.dependency;
-                    if (dep.templateModules) {
-                        obj.templateModules = dep.templateModules.map(module => module.id);
-                    }
-                    if (typeof dep.loc === 'object') {
-                        obj.loc = `${dep.loc.start.line}:${dep.loc.start.column}-${dep.loc.start.line !== dep.loc.end.line
-                            ? dep.loc.end.line + ':'
-                            : ''}${dep.loc.end.column}`;
-                    }
-                    return obj;
-                }).sort((a, b) => a.moduleId - b.moduleId);
+                obj.reasons = module.reasons
+                    .filter(reason => reason.dependency && reason.module)
+                    .map(reason => {
+                        // todo: remove any type
+                        const obj: StatsReason = {
+                            moduleId: reason.module.id,
+                            moduleIdentifier: reason.module.identifier(),
+                            module: reason.module.readableIdentifier(requestShortener),
+                            moduleName: reason.module.readableIdentifier(requestShortener),
+                            type: reason.dependency.type,
+                            userRequest: reason.dependency.userRequest
+                        };
+                        const dep = reason.dependency;
+                        // todo: only NormalModule has templateModules but it's not Dependency, may be reason.module?
+                        if (dep.templateModules) {
+                            obj.templateModules = dep.templateModules.map(module => module.id);
+                        }
+                        if (typeof dep.loc === 'object') {
+                            obj.loc = `${dep.loc.start.line}:${dep.loc.start.column}-${dep.loc.start.line !== dep.loc.end.line
+                                ? dep.loc.end.line + ':'
+                                : ''}${dep.loc.end.column}`;
+                        }
+                        return obj;
+                    })
+                    .sort((a, b) => a.moduleId - b.moduleId);
             }
             if (showUsedExports) {
                 obj.usedExports = module.used ? module.usedExports : false;
@@ -307,7 +420,7 @@ class Stats {
 
         if (showChunks) {
             obj.chunks = compilation.chunks.map(chunk => {
-                const obj: any = {
+                const obj: StatsChunk = {
                     id: chunk.id,
                     rendered: chunk.rendered,
                     initial: chunk.isInitial(),
@@ -332,9 +445,10 @@ class Stats {
                         moduleIdentifier: origin.module ? origin.module.identifier() : '',
                         moduleName: origin.module ? origin.module.readableIdentifier(requestShortener) : '',
                         loc: typeof origin.loc === 'object'
-                            ? obj.loc = `${origin.loc.start.line}:${origin.loc.start.column}-${origin.loc.start.line !== origin.loc.end.line
-                            ? origin.loc.end.line + ':'
-                            : ''}${origin.loc.end.column}`
+                            ? (
+                            obj.loc = `${origin.loc.start.line}:${origin.loc.start.column}-${origin.loc.start.line !== origin.loc.end.line
+                                ? origin.loc.end.line + ':'
+                                : ''}${origin.loc.end.column}`)
                             : '',
                         name: origin.name,
                         reasons: origin.reasons || []
@@ -361,15 +475,15 @@ class Stats {
         return obj;
     }
 
-    toString(options?) {
+    toString(options?: StatsOptions | boolean | string) {
         if (typeof options === 'boolean' || typeof options === 'string') {
             options = Stats.presetToOptions(options);
         }
         else if (!options) {
-            options = {};
+            options = {} as StatsOptions;
         }
 
-        function d(v, def) {
+        function d(v: any, def: any) {
             return v === undefined ? def : v;
         }
 
@@ -380,8 +494,8 @@ class Stats {
         return Stats.jsonToString(obj, useColors);
     }
 
-    static jsonToString(obj, useColors) {
-        const buffer = [];
+    static jsonToString(obj: StatsJson, useColors: boolean | Colors) {
+        const buffer: string[] = [];
 
         const defaultColors = {
             bold: '\x1B[1m',
@@ -392,9 +506,9 @@ class Stats {
             magenta: '\x1B[1m\x1B[35m'
         };
 
-        const colors = <Colors>Object.keys(defaultColors)
+        const colors = Object.keys(defaultColors)
             .reduce((obj, color) => {
-                obj[color] = str => {
+                obj[color] = function (str: string) {
                     if (useColors) {
                         buffer.push(useColors === true || useColors[color] === undefined
                             ? defaultColors[color]
@@ -407,12 +521,12 @@ class Stats {
                 };
                 return obj;
             }, {
-                normal(str) {
+                normal(str: string) {
                     buffer.push(str);
                 }
-            });
+            }) as Colors;
 
-        function coloredTime(time) {
+        function coloredTime(time: number) {
             let times = [800, 400, 200, 100];
             if (obj.time) {
                 times = [obj.time / 2, obj.time / 4, obj.time / 8, obj.time / 16];
@@ -438,7 +552,7 @@ class Stats {
             buffer.push('\n');
         }
 
-        function table(array, formats, align, splitter = '  ') {
+        function table(array: string[][], formats: Function[], align: string, splitter = '  ') {
             let row;
             const rows = array.length;
             let col;
@@ -479,7 +593,7 @@ class Stats {
             }
         }
 
-        function formatSize(size) {
+        function formatSize(size: number) {
             if (size <= 0) {
                 return '0 bytes';
             }
@@ -553,7 +667,7 @@ class Stats {
             });
         }
 
-        function processModuleAttributes(module) {
+        function processModuleAttributes(module: StatsModule) {
             colors.normal(' ');
             colors.normal(formatSize(module.size));
             if (module.chunks) {
@@ -586,7 +700,7 @@ class Stats {
             }
         }
 
-        function processModuleContent(module, prefix) {
+        function processModuleContent(module: StatsModule, prefix: string) {
             if (Array.isArray(module.providedExports)) {
                 colors.normal(prefix);
                 colors.cyan(`[exports: ${module.providedExports.join(', ')}]`);
@@ -606,6 +720,7 @@ class Stats {
             }
             if (module.reasons) {
                 module.reasons.forEach(reason => {
+                    // todo: reason is ModuleReason but not Module, perhaps should be reason.module?
                     colors.normal(prefix);
                     colors.normal(reason.type);
                     colors.normal(' ');
@@ -627,8 +742,9 @@ class Stats {
             if (module.profile) {
                 colors.normal(prefix);
                 let sum = 0;
-                const path = [];
+                const path: StatsModule[] = [];
                 let current = module;
+                // todo: as module is a StatsModule, current.issuer is a string, this loop is useless
                 while (current.issuer) {
                     path.unshift(current = current.issuer);
                 }
@@ -816,7 +932,7 @@ class Stats {
         return buffer.join('');
     }
 
-    static presetToOptions(name) {
+    static presetToOptions(name: string | boolean) {
         // Accepted values: none, errors-only, minimal, normal, verbose
         // Any other falsy value will behave as 'none', truthy values as 'normal'
         const pn = typeof name === 'string' && name.toLowerCase() || name;

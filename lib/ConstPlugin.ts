@@ -7,20 +7,23 @@ import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import NullFactory = require('./NullFactory');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import { CompilationParams } from '../typings/webpack-types'
+import { IfStatement, ConditionalExpression, Identifier } from 'estree'
+import Parser = require('./Parser')
 
-function getQuery(request) {
+function getQuery(request: string) {
     const i = request.indexOf('?');
     return i < 0 ? '' : request.substr(i);
 }
 
 class ConstPlugin {
     apply(compiler: Compiler) {
-        compiler.plugin('compilation', function (compilation: Compilation, params) {
+        compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
             compilation.dependencyFactories.set(ConstDependency, new NullFactory());
             compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', function (parser) {
-                parser.plugin('statement if', function (statement) {
+            params.normalModuleFactory.plugin('parser', function (parser: Parser) {
+                parser.plugin('statement if', function (statement: IfStatement) {
                     const param = this.evaluateExpression(statement.test);
                     const bool = param.asBool();
                     if (typeof bool === 'boolean') {
@@ -32,7 +35,7 @@ class ConstPlugin {
                         return bool;
                     }
                 });
-                parser.plugin('expression ?:', function (expression) {
+                parser.plugin('expression ?:', function (expression: ConditionalExpression) {
                     const param = this.evaluateExpression(expression.test);
                     const bool = param.asBool();
                     if (typeof bool === 'boolean') {
@@ -44,7 +47,7 @@ class ConstPlugin {
                         return bool;
                     }
                 });
-                parser.plugin('evaluate Identifier __resourceQuery', function (expr) {
+                parser.plugin('evaluate Identifier __resourceQuery', function (expr: Identifier) {
                     if (!this.state.module) {
                         return;
                     }

@@ -4,12 +4,14 @@
  */
 import NodeWatchFileSystem = require('./NodeWatchFileSystem');
 import NodeOutputFileSystem = require('./NodeOutputFileSystem');
+// todo: these are exported via resolve namespace
 import NodeJsInputFileSystem = require('enhanced-resolve/lib/NodeJsInputFileSystem');
 import CachedInputFileSystem = require('enhanced-resolve/lib/CachedInputFileSystem');
 import Compiler = require('../Compiler')
 
 class NodeEnvironmentPlugin {
     apply(compiler: Compiler) {
+        // todo: useless assignment?
         compiler.inputFileSystem = new NodeJsInputFileSystem();
         const inputFileSystem = compiler.inputFileSystem = new CachedInputFileSystem(compiler.inputFileSystem, 60000);
         compiler.resolvers.normal.fileSystem = compiler.inputFileSystem;

@@ -3,6 +3,7 @@
  Author Gajus Kuizinas @gajus
  */
 import Ajv = require('ajv')
+import ajv = require('ajv')
 const webpackOptionsSchema = require('../schemas/webpackOptionsSchema.json')
 
 class WebpackOptionsValidationError extends Error {
@@ -14,13 +15,14 @@ class WebpackOptionsValidationError extends Error {
             err => ' - ' + indent(WebpackOptionsValidationError.formatValidationError(err), '   ', false)).join('\n')}`;
     }
 
-    static formatValidationError(err) {
+    static formatValidationError(err: Ajv.ErrorObject) {
         const dataPath = `configuration${err.dataPath}`;
         switch (err.keyword) {
             case 'additionalProperties':
-                const baseMessage = `${dataPath} has an unknown property '${err.params.additionalProperty}'. These properties are valid:\n${getSchemaPartText(err.parentSchema)}`;
+                const adpParams = err.params as ajv.AdditionalPropertiesParams
+                const baseMessage = `${dataPath} has an unknown property '${adpParams.additionalProperty}'. These properties are valid:\n${getSchemaPartText(err.parentSchema)}`;
                 if (!err.dataPath) {
-                    switch (err.params.additionalProperty) {
+                    switch (adpParams.additionalProperty) {
                         case 'debug':
                             return `${baseMessage}
 The 'debug' property was removed in webpack 2.
@@ -41,7 +43,7 @@ For loader options: webpack 2 no longer allows custom properties in configuratio
     new webpack.LoaderOptionsPlugin({
       // test: /\\.xxx$/, // may apply this only for some modules
       options: {
-        ${err.params.additionalProperty}: ...
+        ${adpParams.additionalProperty}: ...
       }
     })
   ]`;
@@ -54,7 +56,8 @@ For loader options: webpack 2 no longer allows custom properties in configuratio
             case 'allOf':
                 return `${dataPath} should be:\n${getSchemaPartText(err.parentSchema)}`;
             case 'type':
-                switch (err.params.type) {
+                const typeParams = err.params as ajv.TypeParams
+                switch (typeParams.type) {
                     case 'object':
                         return `${dataPath} should be an object.`;
                     case 'string':
@@ -64,17 +67,17 @@ For loader options: webpack 2 no longer allows custom properties in configuratio
                     case 'number':
                         return `${dataPath} should be a number.`;
                 }
-                return `${dataPath} should be ${err.params.type}:\n${getSchemaPartText(err.parentSchema)}`;
+                return `${dataPath} should be ${typeParams.type}:\n${getSchemaPartText(err.parentSchema)}`;
             case 'instanceof':
                 return `${dataPath} should be an instance of ${getSchemaPartText(err.parentSchema)}.`;
             case 'required':
-                const missingProperty = err.params.missingProperty.replace(/^\./, '');
+                const missingProperty = ( err.params as ajv.DependenciesParams).missingProperty.replace(/^\./, '');
                 return `${dataPath} misses the property '${missingProperty}'.\n${getSchemaPartText(err.parentSchema, [
                     'properties',
                     missingProperty
                 ])}`;
             case 'minLength':
-                if (err.params.limit === 1) {
+                if ((err.params as ajv.LimitParams).limit === 1) {
                     return `${dataPath} should not be empty.`;
                 }
                 else {
@@ -85,8 +88,8 @@ For loader options: webpack 2 no longer allows custom properties in configuratio
         }
     }
 
-    static formatSchema = function formatSchema(schema: AjvJsonSchema, prevSchemas: AjvJsonSchema[] = []) {
-        function formatInnerSchema(innerSchema, addSelf?) {
+    static formatSchema = function formatSchema(schema: AjvJsonSchema, prevSchemas: AjvJsonSchema[] = []): string {
+        function formatInnerSchema(innerSchema: AjvJsonSchema, addSelf?: boolean | number) {
             if (!addSelf) {
                 return formatSchema(innerSchema, prevSchemas);
             }
@@ -114,11 +117,11 @@ For loader options: webpack 2 no longer allows custom properties in configuratio
                     }).concat(schema.additionalProperties ? ['...'] : []).join(', ')} }`;
                 }
                 if (schema.additionalProperties) {
-                    return `object { <key>: ${formatInnerSchema(schema.additionalProperties)} }`;
+                    return `object { <key>: ${formatInnerSchema(schema.additionalProperties as AjvJsonSchema)} }`;
                 }
                 return 'object';
             case 'array':
-                return `[${formatInnerSchema(schema.items)}]`;
+                return `[${formatInnerSchema(schema.items as AjvJsonSchema)}]`;
         }
         switch (schema.instanceof) {
             case 'Function':
@@ -147,16 +150,16 @@ For loader options: webpack 2 no longer allows custom properties in configuratio
 
 export = WebpackOptionsValidationError;
 
-function getSchemaPart(path, parents = 0, additionalPath?) {
-    path = path.split('/');
-    path = path.slice(0, path.length - parents);
+function getSchemaPart(path: string, parents = 0, additionalPath?: string) {
+    let splitPath = path.split('/'), splitAddtionalPath;
+    splitPath = splitPath.slice(0, splitPath.length - parents);
     if (additionalPath) {
-        additionalPath = additionalPath.split('/');
-        path = path.concat(additionalPath);
+        splitAddtionalPath = additionalPath.split('/');
+        splitPath = splitPath.concat(splitAddtionalPath);
     }
     let schemaPart = <AjvJsonSchema>webpackOptionsSchema;
-    for (let i = 1; i < path.length; i++) {
-        const inner = schemaPart[path[i]];
+    for (let i = 1; i < splitPath.length; i++) {
+        const inner = schemaPart[splitPath[i]];
         if (inner) {
             schemaPart = inner;
         }
@@ -164,7 +167,7 @@ function getSchemaPart(path, parents = 0, additionalPath?) {
     return schemaPart;
 }
 
-function getSchemaPartText2(path, parents, additionalPath) {
+function getSchemaPartText2(path: string, parents: number, additionalPath: string) {
     let schemaPart = getSchemaPart(path, parents, additionalPath);
     while (schemaPart.$ref) {
         schemaPart = getSchemaPart(schemaPart.$ref);
@@ -176,7 +179,7 @@ function getSchemaPartText2(path, parents, additionalPath) {
     return schemaText;
 }
 
-function getSchemaPartText(schemaPart, additionalPath?) {
+function getSchemaPartText(schemaPart: AjvJsonSchema, additionalPath?: string[]) {
     if (additionalPath) {
         for (let i = 0; i < additionalPath.length; i++) {
             const inner = schemaPart[additionalPath[i]];
@@ -195,7 +198,7 @@ function getSchemaPartText(schemaPart, additionalPath?) {
     return schemaText;
 }
 
-function indent(str, prefix, firstLine) {
+function indent(str: string, prefix: string, firstLine: boolean) {
     if (firstLine) {
         return prefix + str.replace(/\n(?!$)/g, '\n' + prefix);
     }

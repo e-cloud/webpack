@@ -5,13 +5,17 @@
 import path = require('path');
 import Compilation = require('./Compilation')
 import Compiler = require('./Compiler')
+import Module = require('./Module')
+import { Record } from '../typings/webpack-types'
+import Chunk = require('./Chunk')
+import DependenciesBlock = require('./DependenciesBlock')
 
 class RecordIdsPlugin {
     apply(compiler: Compiler) {
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin('record-modules', function (modules, records) {
+            compilation.plugin('record-modules', function (modules: Module[], records: Record) {
                 if (!records.modules) {
-                    records.modules = {};
+                    records.modules = {} as any;
                 }
                 if (!records.modules.byIdentifier) {
                     records.modules.byIdentifier = {};
@@ -25,7 +29,7 @@ class RecordIdsPlugin {
                     records.modules.usedIds[module.id] = module.id;
                 });
             });
-            compilation.plugin('revive-modules', function (modules, records) {
+            compilation.plugin('revive-modules', function (modules: Module[], records: Record) {
                 if (!records.modules) {
                     return;
                 }
@@ -50,7 +54,7 @@ class RecordIdsPlugin {
                 compilation.usedModuleIds = records.modules.usedIds;
             });
 
-            function getDepBlockIdent(chunk, block) {
+            function getDepBlockIdent(chunk: Chunk, block: Module) {
                 const ident = [];
                 if (block.chunks.length > 1) {
                     ident.push(block.chunks.indexOf(chunk));
@@ -69,10 +73,10 @@ class RecordIdsPlugin {
                 return ident.join(':');
             }
 
-            compilation.plugin('record-chunks', (chunks, records) => {
+            compilation.plugin('record-chunks', (chunks: Chunk[], records: Record) => {
                 records.nextFreeChunkId = compilation.nextFreeChunkId;
                 if (!records.chunks) {
-                    records.chunks = {};
+                    records.chunks = {} as any;
                 }
                 if (!records.chunks.byName) {
                     records.chunks.byName = {};
@@ -83,7 +87,8 @@ class RecordIdsPlugin {
                 records.chunks.usedIds = {};
                 chunks.forEach(chunk => {
                     const name = chunk.name;
-                    const blockIdents = chunk.blocks.map(getDepBlockIdent.bind(null, chunk)).filter(Boolean);
+                    const blockIdents = chunk.blocks.map(getDepBlockIdent.bind(null, chunk))
+                        .filter(Boolean) as string[];
                     if (name) {
                         records.chunks.byName[name] = chunk.id;
                     }
@@ -93,7 +98,7 @@ class RecordIdsPlugin {
                     records.chunks.usedIds[chunk.id] = chunk.id;
                 });
             });
-            compilation.plugin('revive-chunks', function (chunks, records) {
+            compilation.plugin('revive-chunks', function (chunks: Chunk[], records: Record) {
                 if (!records.chunks) {
                     return;
                 }
@@ -118,10 +123,13 @@ class RecordIdsPlugin {
                     });
                 }
                 if (records.chunks.byBlocks) {
-                    const argumentedChunks = chunks.filter(chunk => chunk.id === null).map(chunk => ({
-                        chunk,
-                        blockIdents: chunk.blocks.map(getDepBlockIdent.bind(null, chunk)).filter(Boolean)
-                    })).filter(arg => arg.blockIdents.length > 0);
+                    const argumentedChunks = chunks.filter(chunk => chunk.id === null)
+                        .map(chunk => ({
+                            chunk,
+                            blockIdents: chunk.blocks.map(getDepBlockIdent.bind(null, chunk))
+                                .filter(Boolean) as string[]
+                        }))
+                        .filter(arg => arg.blockIdents.length > 0);
 
                     const blockIdentsCount = {};
 
@@ -162,7 +170,7 @@ class RecordIdsPlugin {
 
 export = RecordIdsPlugin;
 
-function makeRelative(compiler, identifier) {
+function makeRelative(compiler: Compiler, identifier: string) {
     const context = compiler.context;
     return identifier
         .split('|')

@@ -5,11 +5,12 @@
 
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import Chunk = require('./Chunk')
 
 class FlagInitialModulesAsUsedPlugin {
     apply(compiler: Compiler) {
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin('after-optimize-chunks', function (chunks) {
+            compilation.plugin('after-optimize-chunks', function (chunks: Chunk[]) {
                 chunks.forEach(chunk => {
                     if (!chunk.isInitial()) {
                         return;

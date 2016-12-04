@@ -3,9 +3,18 @@
  Author Tobias Koppers @sokra
  */
 import NullDependency = require('./NullDependency');
+import { ReplaceSource } from 'webpack-sources'
+import { WebpackOutputOptions, SourceRange } from '../../typings/webpack-types'
+import RequestShortener = require('../RequestShortener')
+import Module = require('../Module')
 
 class Template {
-    apply(dep, source, outputOptions, requestShortener) {
+    apply(
+        dep: HarmonyExportExpressionDependency,
+        source: ReplaceSource,
+        outputOptions: WebpackOutputOptions,
+        requestShortener: RequestShortener
+    ) {
         const used = dep.originModule.isUsed('default');
         let content;
         if (used) {
@@ -26,7 +35,7 @@ class Template {
 }
 
 class HarmonyExportExpressionDependency extends NullDependency {
-    constructor(public originModule, public range, public rangeStatement) {
+    constructor(public originModule: Module, public range: SourceRange, public rangeStatement: SourceRange) {
         super();
     }
 

@@ -7,39 +7,38 @@ import Module = require('./Module')
 import DependenciesBlock = require('./DependenciesBlock')
 import Entrypoint = require('./Entrypoint')
 import removeAndDo = require('./removeAndDo')
+import { SourceLocation } from 'estree'
+import { Hash } from 'crypto'
+import { FilenameTemplate } from '../typings/webpack-types'
 
 let debugId = 1000;
 
-interface ChunkOrigin {
-    module: Module
-    loc: any
-    name: string
-    reasons?
-}
-
 class Chunk implements IRemoveAndDo {
-    id: number
-    ids: string[]
-    debugId: number
-    modules: Module[]
-    entrypoints: Entrypoint[]
-    chunks: Chunk[]
-    parents: Chunk[]
-    blocks: DependenciesBlock[]
-    origins: ChunkOrigin[]
-    files: string[]
-    rendered: boolean
-    entryModule: Module
-    hash: string
-    renderedHash: string
-    filenameTemplate
-    recorded: boolean
-    extraAsync: boolean
+    _aggressiveSplittingInvalid: boolean
     _fromAggressiveSplitting: boolean
     _fromAggressiveSplittingIndex: number
-    _aggressiveSplittingInvalid: boolean
+    blocks: DependenciesBlock[]
+    chunks: Chunk[]
+    chunkReason?: string
+    debugId: number
+    entryModule: Module
+    entrypoints: Entrypoint[]
+    extraAsync: boolean
+    filenameTemplate: FilenameTemplate
+    files: string[]
+    hash: string
+    id: number
+    ids: number[]
+    modules: Module[]
+    origins: Chunk.ChunkOrigin[]
+    parents: Chunk[]
+    recorded: boolean
+    rendered: boolean
+    renderedHash: string
+    // todo: there is no assignment of removedModules
+    removedModules: number[]
 
-    constructor(public name: string, module: Module, loc) {
+    constructor(public name: string, module: Module, loc: SourceLocation) {
         this.id = null;
         this.ids = null;
         this.debugId = debugId++;
@@ -77,7 +76,7 @@ class Chunk implements IRemoveAndDo {
         throw new Error('Chunk.initial was removed. Use isInitial()');
     }
 
-    _removeAndDo(collection, thing, action) {
+    _removeAndDo(collection: string, thing: any, action: string) {
         return removeAndDo.call(this, collection, thing, action)
     }
 
@@ -96,7 +95,7 @@ class Chunk implements IRemoveAndDo {
         return !!this.entryModule;
     }
 
-    addModule(module) {
+    addModule(module: Module) {
         if (this.modules.includes(module)) {
             return false;
         }
@@ -104,19 +103,19 @@ class Chunk implements IRemoveAndDo {
         return true;
     }
 
-    removeModule(module) {
+    removeModule(module: Module) {
         this._removeAndDo('modules', module, 'removeChunk');
     }
 
-    removeChunk(chunk) {
+    removeChunk(chunk: Chunk) {
         this._removeAndDo('chunks', chunk, 'removeParent');
     }
 
-    removeParent(chunk) {
+    removeParent(chunk: Chunk) {
         this._removeAndDo('parents', chunk, 'removeChunk');
     }
 
-    addBlock(block) {
+    addBlock(block: DependenciesBlock) {
         if (this.blocks.includes(block)) {
             return false;
         }
@@ -124,7 +123,7 @@ class Chunk implements IRemoveAndDo {
         return true;
     }
 
-    addOrigin(module, loc) {
+    addOrigin(module: Module, loc: SourceLocation) {
         this.origins.push({
             module,
             loc,
@@ -132,7 +131,7 @@ class Chunk implements IRemoveAndDo {
         });
     }
 
-    remove(reason) {
+    remove(reason: string) {
         this.modules.slice().forEach(function (m) {
             m.removeChunk(this);
         }, this);
@@ -166,14 +165,14 @@ class Chunk implements IRemoveAndDo {
         }, this);
     }
 
-    moveModule(module, other) {
+    moveModule(module: Module, other: Chunk) {
         module.removeChunk(this);
         module.addChunk(other);
         other.addModule(module);
         module.rewriteChunkInReasons(this, [other]);
     }
 
-    integrate(other, reason) {
+    integrate(other: Chunk, reason: string) {
         if (!this.canBeIntegrated(other)) {
             return false;
         }
@@ -187,7 +186,7 @@ class Chunk implements IRemoveAndDo {
         }, this);
         other.modules.length = 0;
 
-        function moveChunks(chunks, kind, onChunk) {
+        function moveChunks(chunks: Chunk[], kind: string, onChunk: (chunk: Chunk) => void) {
             chunks.forEach(c => {
                 const idx = c[kind].indexOf(other);
                 if (idx >= 0) {
@@ -237,7 +236,7 @@ class Chunk implements IRemoveAndDo {
         return true;
     }
 
-    split(newChunk) {
+    split(newChunk: Chunk) {
         const _this = this;
         this.blocks.forEach(b => {
             newChunk.blocks.push(b);
@@ -260,7 +259,7 @@ class Chunk implements IRemoveAndDo {
         return this.modules.length === 0;
     }
 
-    updateHash(hash) {
+    updateHash(hash: Hash) {
         hash.update(`${this.id} `);
         hash.update(this.ids ? this.ids.join(',') : '');
         hash.update(`${this.name || ''} `);
@@ -269,7 +268,8 @@ class Chunk implements IRemoveAndDo {
         });
     }
 
-    size(options) {
+    // todo: here the option is option of AggressiveSplittingPlugin
+    size(options: any) {
         const CHUNK_OVERHEAD = typeof options.chunkOverhead === 'number' ? options.chunkOverhead : 10000;
         const ENTRY_CHUNK_MULTIPLICATOR = options.entryChunkMultiplicator || 10;
 
@@ -277,7 +277,7 @@ class Chunk implements IRemoveAndDo {
         return modulesSize * (this.isInitial() ? ENTRY_CHUNK_MULTIPLICATOR : 1) + CHUNK_OVERHEAD;
     }
 
-    canBeIntegrated(other) {
+    canBeIntegrated(other: Chunk) {
         if (other.isInitial()) {
             return false;
         }
@@ -289,7 +289,7 @@ class Chunk implements IRemoveAndDo {
         return true;
     }
 
-    integratedSize(other, options) {
+    integratedSize(other: Chunk, options: any) {
         // Chunk if it's possible to integrate this chunk
         if (!this.canBeIntegrated(other)) {
             return false;
@@ -309,8 +309,8 @@ class Chunk implements IRemoveAndDo {
         return modulesSize * (this.isInitial() || other.isInitial() ? ENTRY_CHUNK_MULTIPLICATOR : 1) + CHUNK_OVERHEAD;
     }
 
-    getChunkMaps(includeEntries, realHash) {
-        const chunksProcessed = [];
+    getChunkMaps(includeEntries?: boolean, realHash?: boolean) {
+        const chunksProcessed: Chunk[] = [];
         const chunkHashMap = {};
         const chunkNameMap = {};
         (function addChunk(c) {
@@ -376,7 +376,7 @@ class Chunk implements IRemoveAndDo {
         });
     }
 
-    addChunk(chunk) {
+    addChunk(chunk: Chunk) {
         if (chunk === this) {
             return false;
         }
@@ -387,7 +387,7 @@ class Chunk implements IRemoveAndDo {
         return true;
     }
 
-    addParent(chunk) {
+    addParent(chunk: Chunk) {
         if (chunk === this) {
             return false;
         }
@@ -399,8 +399,18 @@ class Chunk implements IRemoveAndDo {
     }
 }
 
+declare namespace Chunk {
+    interface ChunkOrigin {
+        loc: SourceLocation
+        module: Module
+        name: string
+        reasons?: string[]
+    }
+}
+
 export = Chunk;
 
-function byId(a, b) {
+// todo: this should be inlined
+function byId(a: Module, b: Module) {
     return a.id - b.id;
 }

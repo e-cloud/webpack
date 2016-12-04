@@ -8,14 +8,15 @@ import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Chunk = require('./Chunk')
 import NormalModule = require('./NormalModule')
+import Module = require('./Module')
 
 class LibManifestPlugin {
     constructor(
         public options: {
+            context?: string
             name: string
             path: string
-            type: string
-            context: string
+            type?: string
         }
     ) {
     }
@@ -63,6 +64,18 @@ class LibManifestPlugin {
                 });
             }, callback);
         });
+    }
+}
+
+declare namespace LibManifestPlugin {
+    interface ManifestContentItem {
+        id: number
+        meta: Module.Meta
+        exports: boolean
+    }
+
+    interface ManifestContent {
+        [path: string]: ManifestContentItem
     }
 }
 

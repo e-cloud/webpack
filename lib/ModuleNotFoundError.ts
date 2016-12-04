@@ -4,13 +4,14 @@
  */
 import Dependency = require('./Dependency')
 import Module = require('./Module')
+import { ResolveError } from 'enhanced-resolve/lib/common-types'
 
 class ModuleNotFoundError extends Error {
     details: string
-    missing: string
+    missing: string[]
     origin: Module
 
-    constructor(public module: Module, public err, public dependencies: Dependency[]) {
+    constructor(public module: Module, public err: ResolveError, public dependencies: Dependency[]) {
         super();
         Error.captureStackTrace(this, ModuleNotFoundError);
         this.name = 'ModuleNotFoundError';

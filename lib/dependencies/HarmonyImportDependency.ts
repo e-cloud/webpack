@@ -3,9 +3,18 @@
  Author Tobias Koppers @sokra
  */
 import ModuleDependency = require('./ModuleDependency');
+import { SourceRange, WebpackOutputOptions } from '../../typings/webpack-types'
+import { ReplaceSource } from 'webpack-sources'
+import { Hash } from 'crypto'
+import RequestShortener = require('../RequestShortener')
 
 class Template {
-    apply(dep, source, outputOptions, requestShortener) {
+    apply(
+        dep: HarmonyImportDependency,
+        source: ReplaceSource,
+        outputOptions: WebpackOutputOptions,
+        requestShortener: RequestShortener
+    ) {
         const content = HarmonyImportDependency.makeStatement(true, dep, outputOptions, requestShortener);
         source.replace(dep.range[0], dep.range[1] - 1, '');
         source.insert(-1, content);
@@ -13,7 +22,7 @@ class Template {
 }
 
 class HarmonyImportDependency extends ModuleDependency {
-    constructor(request, public importedVar, public range) {
+    constructor(request: string, public importedVar: string, public range: SourceRange) {
         super(request);
     }
 
@@ -27,12 +36,15 @@ class HarmonyImportDependency extends ModuleDependency {
         };
     }
 
-    updateHash(hash) {
+    updateHash(hash: Hash) {
         super.updateHash(hash);
         hash.update(`${this.module && (!this.module.meta || this.module.meta.harmonyModule)}`);
     }
 
-    static makeStatement(declare, dep, outputOptions, requestShortener) {
+    static makeStatement(
+        declare: boolean, dep: HarmonyImportDependency, outputOptions: WebpackOutputOptions,
+        requestShortener: RequestShortener
+    ) {
         let comment = '';
         if (outputOptions.pathinfo) {
             comment = `/*! ${requestShortener.shorten(dep.request)} */ `;

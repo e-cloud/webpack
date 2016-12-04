@@ -3,12 +3,11 @@
  Author Tobias Koppers @sokra
  */
 import Module = require('./Module')
+import NormalModule = require('./NormalModule')
+import { Position } from 'estree'
 
 class ModuleParseError extends Error {
-    module: Module
-    error: Error
-
-    constructor(module, source, err) {
+    constructor(public module: NormalModule, source: string, public err: Error & { loc?: Position }) {
         super();
         Error.captureStackTrace(this, ModuleParseError);
         this.name = 'ModuleParseError';
@@ -21,15 +20,13 @@ class ModuleParseError extends Error {
                 this.message += '\n(Source code omitted for this binary file)';
             }
             else {
-                source = source.split('\n');
-                this.message += `\n| ${source.slice(Math.max(0, lineNumber - 3), lineNumber + 2).join('\n| ')}`;
+                const splitSource = source.split('\n');
+                this.message += `\n| ${splitSource.slice(Math.max(0, lineNumber - 3), lineNumber + 2).join('\n| ')}`;
             }
         }
         else {
             this.message += `\n${err.stack}`;
         }
-        this.module = module;
-        this.error = err;
     }
 }
 

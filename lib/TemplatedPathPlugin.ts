@@ -5,6 +5,9 @@
 import Template = require('./Template');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import Chunk = require('./Chunk')
+import MainTemplate = require('./MainTemplate')
+import { Hash } from 'crypto'
 
 const REGEXP_HASH = /\[hash(?::(\d+))?\]/gi;
 const REGEXP_CHUNKHASH = /\[chunkhash(?::(\d+))?\]/gi;
@@ -39,7 +42,7 @@ class TemplatedPathPlugin {
 
             mainTemplate.plugin('asset-path', replacePathVariables);
 
-            mainTemplate.plugin('global-hash', function (chunk, paths) {
+            mainTemplate.plugin('global-hash', function (chunk: Chunk, paths: string[]) {
                 const outputOptions = this.outputOptions;
                 const publicPath = outputOptions.publicPath || '';
                 const filename = outputOptions.filename || '';
@@ -58,7 +61,7 @@ class TemplatedPathPlugin {
                 }
             });
 
-            mainTemplate.plugin('hash-for-chunk', function (hash, chunk) {
+            mainTemplate.plugin('hash-for-chunk', function (hash: Hash, chunk: Chunk) {
                 const outputOptions = this.outputOptions;
                 const chunkFilename = outputOptions.chunkFilename || outputOptions.filename;
                 if (REGEXP_CHUNKHASH_FOR_TEST.test(chunkFilename)) {
@@ -74,8 +77,8 @@ class TemplatedPathPlugin {
 
 export = TemplatedPathPlugin;
 
-function withHashLength(replacer, handlerFn) {
-    return function (_, hashLength) {
+function withHashLength(replacer: (match: string) => string, handlerFn: (length: number) => string) {
+    return function (_: string, hashLength: string) {
         const length = hashLength && parseInt(hashLength, 10);
 
         if (length && handlerFn) {
@@ -88,8 +91,8 @@ function withHashLength(replacer, handlerFn) {
     };
 }
 
-function getReplacer(value, allowEmpty?) {
-    return function (match) {
+function getReplacer(value: string, allowEmpty?: boolean) {
+    return function (match: string) {
         // last argument in replacer is the entire input string
         const input = arguments[arguments.length - 1];
         if (value == null) {
@@ -103,7 +106,24 @@ function getReplacer(value, allowEmpty?) {
         }
     };
 }
-function replacePathVariables(path, data) {
+
+function replacePathVariables(
+    path: string, data: {
+        hash: string
+        hashWithLength: (length: number) => string
+        chunk: {
+            id: string
+            hash: string
+            renderedHash: string
+            hashWithLength: (length: number) => string
+            name: string
+        }
+        noChunkHash: boolean
+        filename: string
+        basename: string
+        query?: string
+    }
+) {
     const chunk = data.chunk;
     const chunkId = chunk && chunk.id;
     const chunkName = chunk && (chunk.name || chunk.id);

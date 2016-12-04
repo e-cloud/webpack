@@ -6,9 +6,11 @@ import AbstractPlugin = require('../AbstractPlugin');
 import RequireEnsureDependenciesBlock = require('./RequireEnsureDependenciesBlock');
 import RequireEnsureItemDependency = require('./RequireEnsureItemDependency');
 import getFunctionExpression = require('./getFunctionExpression');
+import { CallExpression, FunctionExpression } from 'estree'
+import Parser = require('../Parser')
 
 export = AbstractPlugin.create({
-    'call require.ensure'(expr) {
+    'call require.ensure'(this: Parser, expr: CallExpression) {
         let chunkName = null;
         let chunkNameRange = null;
         switch (expr.arguments.length) {
@@ -23,7 +25,7 @@ export = AbstractPlugin.create({
             case 2:
                 const dependenciesExpr = this.evaluateExpression(expr.arguments[0]);
                 const dependenciesItems = dependenciesExpr.isArray() ? dependenciesExpr.items : [dependenciesExpr];
-                const fnExpressionArg = expr.arguments[1];
+                const fnExpressionArg = expr.arguments[1] as FunctionExpression;
                 const fnExpression = getFunctionExpression(fnExpressionArg);
 
                 if (fnExpression) {

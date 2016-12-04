@@ -4,6 +4,7 @@
  */
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
+import Chunk = require('../Chunk')
 
 class MinChunkSizePlugin {
     constructor(
@@ -20,8 +21,9 @@ class MinChunkSizePlugin {
         const options = this.options;
         const minChunkSize = options.minChunkSize;
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin('optimize-chunks-advanced', function (chunks) {
+            compilation.plugin('optimize-chunks-advanced', function (chunks: Chunk[]) {
 
+                // todo: the form of combinations is too flexible, unable to attach a type system
                 let combinations = [];
                 chunks.forEach((a, idx) => {
                     for (let i = 0; i < idx; i++) {

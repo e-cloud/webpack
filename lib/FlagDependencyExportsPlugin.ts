@@ -4,14 +4,17 @@
  */
 import Compilation = require('./Compilation')
 import Compiler = require('./Compiler')
+import Module = require('./Module')
+import DependenciesBlock = require('./DependenciesBlock')
+import Dependency = require('./Dependency')
 
 class FlagDependencyExportsPlugin {
     apply(compiler: Compiler) {
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin('finish-modules', function (modules) {
-                const dependencies = {};
+            compilation.plugin('finish-modules', function (modules: Module[]) {
+                const dependencies: Dictionary<Module[]> = {};
 
-                let module;
+                let module: Module;
                 let moduleWithExports;
                 const queue = modules.filter(m => !m.providedExports);
                 for (let i = 0; i < queue.length; i++) {
@@ -27,7 +30,7 @@ class FlagDependencyExportsPlugin {
                     }
                 }
 
-                function processDependenciesBlock(depBlock) {
+                function processDependenciesBlock(depBlock: DependenciesBlock) {
                     depBlock.dependencies.forEach(dep => {
                         processDependency(dep);
                     });
@@ -41,7 +44,7 @@ class FlagDependencyExportsPlugin {
                     });
                 }
 
-                function processDependency(dep) {
+                function processDependency(dep: Dependency) {
                     const exportDesc = dep.getExports && dep.getExports();
                     if (!exportDesc) {
                         return;
@@ -92,7 +95,7 @@ class FlagDependencyExportsPlugin {
                 }
             });
 
-            function addToSet(a, b) {
+            function addToSet(a: any[], b: any[]) {
                 let changed = false;
                 b.forEach(item => {
                     if (!a.includes(item)) {

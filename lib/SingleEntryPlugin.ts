@@ -5,13 +5,14 @@
 import SingleEntryDependency = require('./dependencies/SingleEntryDependency');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import { CompilationParams } from '../typings/webpack-types'
 
 class SingleEntryPlugin {
-    constructor(public context, public entry, public name) {
+    constructor(public context: string, public entry: string, public name: string) {
     }
 
     apply(compiler: Compiler) {
-        compiler.plugin('compilation', function (compilation: Compilation, params) {
+        compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
             const normalModuleFactory = params.normalModuleFactory;
 
             compilation.dependencyFactories.set(SingleEntryDependency, normalModuleFactory);

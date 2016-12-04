@@ -5,7 +5,7 @@
 import HarmonyImportDependency = require('./HarmonyImportDependency');
 
 class Template {
-    apply(dep, source, outputOptions, requestShortener) {
+    apply(dep: any, source: any, outputOptions: any, requestShortener: any) {
     }
 }
 

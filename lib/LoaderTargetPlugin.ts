@@ -4,6 +4,7 @@
  */
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import { LoaderContext } from '../typings/webpack-types'
 
 class LoaderTargetPlugin {
     constructor(public target: string) {
@@ -11,7 +12,7 @@ class LoaderTargetPlugin {
 
     apply(compiler: Compiler) {
         compiler.plugin('compilation', (compilation: Compilation) => {
-            compilation.plugin('normal-module-loader', loaderContext => {
+            compilation.plugin('normal-module-loader', (loaderContext: LoaderContext) => {
                 loaderContext.target = this.target;
             });
         });

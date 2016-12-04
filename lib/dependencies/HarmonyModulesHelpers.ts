@@ -2,7 +2,15 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-export function getModuleVar(state, request) {
+import Module = require('../Module')
+import HarmonyExportSpecifierDependency = require('./HarmonyExportSpecifierDependency')
+import HarmonyExportImportedSpecifierDependency = require('./HarmonyExportImportedSpecifierDependency')
+import HarmonyExportHeaderDependency = require('./HarmonyExportHeaderDependency')
+import HarmonyExportExpressionDependency = require('./HarmonyExportExpressionDependency')
+import Dependency = require('../Dependency')
+import { ParserState } from '../../typings/webpack-types'
+
+export function getModuleVar(state: ParserState, request: string) {
     if (!state.harmonyModules) {
         state.harmonyModules = [];
     }
@@ -14,14 +22,14 @@ export function getModuleVar(state, request) {
     return `__WEBPACK_IMPORTED_MODULE_${idx}_${request.replace(/[^A-Za-z0-9_]/g, '_').replace(/__+/g, '_')}__`;
 }
 
-export function getNewModuleVar(state, request) {
+export function getNewModuleVar(state: ParserState, request: string) {
     if (state.harmonyModules && state.harmonyModules.includes(request)) {
         return null;
     }
     return getModuleVar(state, request);
 }
 
-export function checkModuleVar(state, request) {
+export function checkModuleVar(state: ParserState, request: string) {
     if (!state.harmonyModules || !state.harmonyModules.includes(request)) {
         return null;
     }
@@ -30,14 +38,14 @@ export function checkModuleVar(state, request) {
 
 // checks if an harmory dependency is active in a module according to
 // precedence rules.
-export function isActive(module, depInQuestion) {
+export function isActive(module: Module, depInQuestion: HarmonyExportDependency) {
     const desc = depInQuestion.describeHarmonyExport();
     if (!desc.exportedName) {
         return true;
     }
     let before = true;
     for (let i = 0; i < module.dependencies.length; i++) {
-        const dep = module.dependencies[i];
+        const dep = module.dependencies[i] as HarmonyExportDependency;
         if (dep === depInQuestion) {
             before = false;
             continue;
@@ -61,13 +69,16 @@ export function isActive(module, depInQuestion) {
     return true;
 }
 
+type HarmonyExportDependency = HarmonyExportSpecifierDependency | HarmonyExportImportedSpecifierDependency | HarmonyExportExpressionDependency
+
 // get a list of named exports defined in a module
 // doesn't include * reexports.
-export function getActiveExports(module) {
+export function getActiveExports(module: Module): string[] {
+    // todo: there is no activeExports assignment at all across the repo
     if (module.activeExports) {
         return module.activeExports;
     }
-    return module.dependencies.reduce((arr, dep) => {
+    return module.dependencies.reduce(function (arr, dep: HarmonyExportDependency) {
         if (!dep.describeHarmonyExport) {
             return arr;
         }

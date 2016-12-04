@@ -3,19 +3,20 @@
  Author Tobias Koppers @sokra
  */
 import { OriginalSource, RawSource } from 'webpack-sources'
+import { ErrCallback, ExternalsModuleObject } from '../typings/webpack-types'
 import Module = require('./Module');
 import WebpackMissingModule = require('./dependencies/WebpackMissingModule');
 import Chunk = require('./Chunk')
 
 class ExternalModule extends Module {
-    chunkCondition
-    built: boolean
+    _EnsureChunkConditionsPlugin_usedChunks: Chunk[]
     builtTime: number
+    chunkCondition: (chunk: Chunk) => boolean
+    external: boolean
     optional: boolean
     useSourceMap: boolean
-    external: boolean
 
-    constructor(public request: {} | String[], public type: string) {
+    constructor(public request: ExternalsModuleObject | string[] | string, public type: string) {
         super();
         this.chunkCondition = (chunk: Chunk) => chunk.hasEntryModule();
         this.built = false;
@@ -33,7 +34,7 @@ class ExternalModule extends Module {
         return false;
     }
 
-    build(options, compilation, resolver, fs, callback) {
+    build(options: any, compilation: any, resolver: any, fs: any, callback: ErrCallback) {
         this.builtTime = new Date().getTime();
         callback();
     }
@@ -48,8 +49,10 @@ class ExternalModule extends Module {
             case 'this':
             case 'window':
             case 'global':
+                // todo: it seems to be unclear about use case of array type request
                 if (Array.isArray(request)) {
-                    str = `(function() { module.exports = ${this.type}${request.map(r => '[' + JSON.stringify(r) + ']')
+                    str = `(function() { module.exports = ${this.type}${request.map(
+                        r => '[' + JSON.stringify(r) + ']')
                         .join('')}; }());`;
                 }
                 else {

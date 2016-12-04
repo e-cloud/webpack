@@ -5,7 +5,7 @@
 import ModuleDependency = require('./ModuleDependency');
 
 class SingleEntryDependency extends ModuleDependency {
-    constructor(request) {
+    constructor(request: string) {
         super(request)
     }
 }

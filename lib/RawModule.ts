@@ -3,16 +3,17 @@
  Author Tobias Koppers @sokra
  */
 import { OriginalSource, RawSource } from 'webpack-sources'
+import { ErrCallback } from '../typings/webpack-types'
 import Module = require('./Module');
 import crypto = require('crypto')
+import RequestShortener = require('./RequestShortener')
 
 class RawModule extends Module {
-    sourceStr: string
+    builtTime: number
+    cacheable: boolean
     identifierStr: string
     readableIdentifierStr: string
-    cacheable: boolean
-    built: boolean
-    builtTime: number
+    sourceStr: string
     useSourceMap: boolean
 
     constructor(source: string, identifier?: string, readableIdentifier?: string) {
@@ -28,11 +29,11 @@ class RawModule extends Module {
         return this.identifierStr;
     }
 
-    readableIdentifier(requestShortener) {
+    readableIdentifier(requestShortener: RequestShortener) {
         return requestShortener.shorten(this.readableIdentifierStr);
     }
 
-    build(options, compilation, resolver, fs, callback) {
+    build(options: any, compilation: any, resolver: any, fs: any, callback: ErrCallback) {
         this.builtTime = new Date().getTime();
         callback();
     }
@@ -62,9 +63,9 @@ class RawModule extends Module {
 
     needRebuild() { return false }
 
-    getAllModuleDependencies() { return [] }
+    getAllModuleDependencies(): any[] { return [] }
 
-    getTemplateArguments() { return [] }
+    getTemplateArguments(): any[] { return [] }
 }
 
 export = RawModule;

@@ -5,27 +5,33 @@
 import ExternalModule = require('./ExternalModule');
 import Module = require('./Module')
 import NormalModuleFactory = require('./NormalModuleFactory')
+import {
+    NMFBeforeResolveResult,
+    ErrCallback,
+    ExternalsElement,
+    ExternalsObjectPropValue
+} from '../typings/webpack-types'
 
 class ExternalModuleFactoryPlugin {
-    constructor(
-        public type: string,
-        public externals: string | string[] | RegExp | ((context, request, callback) => any) | {}
-    ) {
+    constructor(public type: string, public externals: ExternalsElement) {
     }
 
     apply(normalModuleFactory: NormalModuleFactory) {
         const globalType = this.type;
         normalModuleFactory.plugin('factory', factory =>
-            (data, outterCallback) => {
+            (data: NMFBeforeResolveResult, outterCallback: ErrCallback) => {
                 const context = data.context;
                 const dependency = data.dependencies[0];
 
-                type ExternalCallback = (something, module: Module) => void
+                type ExternalCallback = (err?: Error, module?: Module) => void
 
-                function handleExternal(value, type, callback: ExternalCallback): boolean
-                function handleExternal(value, callback: ExternalCallback, fake?): boolean
+                function handleExternal(
+                    value: ExternalsObjectPropValue, type: string,
+                    callback: ExternalCallback
+                ): boolean
+                function handleExternal(value: ExternalsObjectPropValue, callback: ExternalCallback): boolean
 
-                function handleExternal(value, type, externalCallback) {
+                function handleExternal(value: ExternalsObjectPropValue, type: any, externalCallback?: any) {
                     if (typeof type === 'function') {
                         externalCallback = type;
                         type = undefined;
@@ -36,7 +42,7 @@ class ExternalModuleFactoryPlugin {
                     if (value === true) {
                         value = dependency.request;
                     }
-                    if (typeof type === 'undefined' && /^[a-z0-9]+ /.test(value)) {
+                    if (typeof type === 'undefined' && typeof value === 'string' && /^[a-z0-9]+ /.test(value)) {
                         const idx = value.indexOf(' ');
                         type = value.substr(0, idx);
                         value = value.substr(idx + 1);
@@ -47,8 +53,8 @@ class ExternalModuleFactoryPlugin {
 
                 // todo: need to be refactor
                 (function handleExternals(
-                    externals: string | string[] | RegExp | ((context, request, callback) => any) | {},
-                    innerCallback
+                    externals: ExternalsElement,
+                    innerCallback: ExternalCallback
                 ) {
                     if (typeof externals === 'string') {
                         if (externals === dependency.request) {
@@ -58,7 +64,7 @@ class ExternalModuleFactoryPlugin {
                     else if (Array.isArray(externals)) {
                         let i = 0;
                         (function next() {
-                            let async
+                            let async: boolean
                             do {
                                 async = true;
                                 if (i >= externals.length) {
@@ -88,7 +94,7 @@ class ExternalModuleFactoryPlugin {
                         }
                     }
                     else if (typeof externals === 'function') {
-                        externals.call(null, context, dependency.request, (err, value, type) => {
+                        externals.call(null, context, dependency.request, (err: Error, value: any, type: string) => {
                             if (err) {
                                 return innerCallback(err);
                             }

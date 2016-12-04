@@ -3,12 +3,13 @@
  Author Tobias Koppers @sokra
  */
 import Module = require('./Module')
+import { SourceLocation } from 'estree'
 
 class ModuleDependencyWarning extends Error {
     details: string
     origin: Module
 
-    constructor(public module: Module, public error: Error, loc) {
+    constructor(public module: Module, public error: Error, loc: SourceLocation) {
         super();
         Error.captureStackTrace(this, ModuleDependencyWarning);
         this.name = 'ModuleDependencyWarning';

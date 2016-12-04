@@ -4,6 +4,9 @@
  */
 import Compilation = require('../Compilation')
 import Compiler = require('../Compiler')
+import Module = require('../Module')
+import Chunk = require('../Chunk')
+
 class OccurrenceOrderPlugin {
     constructor(public preferEntry: boolean) {
         if (preferEntry !== undefined && typeof preferEntry !== 'boolean') {
@@ -14,15 +17,15 @@ class OccurrenceOrderPlugin {
     apply(compiler: Compiler) {
         const preferEntry = this.preferEntry;
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin('optimize-module-order', function (modules) {
-                function entryChunks(m) {
+            compilation.plugin('optimize-module-order', function (modules: Module[]) {
+                function entryChunks(m: Module) {
                     return m.chunks.map(c => {
                         const sum = (c.isInitial() ? 1 : 0) + (c.entryModule === m ? 1 : 0);
                         return sum;
                     }).reduce((a, b) => a + b, 0);
                 }
 
-                function occursInEntry(m) {
+                function occursInEntry(m: Module) {
                     return m.reasons.map(r => {
                             if (!r.module) {
                                 return 0;
@@ -31,13 +34,15 @@ class OccurrenceOrderPlugin {
                         }).reduce((a, b) => a + b, 0) + entryChunks(m);
                 }
 
-                function occurs(m) {
+                function occurs(m: Module) {
                     return m.reasons.map(r => {
                             if (!r.module) {
                                 return 0;
                             }
                             return r.module.chunks.length;
-                        }).reduce((a, b) => a + b, 0) + m.chunks.length + m.chunks.filter(c => {
+                        }).reduce((a, b) => a + b, 0)
+                        +
+                        m.chunks.length + m.chunks.filter(c => {
                             // todo: what? may need a return
                             c.entryModule === m;
                         }).length;
@@ -71,14 +76,14 @@ class OccurrenceOrderPlugin {
                     return 0;
                 });
             });
-            compilation.plugin('optimize-chunk-order', chunks => {
-                function occursInEntry(c) {
+            compilation.plugin('optimize-chunk-order', (chunks: Chunk[]) => {
+                function occursInEntry(c: Chunk) {
                     return c.parents
                         .filter(p => p.isInitial())
                         .length;
                 }
 
-                function occurs(c) {
+                function occurs(c: Chunk) {
                     return c.blocks.length;
                 }
 
@@ -93,6 +98,7 @@ class OccurrenceOrderPlugin {
                         return 0;
                     });
                 });
+
                 chunks.sort((a, b) => {
                     const aEntryOccurs = occursInEntry(a);
                     const bEntryOccurs = occursInEntry(b);

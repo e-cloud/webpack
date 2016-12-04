@@ -3,24 +3,26 @@
  Author Tobias Koppers @sokra
  */
 import { OriginalSource, RawSource } from 'webpack-sources'
+import { WebpackOptions, TimeStampMap, ErrCallback, AbstractInputFileSystem } from '../typings/webpack-types'
+import { SourceLocation } from 'estree'
 import Module = require('./Module');
 import AsyncDependenciesBlock = require('./AsyncDependenciesBlock');
 import ModuleDependency = require('./dependencies/ModuleDependency');
 import RequestShortener = require('./RequestShortener')
 import Compilation = require('./Compilation')
+import * as Resolve from 'enhanced-resolve'
 
 class ContextModule extends Module {
     async: boolean
+    builtTime: number
     cacheable: boolean
     contextDependencies: string[]
-    built: boolean
-    builtTime: number
     dependencies: ModuleDependency[]
     useSourceMap: boolean
 
     constructor(
         public resolveDependencies: (
-            fs,
+            fs: AbstractInputFileSystem,
             context: string,
             recursive: boolean,
             regExp: RegExp,
@@ -75,7 +77,7 @@ class ContextModule extends Module {
         return identifier.replace(/ $/, '');
     }
 
-    needRebuild(fileTimestamps, contextTimestamps) {
+    needRebuild(fileTimestamps: TimeStampMap, contextTimestamps: TimeStampMap) {
         const ts = contextTimestamps[this.context];
         if (!ts) {
             return true;
@@ -88,7 +90,7 @@ class ContextModule extends Module {
         super.disconnect();
     }
 
-    build(options, compilation: Compilation, resolver, fs, callback) {
+    build(options: WebpackOptions, compilation: Compilation, resolver: any, fs: AbstractInputFileSystem, callback: ErrCallback) {
         this.built = true;
         this.builtTime = new Date().getTime();
         const addon = this.addon;
@@ -105,7 +107,7 @@ class ContextModule extends Module {
             if (this.async) {
                 if (dependencies) {
                     dependencies.forEach(function (dep) {
-                        const block = new AsyncDependenciesBlock(null, dep.module, dep.loc);
+                        const block = new AsyncDependenciesBlock(null, dep.module, dep.loc as SourceLocation);
                         block.addDependency(dep);
                         this.addBlock(block);
                     }, this);

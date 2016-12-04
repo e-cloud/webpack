@@ -8,6 +8,9 @@ import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import ModuleHotAcceptDependency = require('./dependencies/ModuleHotAcceptDependency');
 import ModuleHotDeclineDependency = require('./dependencies/ModuleHotDeclineDependency');
 import { RawSource } from 'webpack-sources'
+import { CompilationParams, Record, ParserOptions } from '../typings/webpack-types'
+import { Hash } from 'crypto'
+import { Identifier, UnaryExpression, CallExpression, Expression } from 'estree'
 import ConstDependency = require('./dependencies/ConstDependency');
 import NullFactory = require('./NullFactory');
 import crypto = require('crypto')
@@ -15,6 +18,7 @@ import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Parser = require('./Parser')
 import MainTemplate = require('./MainTemplate')
+import Chunk = require('./Chunk')
 
 const hotInitCode = Template.getFunctionContent(require('./HotModuleReplacement.runtime.js'));
 
@@ -37,7 +41,7 @@ class HotModuleReplacementPlugin {
         const fullBuildTimeout = this.fullBuildTimeout;
         const hotUpdateChunkFilename = compiler.options.output.hotUpdateChunkFilename;
         const hotUpdateMainFilename = compiler.options.output.hotUpdateMainFilename;
-        compiler.plugin('compilation', function (compilation: Compilation, params) {
+        compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
             const hotUpdateChunkTemplate = compilation.hotUpdateChunkTemplate;
             if (!hotUpdateChunkTemplate) {
                 return;
@@ -54,7 +58,8 @@ class HotModuleReplacementPlugin {
             compilation.dependencyFactories.set(ModuleHotDeclineDependency, normalModuleFactory);
             compilation.dependencyTemplates.set(ModuleHotDeclineDependency, new ModuleHotDeclineDependency.Template());
 
-            compilation.plugin('record', function (compilation: Compilation, records) {
+            compilation.plugin('record', function (compilation: Compilation, records: Record) {
+                // todo:  this.hash === compilation.hash?
                 if (records.hash === this.hash) {
                     return;
                 }
@@ -133,30 +138,30 @@ class HotModuleReplacementPlugin {
                     c: {}
                 };
                 Object.keys(records.chunkHashs).forEach(function (chunkId) {
-                    chunkId = +chunkId;
-                    const currentChunk = this.chunks.filter(chunk => chunk.id === chunkId)[0];
+                    const chunkIdNum = +chunkId;
+                    const currentChunk = this.chunks.filter(chunk => chunk.id === chunkIdNum)[0];
                     if (currentChunk) {
                         const newModules = currentChunk.modules.filter(module => module.hotUpdate);
                         const allModules = {};
                         currentChunk.modules.forEach(module => {
                             allModules[module.id] = true;
                         });
-                        const removedModules = records.chunkModuleIds[chunkId].filter(id => !allModules[id]);
+                        const removedModules = records.chunkModuleIds[chunkIdNum].filter(id => !allModules[id]);
                         if (newModules.length > 0 || removedModules.length > 0) {
-                            const source = hotUpdateChunkTemplate.render(chunkId, newModules, removedModules, this.hash, this.moduleTemplate, this.dependencyTemplates);
+                            const source = hotUpdateChunkTemplate.render(chunkIdNum, newModules, removedModules, this.hash, this.moduleTemplate, this.dependencyTemplates);
                             const filename = this.getPath(hotUpdateChunkFilename, {
                                 hash: records.hash,
                                 chunk: currentChunk
                             });
                             this.additionalChunkAssets.push(filename);
                             this.assets[filename] = source;
-                            hotUpdateMainContent.c[chunkId] = true;
+                            hotUpdateMainContent.c[chunkIdNum] = true;
                             currentChunk.files.push(filename);
                             this.applyPlugins('chunk-asset', currentChunk, filename);
                         }
                     }
                     else {
-                        hotUpdateMainContent.c[chunkId] = false;
+                        hotUpdateMainContent.c[chunkIdNum] = false;
                     }
                 }, this);
 
@@ -167,7 +172,7 @@ class HotModuleReplacementPlugin {
                 this.assets[filename] = source;
             });
 
-            compilation.mainTemplate.plugin('hash', function (hash) {
+            compilation.mainTemplate.plugin('hash', function (hash: Hash) {
                 hash.update('HotMainTemplateDecorator');
             });
 
@@ -176,7 +181,7 @@ class HotModuleReplacementPlugin {
                 (_, chunk, hash, varModuleId) => `hotCreateRequire(${varModuleId})`
             );
 
-            compilation.mainTemplate.plugin('require-extensions', function (this: MainTemplate, source) {
+            compilation.mainTemplate.plugin('require-extensions', function (source: string) {
                 const buf = [source];
                 buf.push('');
                 buf.push('// __webpack_hash__');
@@ -184,7 +189,7 @@ class HotModuleReplacementPlugin {
                 return this.asString(buf);
             });
 
-            compilation.mainTemplate.plugin('bootstrap', function (source, chunk, hash) {
+            compilation.mainTemplate.plugin('bootstrap', function (source: string, chunk: Chunk, hash: string) {
                 source = this.applyPluginsWaterfall('hot-bootstrap', source, chunk, hash);
                 return this.asString([
                     source,
@@ -199,7 +204,7 @@ class HotModuleReplacementPlugin {
 
             compilation.mainTemplate.plugin('global-hash', () => true);
 
-            compilation.mainTemplate.plugin('current-hash', function (_, length) {
+            compilation.mainTemplate.plugin('current-hash', function (_, length: number) {
                 if (isFinite(length)) {
                     return `hotCurrentHash.substr(0, ${length})`;
                 }
@@ -208,7 +213,12 @@ class HotModuleReplacementPlugin {
                 }
             });
 
-            compilation.mainTemplate.plugin('module-obj', function (source, chunk, hash, varModuleId) {
+            compilation.mainTemplate.plugin('module-obj', function (
+                source: string,
+                chunk: Chunk,
+                hash: string,
+                varModuleId: string
+            ) {
                 return this.asString([
                     `${source},`,
                     `hot: hotCreateModule(${varModuleId}),`,
@@ -217,27 +227,29 @@ class HotModuleReplacementPlugin {
                 ]);
             });
 
-            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions) {
-                parser.plugin('expression __webpack_hash__', function (expr) {
+            params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions: ParserOptions) {
+                parser.plugin('expression __webpack_hash__', function (expr: Expression) {
                     const dep = new ConstDependency('__webpack_require__.h()', expr.range);
                     dep.loc = expr.loc;
                     this.state.current.addDependency(dep);
                     return true;
                 });
-                parser.plugin('evaluate typeof __webpack_hash__',
-                    expr => new BasicEvaluatedExpression().setString('string').setRange(expr.range));
-                parser.plugin('evaluate Identifier module.hot', function (expr) {
+                parser.plugin('evaluate typeof __webpack_hash__', function (expr: UnaryExpression) {
+                    return new BasicEvaluatedExpression().setString('string')
+                        .setRange(expr.range)
+                });
+                parser.plugin('evaluate Identifier module.hot', function (expr: Identifier) {
                     return new BasicEvaluatedExpression().setBoolean(!!this.state.compilation.hotUpdateChunkTemplate)
                         .setRange(expr.range);
                 });
-                parser.plugin('call module.hot.accept', function (expr) {
+                parser.plugin('call module.hot.accept', function (expr: CallExpression) {
                     if (!this.state.compilation.hotUpdateChunkTemplate) {
                         return false;
                     }
                     if (expr.arguments.length >= 1) {
                         const arg = this.evaluateExpression(expr.arguments[0]);
-                        let params = [];
-                        const requests = [];
+                        let params: BasicEvaluatedExpression[] = [];
+                        const requests: string[] = [];
                         if (arg.isString()) {
                             params = [arg];
                         }
@@ -263,13 +275,13 @@ class HotModuleReplacementPlugin {
                         }
                     }
                 });
-                parser.plugin('call module.hot.decline', function (expr) {
+                parser.plugin('call module.hot.decline', function (expr: CallExpression) {
                     if (!this.state.compilation.hotUpdateChunkTemplate) {
                         return false;
                     }
                     if (expr.arguments.length === 1) {
                         const arg = this.evaluateExpression(expr.arguments[0]);
-                        let params = [];
+                        let params: BasicEvaluatedExpression[] = [];
                         if (arg.isString()) {
                             params = [arg];
                         }

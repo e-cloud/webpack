@@ -3,9 +3,12 @@
  Author Tobias Koppers @sokra
  */
 import NullDependency = require('./NullDependency');
+import { ReplaceSource } from 'webpack-sources'
+import { SourceRange } from '../../typings/webpack-types'
+import { Hash } from 'crypto'
 
 class Template {
-    apply(dep, source) {
+    apply(dep: ConstDependency, source: ReplaceSource) {
         if (typeof dep.range === 'number') {
             source.insert(dep.range, dep.expression);
         }
@@ -18,13 +21,13 @@ class Template {
 class ConstDependency extends NullDependency {
     optional: boolean
 
-    constructor(public expression, public range) {
+    constructor(public expression: string, public range: SourceRange | number) {
         super();
     }
 
     static Template = Template
 
-    updateHash(hash) {
+    updateHash(hash: Hash) {
         hash.update(`${this.range}`);
         hash.update(`${this.expression}`);
     }

@@ -7,6 +7,9 @@ import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import NullFactory = require('./NullFactory');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import Parser = require('./Parser')
+import { Expression } from 'estree'
+import { CompilationParams } from '../typings/webpack-types'
 
 const REPLACEMENTS = {
     __webpack_require__: '__webpack_require__', // eslint-disable-line camelcase
@@ -24,23 +27,25 @@ const REPLACEMENT_TYPES = {
     __webpack_chunk_load__: 'function', // eslint-disable-line camelcase
     __webpack_nonce__: 'string' // eslint-disable-line camelcase
 };
+
+// todo: this may be useless
 const IGNORES = [];
 
 class APIPlugin {
     apply(compiler: Compiler) {
-        compiler.plugin('compilation', function (compilation: Compilation, params) {
+        compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
             compilation.dependencyFactories.set(ConstDependency, new NullFactory());
             compilation.dependencyTemplates.set(ConstDependency, new ConstDependency.Template());
 
-            params.normalModuleFactory.plugin('parser', function (parser) {
+            params.normalModuleFactory.plugin('parser', function (parser: Parser) {
                 Object.keys(REPLACEMENTS).forEach(function (key) {
-                    parser.plugin(`expression ${key}`, function (expr) {
+                    parser.plugin(`expression ${key}`, function (expr: Expression) {
                         const dep = new ConstDependency(REPLACEMENTS[key], expr.range);
                         dep.loc = expr.loc;
                         this.state.current.addDependency(dep);
                         return true;
                     });
-                    parser.plugin(`evaluate typeof ${key}`, function (expr) {
+                    parser.plugin(`evaluate typeof ${key}`, function (expr: Expression) {
                             return new BasicEvaluatedExpression()
                                 .setString(REPLACEMENT_TYPES[key])
                                 .setRange(expr.range)

@@ -12,13 +12,13 @@ interface IHasDependencies {
 }
 
 abstract class DependenciesBlock {
-    dependencies: Dependency[]
     // todo: what is blocks?
     blocks: DependenciesBlock[]
-    variables: DependenciesBlockVariable[]
-    chunks: Chunk[]
     chunkReason: string
+    chunks: Chunk[]
+    dependencies: Dependency[]
     parent?: DependenciesBlock
+    variables: DependenciesBlockVariable[]
 
     constructor() {
         this.dependencies = [];
@@ -57,7 +57,11 @@ abstract class DependenciesBlock {
     }
 
     disconnect() {
-        function disconnect(i) {
+        function disconnect(
+            i: {
+                disconnect(): any
+            }
+        ) {
             i.disconnect();
         }
 
@@ -67,15 +71,20 @@ abstract class DependenciesBlock {
     }
 
     unseal() {
-        function unseal(i) {
+        function unseal(
+            i: {
+                unseal(): any
+            }
+        ) {
             i.unseal();
         }
 
         this.blocks.forEach(unseal);
     }
 
-    hasDependencies() {
-        return this.dependencies.length > 0 || (<IHasDependencies[]>this.blocks).concat(<IHasDependencies[]>this.variables)
+    hasDependencies(): boolean {
+        return this.dependencies.length > 0
+            || (<IHasDependencies[]>this.blocks).concat(<IHasDependencies[]>this.variables)
                 .some(item => item.hasDependencies());
     }
 

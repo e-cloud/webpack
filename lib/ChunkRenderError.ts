@@ -9,7 +9,7 @@ class ChunkRenderError extends Error {
     details: string
     name = 'ChunkRenderError'
 
-    constructor(public chunk: Chunk, public file, public error: Error) {
+    constructor(public chunk: Chunk, public file: string, public error: Error) {
         super();
         Error.captureStackTrace(this, ChunkRenderError);
         this.message = error.message;

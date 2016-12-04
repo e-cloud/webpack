@@ -4,11 +4,12 @@
  */
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
+import Chunk = require('../Chunk')
 
 class FlagIncludedChunksPlugin {
     apply(compiler: Compiler) {
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin('optimize-chunk-ids', function (chunks) {
+            compilation.plugin('optimize-chunk-ids', function (chunks: Chunk[]) {
                 chunks.forEach(chunkA => {
                     chunks.forEach(chunkB => {
                         if (chunkA === chunkB) {

@@ -5,20 +5,23 @@
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import NormalModule = require('./NormalModule')
+import { LoaderContext } from '../typings/webpack-types'
 
 class LoaderOptionsPlugin {
-    options: {}
+    options: LoaderOptionsPlugin.Option
 
-    constructor(options) {
+    constructor(options: LoaderOptionsPlugin.Option) {
         if (typeof options !== 'object') {
             options = {};
         }
         if (!options.test) {
+            // seems like act as a RegExp
             options.test = {
                 test() {
                     return true;
                 }
-            };
+            } as any;
         }
         this.options = options;
     }
@@ -26,7 +29,7 @@ class LoaderOptionsPlugin {
     apply(compiler: Compiler) {
         const options = this.options;
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin('normal-module-loader', function (context, module) {
+            compilation.plugin('normal-module-loader', function (context: LoaderContext, module: NormalModule) {
                 const resource = module.resource;
                 if (!resource) {
                     return;
@@ -41,6 +44,13 @@ class LoaderOptionsPlugin {
                 }
             });
         });
+    }
+}
+
+declare namespace LoaderOptionsPlugin {
+    interface Option {
+        test?: RegExp
+        [name: string]: any
     }
 }
 

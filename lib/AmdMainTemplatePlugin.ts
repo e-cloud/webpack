@@ -3,7 +3,10 @@
  Author Tobias Koppers @sokra
  */
 import { ConcatSource } from 'webpack-sources'
+import { Hash } from 'crypto'
 import Compilation = require('./Compilation')
+import Chunk = require('./Chunk')
+import ExternalModule = require('./ExternalModule')
 
 class AmdMainTemplatePlugin {
     constructor(public name: string) {
@@ -11,10 +14,11 @@ class AmdMainTemplatePlugin {
 
     apply(compilation: Compilation) {
         const mainTemplate = compilation.mainTemplate;
-        compilation.templatesPlugin('render-with-entry', (source, chunk, hash) => {
-            const externals = chunk.modules.filter(m => m.external);
+        compilation.templatesPlugin('render-with-entry', (source: string, chunk: Chunk, hash: Hash) => {
+            const externals = chunk.modules.filter((m: ExternalModule) => m.external);
             const externalsDepsArray = JSON.stringify(externals.map(
-                m => typeof m.request === 'object' ? m.request.amd : m.request)
+                // todo: typeof array is also object, may be error here
+                (m: ExternalModule) => typeof m.request === 'object' ? m.request.amd : m.request)
             );
             const externalsArguments = externals
                 .map(m => `__WEBPACK_EXTERNAL_MODULE_${m.id}__`)
@@ -33,13 +37,13 @@ class AmdMainTemplatePlugin {
                 return new ConcatSource('define(function() { return ', source, '});');
             }
         });
-        mainTemplate.plugin('global-hash-paths', paths => {
+        mainTemplate.plugin('global-hash-paths', (paths: string[]) => {
             if (this.name) {
                 paths.push(this.name);
             }
             return paths;
         });
-        mainTemplate.plugin('hash', hash => {
+        mainTemplate.plugin('hash', (hash: Hash) => {
             hash.update('exports amd');
             hash.update(`${this.name}`);
         });

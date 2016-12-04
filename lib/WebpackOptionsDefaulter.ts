@@ -4,6 +4,7 @@
  */
 import OptionsDefaulter = require('./OptionsDefaulter');
 import Template = require('./Template');
+import { WebpackOptions } from '../typings/webpack-types'
 
 class WebpackOptionsDefaulter extends OptionsDefaulter {
     constructor() {
@@ -26,7 +27,7 @@ class WebpackOptionsDefaulter extends OptionsDefaulter {
         this.set('module.wrappedContextRecursive', true);
         this.set('module.wrappedContextCritical', false);
 
-        this.set('output', 'call', (value, options) => {
+        this.set('output', 'call', (value: any, options: WebpackOptions) => {
             if (typeof value === 'string') {
                 return {
                     filename: value
@@ -40,15 +41,15 @@ class WebpackOptionsDefaulter extends OptionsDefaulter {
             }
         });
         this.set('output.filename', '[name].js');
-        this.set('output.chunkFilename', 'make', function (options) {
+        this.set('output.chunkFilename', 'make', function (options: WebpackOptions) {
             const filename = options.output.filename;
             return filename.includes('[name]') ? filename.replace('[name]', '[id]') : `[id].${filename}`;
         });
         this.set('output.library', '');
-        this.set('output.hotUpdateFunction', 'make',
-            options => Template.toIdentifier(`webpackHotUpdate${options.output.library}`));
-        this.set('output.jsonpFunction', 'make',
-            options => Template.toIdentifier(`webpackJsonp${options.output.library}`));
+        this.set('output.hotUpdateFunction', 'make', (options: WebpackOptions) =>
+            Template.toIdentifier(`webpackHotUpdate${options.output.library}`));
+        this.set('output.jsonpFunction', 'make', (options: WebpackOptions) =>
+            Template.toIdentifier(`webpackJsonp${options.output.library}`));
         this.set('output.libraryTarget', 'var');
         this.set('output.path', process.cwd());
         this.set('output.sourceMapFilename', '[file].map[query]');
@@ -74,7 +75,7 @@ class WebpackOptionsDefaulter extends OptionsDefaulter {
         this.set('resolve.unsafeCache', true);
         this.set('resolve.modules', ['node_modules']);
         this.set('resolve.extensions', ['.js', '.json']);
-        this.set('resolve.aliasFields', 'make', options => {
+        this.set('resolve.aliasFields', 'make', (options: WebpackOptions) => {
             if (options.target === 'web' || options.target === 'webworker') {
                 return ['browser'];
             }
@@ -82,7 +83,7 @@ class WebpackOptionsDefaulter extends OptionsDefaulter {
                 return [];
             }
         });
-        this.set('resolve.mainFields', 'make', options => {
+        this.set('resolve.mainFields', 'make', (options: WebpackOptions) => {
             if (options.target === 'web' || options.target === 'webworker') {
                 return ['browser', 'module', 'main'];
             }

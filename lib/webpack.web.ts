@@ -6,8 +6,9 @@ import Compiler = require('./Compiler');
 import WebEnvironmentPlugin = require('./web/WebEnvironmentPlugin');
 import WebpackOptionsApply = require('./WebpackOptionsApply');
 import WebpackOptionsDefaulter = require('./WebpackOptionsDefaulter');
+import { WebpackOptions, WatchCallback } from '../typings/webpack-types'
 
-function webpack(options, callback) {
+function webpack(options: WebpackOptions, callback: WatchCallback) {
     new WebpackOptionsDefaulter().process(options);
 
     const compiler = new Compiler();

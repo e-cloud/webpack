@@ -2,7 +2,17 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-export function getLoadDepBlockWrapper(depBlock, outputOptions, requestShortener, name) {
+import DependenciesBlock = require('../DependenciesBlock')
+import { WebpackOutputOptions } from '../../typings/webpack-types'
+import RequestShortener = require('../RequestShortener')
+import AsyncDependenciesBlock = require('../AsyncDependenciesBlock')
+
+export function getLoadDepBlockWrapper(
+    depBlock: AsyncDependenciesBlock,
+    outputOptions: WebpackOutputOptions,
+    requestShortener: RequestShortener,
+    name: string
+) {
     const promiseCode = getDepBlockPromise(depBlock, outputOptions, requestShortener, name);
     return [
         `${promiseCode}.then(`,
@@ -11,7 +21,12 @@ export function getLoadDepBlockWrapper(depBlock, outputOptions, requestShortener
     ];
 }
 
-export function getDepBlockPromise(depBlock, outputOptions, requestShortener, name) {
+export function getDepBlockPromise(
+    depBlock: AsyncDependenciesBlock,
+    outputOptions: WebpackOutputOptions,
+    requestShortener: RequestShortener,
+    name: string
+) {
     if (depBlock.chunks) {
         const chunks = depBlock.chunks.filter(chunk => !chunk.hasRuntime() && typeof chunk.id === 'number');
         if (chunks.length === 1) {
@@ -31,7 +46,7 @@ export function getDepBlockPromise(depBlock, outputOptions, requestShortener, na
     return 'Promise.resolve()';
 }
 
-function asComment(str) {
+function asComment(str: string) {
     if (!str) {
         return '';
     }

@@ -4,9 +4,11 @@
  */
 import NullDependency = require('./NullDependency');
 import LocalModule = require('./LocalModule')
+import { ReplaceSource } from 'webpack-sources'
+import { SourceRange } from '../../typings/webpack-types'
 
 class Template {
-    apply(dep, source) {
+    apply(dep: LocalModuleDependency, source: ReplaceSource) {
         if (!dep.range) {
             return;
         }
@@ -17,7 +19,7 @@ class Template {
 class LocalModuleDependency extends NullDependency {
     optional: boolean
 
-    constructor(public localModule: LocalModule, public range?) {
+    constructor(public localModule: LocalModule, public range?: SourceRange) {
         super();
         localModule.flagUsed();
     }

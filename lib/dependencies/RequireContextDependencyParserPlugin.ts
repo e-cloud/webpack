@@ -4,9 +4,11 @@
  */
 import AbstractPlugin = require('../AbstractPlugin');
 import RequireContextDependency = require('./RequireContextDependency');
+import Parser = require('../Parser')
+import { CallExpression } from 'estree'
 
 export = AbstractPlugin.create({
-    'call require.context'(expr) {
+    'call require.context'(this: Parser, expr: CallExpression) {
         let regExp = /^\.\/.*$/;
         let recursive = true;
         switch (expr.arguments.length) {

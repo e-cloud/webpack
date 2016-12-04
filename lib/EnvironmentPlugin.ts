@@ -12,7 +12,7 @@ class EnvironmentPlugin {
     constructor(keys: string[])
     constructor(...keys: string[])
 
-    constructor(keys) {
+    constructor(keys: any) {
         this.keys = Array.isArray(keys) ? keys : Array.prototype.slice.call(arguments);
     }
 

@@ -5,16 +5,17 @@
 import LoaderDependency = require('./LoaderDependency');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
+import { LoaderContext, CompilationParams } from '../../typings/webpack-types'
 
 class LoaderPlugin {
     apply(compiler: Compiler) {
-        compiler.plugin('compilation', function (compilation: Compilation, params) {
+        compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
             const normalModuleFactory = params.normalModuleFactory;
 
             compilation.dependencyFactories.set(LoaderDependency, normalModuleFactory);
         });
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin('normal-module-loader', function (loaderContext, module) {
+            compilation.plugin('normal-module-loader', function (loaderContext: LoaderContext, module) {
                 loaderContext.loadModule = function loadModule(request, callback) {
                     const dep = new LoaderDependency(request);
                     dep.loc = request;
@@ -33,7 +34,7 @@ class LoaderPlugin {
                             next();
                         }
 
-                        function next(err?) {
+                        function next(err?: Error) {
                             if (err) {
                                 return callback(err);
                             }

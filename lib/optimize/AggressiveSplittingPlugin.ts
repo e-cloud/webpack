@@ -5,6 +5,8 @@
 import path = require('path');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
+import Chunk = require('../Chunk')
+import { Record } from '../../typings/webpack-types'
 
 class AggressiveSplittingPlugin {
     constructor(
@@ -32,10 +34,10 @@ class AggressiveSplittingPlugin {
     apply(compiler: Compiler) {
         const _this = this;
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin('optimize-chunks-advanced', function (chunks) {
+            compilation.plugin('optimize-chunks-advanced', function (chunks: Chunk[]) {
                 let i;
-                let chunk;
-                let newChunk;
+                let chunk: Chunk;
+                let newChunk: Chunk;
                 const savedSplits = compilation.records && compilation.records.aggressiveSplits || [];
                 let usedSplits = savedSplits;
                 if (compilation._aggressiveSplittingSplits) {
@@ -49,6 +51,7 @@ class AggressiveSplittingPlugin {
                     for (i = 0; i < chunks.length; i++) {
                         chunk = chunks[i];
                         const chunkModuleNames = chunk.modules.map(m => makeRelative(compiler, m.identifier()));
+                        // todo: wrong type comparison
                         if (chunkModuleNames.length < splitData.modules) {
                             continue;
                         }
@@ -94,12 +97,12 @@ class AggressiveSplittingPlugin {
                         newChunk = compilation.addChunk();
                         const modules = chunk.modules.filter(m => chunk.entryModule !== m)
                             .sort((a, b) => {
-                                a = a.identifier();
-                                b = b.identifier();
-                                if (a > b) {
+                                const aId = a.identifier();
+                                const bId = b.identifier();
+                                if (aId > bId) {
                                     return 1;
                                 }
-                                if (a < b) {
+                                if (aId < bId) {
                                     return -1;
                                 }
                                 return 0;
@@ -142,7 +145,7 @@ class AggressiveSplittingPlugin {
                     }
                 }
             });
-            compilation.plugin('record-hash', function (records) {
+            compilation.plugin('record-hash', function (records: Record) {
                 // 3. save to made splittings to records
                 const minSize = _this.options.minSize;
                 const maxSize = _this.options.maxSize;
@@ -194,7 +197,7 @@ class AggressiveSplittingPlugin {
 
 export = AggressiveSplittingPlugin;
 
-function makeRelative(compiler, identifier) {
+function makeRelative(compiler: Compiler, identifier: string) {
     const context = compiler.context;
     return identifier.split('|')
         .map(str =>
@@ -204,7 +207,7 @@ function makeRelative(compiler, identifier) {
         ).join('|');
 }
 
-function copyWithReason(obj) {
+function copyWithReason(obj: Chunk.ChunkOrigin): Chunk.ChunkOrigin {
     const newObj: any = {};
     Object.keys(obj).forEach(key => {
         newObj[key] = obj[key];

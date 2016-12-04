@@ -4,9 +4,18 @@
  */
 import NullDependency = require('./NullDependency');
 import DepBlockHelpers = require('./DepBlockHelpers');
+import { ReplaceSource } from 'webpack-sources'
+import { WebpackOutputOptions } from '../../typings/webpack-types'
+import RequestShortener = require('../RequestShortener')
+import AMDRequireDependenciesBlock = require('./AMDRequireDependenciesBlock')
 
 class Template {
-    apply(dep, source, outputOptions, requestShortener) {
+    apply(
+        dep: AMDRequireDependency,
+        source: ReplaceSource,
+        outputOptions: WebpackOutputOptions,
+        requestShortener: RequestShortener
+    ) {
         const depBlock = dep.block;
         const wrapper = DepBlockHelpers.getLoadDepBlockWrapper(depBlock, outputOptions, requestShortener, 'require');
         if (depBlock.arrayRange && !depBlock.functionRange) {
@@ -42,7 +51,7 @@ class Template {
 }
 
 class AMDRequireDependency extends NullDependency {
-    constructor(public block) {
+    constructor(public block: AMDRequireDependenciesBlock) {
         super();
     }
 

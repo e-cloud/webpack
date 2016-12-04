@@ -3,6 +3,9 @@
  Author Tobias Koppers @sokra
  */
 import Compiler = require('./Compiler')
+import NodeWatchFileSystem = require('./node/NodeWatchFileSystem')
+import Compilation = require('./Compilation')
+import { TimeStampMap, WatchOptions, ErrCallback, WatchFileSystem } from '../typings/webpack-types'
 
 class WatchIgnorePlugin {
     constructor(protected paths: string[]) {
@@ -20,25 +23,39 @@ class WatchIgnorePlugin {
 export = WatchIgnorePlugin;
 
 class IgnoringWatchFileSystem {
-    constructor(protected wfs, protected paths) {
+    constructor(protected wfs: WatchFileSystem, protected paths: (string | RegExp)[]) {
     }
 
-    watch(files, dirs, missing, startTime, options, callback, callbackUndelayed) {
-        const ignored = path => this.paths.some(p => p instanceof RegExp ? p.test(path) : path.indexOf(p) === 0);
+    watch(
+        files: string[],
+        dirs: string[],
+        missing: string[],
+        startTime: number,
+        options: WatchOptions,
+        callback: ErrCallback,
+        callbackUndelayed: (fileName: string, changeTime: number) => any
+    ) {
+        const ignored = (path: string) => this.paths.some(
+            p => p instanceof RegExp ? p.test(path) : path.indexOf(p) === 0);
 
-        const notIgnored = path => !ignored(path);
+        const notIgnored = (path: string) => !ignored(path);
 
         const ignoredFiles = files.filter(ignored);
         const ignoredDirs = dirs.filter(ignored);
 
         this.wfs.watch(
-            files.filter(notIgnored), dirs.filter(notIgnored), missing, startTime, options, (
-                err,
-                filesModified,
-                dirsModified,
-                missingModified,
-                fileTimestamps,
-                dirTimestamps
+            files.filter(notIgnored),
+            dirs.filter(notIgnored),
+            missing,
+            startTime,
+            options,
+            (
+                err: Error,
+                filesModified: string[],
+                dirsModified: string[],
+                missingModified: string[],
+                fileTimestamps: TimeStampMap,
+                dirTimestamps: TimeStampMap
             ) => {
                 if (err) {
                     return callback(err);

@@ -4,15 +4,25 @@
  */
 import AsyncDependenciesBlock = require('../AsyncDependenciesBlock');
 import AMDRequireDependency = require('./AMDRequireDependency');
+import { Expression, SourceLocation } from 'estree'
+import { SourceRange } from '../../typings/webpack-types'
+import Module = require('../Module')
 
 class AMDRequireDependenciesBlock extends AsyncDependenciesBlock {
-    outerRange
+    outerRange: SourceRange
     bindThis = true
-    functionBindThis
-    errorCallbackBindThis
-    range
+    functionBindThis: boolean
+    errorCallbackBindThis: boolean
+    range: SourceRange
 
-    constructor(public expr, public arrayRange, public functionRange, public errorCallbackRange, module, loc) {
+    constructor(
+        public expr: Expression,
+        public arrayRange: SourceRange,
+        public functionRange: SourceRange,
+        public errorCallbackRange: SourceRange,
+        module: Module,
+        loc: SourceLocation
+    ) {
         super(null, module, loc);
         this.outerRange = expr.range;
 

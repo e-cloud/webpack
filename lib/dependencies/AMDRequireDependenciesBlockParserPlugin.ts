@@ -14,15 +14,20 @@ import ConstDependency = require('./ConstDependency');
 import getFunctionExpression = require('./getFunctionExpression');
 import UnsupportedFeatureWarning = require('../UnsupportedFeatureWarning');
 import Parser = require('../Parser')
+import { CallExpression, Expression, Identifier } from 'estree'
+import { ModuleOptions } from '../../typings/webpack-types'
+import BasicEvaluatedExpression = require('../BasicEvaluatedExpression')
+import Dependency = require('../Dependency')
+import ModuleDependency = require('./ModuleDependency')
 
 class AMDRequireDependenciesBlockParserPlugin {
-    constructor(public options) {
+    constructor(public options: ModuleOptions) {
     }
 
     apply(parser: Parser) {
         const options = this.options;
-        parser.plugin('call require', function (this: Parser, expr) {
-            let param;
+        parser.plugin('call require', function (expr: CallExpression) {
+            let param: BasicEvaluatedExpression;
             let dep;
             let old;
             let result;
@@ -43,9 +48,9 @@ class AMDRequireDependenciesBlockParserPlugin {
             }
 
             if (expr.arguments.length === 1) {
-                this.inScope([], function () {
+                this.inScope([], () => {
                     result = this.applyPluginsBailResult('call require:amd:array', expr, param);
-                }.bind(this));
+                });
                 this.state.current = old;
                 if (!result) {
                     return;
@@ -56,9 +61,9 @@ class AMDRequireDependenciesBlockParserPlugin {
 
             if (expr.arguments.length === 2 || expr.arguments.length === 3) {
                 try {
-                    this.inScope([], function () {
+                    this.inScope([], () => {
                         result = this.applyPluginsBailResult('call require:amd:array', expr, param);
-                    }.bind(this));
+                    });
                     if (!result) {
                         dep = new UnsupportedDependency('unsupported', expr.range);
                         old.addDependency(dep);
@@ -68,9 +73,9 @@ class AMDRequireDependenciesBlockParserPlugin {
                         dep = null;
                         return true;
                     }
-                    dep.functionBindThis = processFunctionArgument(this, expr.arguments[1]);
+                    dep.functionBindThis = processFunctionArgument(this, expr.arguments[1] as Expression);
                     if (expr.arguments.length === 3) {
-                        dep.errorCallbackBindThis = processFunctionArgument(this, expr.arguments[2]);
+                        dep.errorCallbackBindThis = processFunctionArgument(this, expr.arguments[2] as Expression);
                     }
                 } finally {
                     this.state.current = old;
@@ -81,7 +86,7 @@ class AMDRequireDependenciesBlockParserPlugin {
                 return true;
             }
         });
-        parser.plugin('call require:amd:array', function (expr, param) {
+        parser.plugin('call require:amd:array', function (expr: CallExpression, param: BasicEvaluatedExpression) {
             if (param.isArray()) {
                 param.items.forEach(function (param) {
                     const result = this.applyPluginsBailResult('call require:amd:item', expr, param);
@@ -92,7 +97,7 @@ class AMDRequireDependenciesBlockParserPlugin {
                 return true;
             }
             else if (param.isConstArray()) {
-                const deps = [];
+                const deps: ModuleDependency[] = [];
                 param.array.forEach(function (request) {
                     let dep;
                     let localModule;
@@ -123,7 +128,7 @@ class AMDRequireDependenciesBlockParserPlugin {
                 return true;
             }
         });
-        parser.plugin('call require:amd:item', function (expr, param) {
+        parser.plugin('call require:amd:item', function (expr: CallExpression, param: BasicEvaluatedExpression) {
             if (param.isConditional()) {
                 param.options.forEach(function (param) {
                     const result = this.applyPluginsBailResult('call require:amd:item', expr, param);
@@ -137,6 +142,7 @@ class AMDRequireDependenciesBlockParserPlugin {
                 let dep;
                 let localModule;
                 if (param.string === 'require') {
+                    // todo: type unmatched
                     dep = new ConstDependency('__webpack_require__', param.string);
                 }
                 else if (['exports', 'module'].includes(param.string)) {
@@ -155,7 +161,7 @@ class AMDRequireDependenciesBlockParserPlugin {
                 return true;
             }
         });
-        parser.plugin('call require:amd:context', function (expr, param) {
+        parser.plugin('call require:amd:context', function (expr: CallExpression, param) {
             const dep = ContextDependencyHelpers.create(AMDRequireContextDependency, param.range, param, expr, options);
             if (!dep) {
                 return;
@@ -168,11 +174,11 @@ class AMDRequireDependenciesBlockParserPlugin {
     }
 }
 
-function processFunctionArgument(parser, expression) {
+function processFunctionArgument(parser: Parser, expression: Expression) {
     let bindThis = true;
     const fnData = getFunctionExpression(expression);
     if (fnData) {
-        parser.inScope(fnData.fn.params.filter(function (i) {
+        parser.inScope(fnData.fn.params.filter(function (i: Identifier) {
             return !['require', 'module', 'exports'].includes(i.name);
         }), function () {
             if (fnData.fn.body.type === 'BlockStatement') {

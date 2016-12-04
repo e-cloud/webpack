@@ -4,11 +4,12 @@
  */
 import Module = require('./Module')
 import Chunk = require('./Chunk')
+import Dependency = require('./Dependency')
 
 class ModuleReason {
     chunks: Chunk[]
 
-    constructor(public module: Module, public dependency) {
+    constructor(public module: Module, public dependency: Dependency) {
     }
 }
 export = ModuleReason;

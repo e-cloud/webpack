@@ -3,17 +3,22 @@
  Author Tobias Koppers @sokra
  */
 import { ConcatSource, OriginalSource } from 'webpack-sources'
+import { AuxiliaryComment } from '../typings/webpack-types'
+import { Hash } from 'crypto'
 import Compilation = require('./Compilation')
+import Chunk = require('./Chunk')
+import ExternalModule = require('./ExternalModule')
+import Module = require('./Module')
 
-function accessorToObjectAccess(accessor) {
+function accessorToObjectAccess(accessor: string[]) {
     return accessor.map(a => `[${JSON.stringify(a)}]`).join('');
 }
 
-function accessorAccess(base, accessor) {
-    accessor = [].concat(accessor);
-    return accessor.map((a, idx) => {
-        a = base + accessorToObjectAccess(accessor.slice(0, idx + 1));
-        if (idx === accessor.length - 1) {
+function accessorAccess(base: string, accessor: string) {
+    let accessorArr = [].concat(accessor);
+    return accessorArr.map((a, idx) => {
+        a = base + accessorToObjectAccess(accessorArr.slice(0, idx + 1));
+        if (idx === accessorArr.length - 1) {
             return a;
         }
         return `${a} = ${a} || {}`;
@@ -21,11 +26,17 @@ function accessorAccess(base, accessor) {
 }
 
 class UmdMainTemplatePlugin {
-    auxiliaryComment: {}
+    auxiliaryComment: AuxiliaryComment
     optionalAmdExternalAsGlobal: boolean
     namedDefine: boolean
 
-    constructor(public name: string, options) {
+    constructor(
+        public name: string, options: {
+            auxiliaryComment: AuxiliaryComment
+            optionalAmdExternalAsGlobal: boolean
+            namedDefine: boolean
+        }
+    ) {
         this.optionalAmdExternalAsGlobal = options.optionalAmdExternalAsGlobal;
         this.namedDefine = options.namedDefine;
         this.auxiliaryComment = options.auxiliaryComment;
@@ -33,10 +44,14 @@ class UmdMainTemplatePlugin {
 
     apply(compilation: Compilation) {
         const mainTemplate = compilation.mainTemplate;
-        compilation.templatesPlugin('render-with-entry', (source, chunk, hash) => {
-            let externals = chunk.modules.filter(m => m.external);
-            const optionalExternals = [];
-            let requiredExternals = [];
+        compilation.templatesPlugin('render-with-entry', (
+            source: string,
+            chunk: Chunk,
+            hash: string
+        ) => {
+            let externals = chunk.modules.filter((m: ExternalModule) => m.external) as ExternalModule[];
+            const optionalExternals: ExternalModule[] = [];
+            let requiredExternals: ExternalModule[] = [];
             if (this.optionalAmdExternalAsGlobal) {
                 externals.forEach(m => {
                     if (m.optional) {
@@ -52,55 +67,62 @@ class UmdMainTemplatePlugin {
                 requiredExternals = externals;
             }
 
-            function replaceKeys(str) {
+            function replaceKeys(str: string) {
                 return mainTemplate.applyPluginsWaterfall('asset-path', str, {
                     hash,
                     chunk
                 });
             }
 
-            function externalsDepsArray(modules) {
+            function externalsDepsArray(modules: ExternalModule[]) {
                 return `[${replaceKeys(
-                    modules.map(m => JSON.stringify(typeof m.request === 'object' ? m.request.amd : m.request))
+                    modules.map(({ request }) =>
+                            JSON.stringify(typeof request === 'object' ? request.amd : request)
+                        )
                         .join(', ')
                 )}]`;
             }
 
-            function externalsRootArray(modules) {
+            function externalsRootArray(modules: ExternalModule[]) {
                 return replaceKeys(modules.map(m => {
                     let request = m.request;
                     if (typeof request === 'object') {
+                        // todo: here is strange, although it works, but against the documentation
                         request = request.root;
                     }
                     return `root${accessorToObjectAccess([].concat(request))}`;
                 }).join(', '));
             }
 
-            function externalsRequireArray(type) {
-                return replaceKeys(externals.map(m => {
-                    let expr;
-                    let request = m.request;
-                    if (typeof request === 'object') {
-                        request = request[type];
-                    }
-                    if (Array.isArray(request)) {
-                        expr = `require(${JSON.stringify(request[0])})${accessorToObjectAccess(request.slice(1))}`;
-                    }
-                    else {
-                        expr = `require(${JSON.stringify(request)})`;
-                    }
-                    if (m.optional) {
-                        expr = `(function webpackLoadOptionalExternalModule() { try { return ${expr}; } catch(e) {} }())`;
-                    }
-                    return expr;
-                }).join(', '));
+            function externalsRequireArray(type: string) {
+                return replaceKeys(
+                    externals.map(m => {
+                            let expr;
+                            let request = m.request;
+                            if (typeof request === 'object') {
+                                request = request[type];
+                            }
+                            if (Array.isArray(request)) {
+                                expr = `require(${JSON.stringify(request[0])})${accessorToObjectAccess(request.slice(1))}`;
+                            }
+                            else {
+                                expr = `require(${JSON.stringify(request)})`;
+                            }
+                            if (m.optional) {
+                                expr = `(function webpackLoadOptionalExternalModule() { try { return ${expr}; } catch(e) {} }())`;
+                            }
+                            return expr;
+                        })
+                        .join(', ')
+                );
             }
 
-            function externalsArguments(modules) {
-                return modules.map(m => `__WEBPACK_EXTERNAL_MODULE_${m.id}__`).join(', ');
+            function externalsArguments(modules: ExternalModule[]) {
+                return modules.map(m => `__WEBPACK_EXTERNAL_MODULE_${m.id}__`)
+                    .join(', ');
             }
 
-            function libraryName(library) {
+            function libraryName(library: string) {
                 return JSON.stringify(replaceKeys([].concat(library).pop()));
             }
 
@@ -156,13 +178,13 @@ ${(externals.length > 0
                 ';\n})'
             );
         });
-        mainTemplate.plugin('global-hash-paths', paths => {
+        mainTemplate.plugin('global-hash-paths', (paths: string[]) => {
             if (this.name) {
                 paths = paths.concat(this.name);
             }
             return paths;
         });
-        mainTemplate.plugin('hash', hash => {
+        mainTemplate.plugin('hash', (hash: Hash) => {
             hash.update('umd');
             hash.update(`${this.name}`);
         });
@@ -171,11 +193,11 @@ ${(externals.length > 0
 
 export = UmdMainTemplatePlugin;
 
-function isString(val) {
+function isString(val: any) {
     return typeof val === 'string'
 }
 
-function normalizeAuxiliaryComment(auxiliaryComment, type) {
+function normalizeAuxiliaryComment(auxiliaryComment: AuxiliaryComment, type: string) {
     if (auxiliaryComment) {
         if (isString(auxiliaryComment)) {
             return `//${auxiliaryComment}`

@@ -2,17 +2,18 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-class AbstractPlugin {
-    _plugins: {
-        [prop: string]: Function
-    }
+import Tapable = require('tapable')
+import { PlainObject } from '../typings/webpack-types'
 
-    constructor(plugins = {}) {
+class AbstractPlugin {
+    _plugins: Dictionary<Tapable.Handler>
+
+    constructor(plugins: PlainObject = {}) {
         this._plugins = plugins;
     }
 
     // todo: remove this static method
-    static create(plugins) {
+    static create(plugins: PlainObject) {
         class Plugin extends AbstractPlugin {
             constructor() {
                 super(plugins);
@@ -22,7 +23,7 @@ class AbstractPlugin {
         return Plugin;
     }
 
-    apply(object) {
+    apply(object: Tapable) {
         for (const name in this._plugins) {
             object.plugin(name, this._plugins[name]);
         }

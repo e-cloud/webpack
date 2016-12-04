@@ -4,9 +4,11 @@
  */
 import NullDependency = require('./NullDependency');
 import HarmonyModulesHelpers = require('./HarmonyModulesHelpers');
+import { ReplaceSource } from 'webpack-sources'
+import Module = require('../Module')
 
 class Template {
-    apply(dep, source, outputOptions, requestShortener) {
+    apply(dep: HarmonyExportSpecifierDependency, source: ReplaceSource) {
         const used = dep.originModule.isUsed(dep.name);
         const active = HarmonyModulesHelpers.isActive(dep.originModule, dep);
         let content;
@@ -30,7 +32,13 @@ class Template {
 }
 
 class HarmonyExportSpecifierDependency extends NullDependency {
-    constructor(public originModule, public id, public  name, public position, public immutable) {
+    constructor(
+        public originModule: Module,
+        public id: number,
+        public name: string,
+        public position: number,
+        public immutable: boolean
+    ) {
         super();
     }
 

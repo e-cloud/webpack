@@ -4,24 +4,28 @@
  */
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import Module = require('./Module')
+import Chunk = require('./Chunk')
+import DependenciesBlock = require('./DependenciesBlock')
+import Dependency = require('./Dependency')
 
 class FlagDependencyUsagePlugin {
     apply(compiler: Compiler) {
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin('optimize-modules-advanced', function (modules) {
+            compilation.plugin('optimize-modules-advanced', function (modules: Module[]) {
 
                 modules.forEach(module => {
                     module.used = false;
                 });
 
-                compilation.chunks.forEach(chunk => {
+                compilation.chunks.forEach((chunk: Chunk) => {
                     if (chunk.entryModule) {
                         processModule(chunk.entryModule, true);
                     }
                 });
             });
 
-            function processModule(module, usedExports) {
+            function processModule(module: Module, usedExports: boolean | any[]) {
                 module.used = true;
                 if (usedExports === true || module.usedExports === true) {
                     module.usedExports = true;
@@ -37,10 +41,11 @@ class FlagDependencyUsagePlugin {
                     module.usedExports = false;
                 }
 
-                processDependenciesBlock(module, module.usedExports);
+                processDependenciesBlock(module, module.usedExports as boolean);
             }
 
-            function processDependenciesBlock(depBlock, usedExports) {
+            // todo: usedExports is uesless
+            function processDependenciesBlock(depBlock: DependenciesBlock, usedExports: boolean) {
                 depBlock.dependencies.forEach(dep => {
                     processDependency(dep, usedExports);
                 });
@@ -54,7 +59,7 @@ class FlagDependencyUsagePlugin {
                 });
             }
 
-            function processDependency(dep, usedExports) {
+            function processDependency(dep: Dependency, usedExports: boolean) {
                 const reference = dep.getReference && dep.getReference();
                 if (!reference) {
                     return;
@@ -68,7 +73,7 @@ class FlagDependencyUsagePlugin {
                 }
             }
 
-            function addToSet(a, b) {
+            function addToSet(a: any[], b: any[]) {
                 b.forEach(item => {
                     if (!a.includes(item)) {
                         a.push(item);
@@ -77,7 +82,7 @@ class FlagDependencyUsagePlugin {
                 return a;
             }
 
-            function isSubset(biggerSet, subset) {
+            function isSubset(biggerSet: any[] | true, subset: any[] | true) {
                 if (biggerSet === true) {
                     return true;
                 }

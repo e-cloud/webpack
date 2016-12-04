@@ -4,19 +4,23 @@
  */
 import NullDependency = require('./NullDependency');
 import HarmonyModulesHelpers = require('./HarmonyModulesHelpers');
+import { ReplaceSource } from 'webpack-sources'
+import { Hash } from 'crypto'
+import Module = require('../Module')
+import Dependency = require('../Dependency')
 
 class Template {
-    apply(dep, source) {
+    apply(dep: HarmonyExportImportedSpecifierDependency, source: ReplaceSource) {
         const name = dep.importedVar;
         const used = dep.originModule.isUsed(dep.name);
         const importedModule = dep.importDependency.module;
         const active = HarmonyModulesHelpers.isActive(dep.originModule, dep);
         let content;
-        let activeExports;
+        let activeExports: string[];
         let items;
         const importIsHarmony = importedModule && (!importedModule.meta || importedModule.meta.harmonyModule);
 
-        function getReexportStatement(key, valueKey) {
+        function getReexportStatement(key: string, valueKey: string) {
             return `${importIsHarmony || !valueKey
                 ? ''
                 : 'if(__webpack_require__.o(' + name + ', ' + valueKey + ')) '}__webpack_require__.d(exports, ${key}, function() { return ${name}${valueKey === null
@@ -86,8 +90,9 @@ class Template {
                 return [exportUsed, idUsed];
             }).filter(Boolean);
             if (items.length > 0) {
-                content = items.map(
-                    item => `/* harmony namespace reexport (by provided) */ ${getReexportStatement(JSON.stringify(item[0]), JSON.stringify(item[1]))}`)
+                content = items.map(item =>
+                        `/* harmony namespace reexport (by provided) */ ${getReexportStatement(JSON.stringify(item[0]), JSON.stringify(item[1]))}`
+                    )
                     .join('');
             }
             else {
@@ -118,12 +123,12 @@ class Template {
 
 class HarmonyExportImportedSpecifierDependency extends NullDependency {
     constructor(
-        public originModule,
-        public importDependency,
-        public importedVar,
-        public id,
-        public name,
-        public position
+        public originModule: Module,
+        public importDependency: Dependency,
+        public importedVar: string,
+        public id: string,
+        public name: string,
+        public position: number
     ) {
         super();
     }
@@ -140,28 +145,34 @@ class HarmonyExportImportedSpecifierDependency extends NullDependency {
         const m = this.importDependency.module;
         if (!this.name) {
             // export *
+            const providedExports = m.providedExports
             if (Array.isArray(this.originModule.usedExports)) {
                 // reexport * with known used exports
                 const activeExports = HarmonyModulesHelpers.getActiveExports(this.originModule);
-                if (Array.isArray(m.providedExports)) {
+                if (Array.isArray(providedExports)) {
                     return {
                         module: m,
-                        importedNames: this.originModule.usedExports.filter(
-                            id => !activeExports.includes(id) && m.providedExports.includes(id) && id !== 'default', this)
+                        importedNames: this.originModule.usedExports.filter(id =>
+                            !activeExports.includes(id) && providedExports.includes(id) && id !== 'default',
+                            // todo: binding this is useless
+                            this
+                        )
                     };
                 }
                 else {
                     return {
                         module: m,
                         importedNames: this.originModule.usedExports.filter(
-                            id => !activeExports.includes(id) && id !== 'default', this)
+                            id => !activeExports.includes(id) && id !== 'default',
+                            this
+                        )
                     };
                 }
             }
-            else if (Array.isArray(m.providedExports)) {
+            else if (Array.isArray(providedExports)) {
                 return {
                     module: m,
-                    importedNames: m.providedExports.filter(id => id !== 'default')
+                    importedNames: providedExports.filter(id => id !== 'default')
                 };
             }
             else {
@@ -227,7 +238,7 @@ class HarmonyExportImportedSpecifierDependency extends NullDependency {
         };
     }
 
-    updateHash(hash) {
+    updateHash(hash: Hash) {
         super.updateHash(hash);
         const importedModule = this.importDependency.module;
         hash.update(`${importedModule && importedModule.used + JSON.stringify(importedModule.usedExports) + JSON.stringify(importedModule.providedExports)}`);

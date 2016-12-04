@@ -2,18 +2,21 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { ConcatSource } from 'webpack-sources'
+import { ConcatSource, Source } from 'webpack-sources'
+import { Hash } from 'crypto'
+import Chunk = require('../Chunk')
+import ChunkTemplate = require('../ChunkTemplate')
 
 class NodeChunkTemplatePlugin {
-    apply(chunkTemplate) {
-        chunkTemplate.plugin('render', function (modules, chunk) {
+    apply(chunkTemplate: ChunkTemplate) {
+        chunkTemplate.plugin('render', function (modules: Source, chunk: Chunk) {
             const source = new ConcatSource();
             source.add(`exports.ids = ${JSON.stringify(chunk.ids)};\nexports.modules = `);
             source.add(modules);
             source.add(';');
             return source;
         });
-        chunkTemplate.plugin('hash', function (hash) {
+        chunkTemplate.plugin('hash', function (hash: Hash) {
             hash.update('node');
             hash.update('3');
         });

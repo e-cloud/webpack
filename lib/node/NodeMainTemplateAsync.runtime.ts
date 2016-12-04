@@ -5,18 +5,18 @@
 /* tslint:disable:no-unused-variable no-unused-expression */
 
 // just for eliminating the compiler error, ignore it
-declare var installedChunks
-declare var $hotChunkFilename$
-declare var $require$
-declare var hotAddUpdateChunk
-declare var $hotMainFilename$
+declare var installedChunks: any
+declare var $hotChunkFilename$: any
+declare var $require$: any
+declare var hotAddUpdateChunk: any
+declare var $hotMainFilename$: any
 
 /*global installedChunks $hotChunkFilename$ $require$ hotAddUpdateChunk $hotMainFilename$ */
 export = function () {
-    function hotDownloadUpdateChunk(chunkId) {
+    function hotDownloadUpdateChunk(chunkId: number) {
         // eslint-disable-line no-unused-vars
         const filename = require('path').join(__dirname, $hotChunkFilename$);
-        require('fs').readFile(filename, 'utf-8', function (err, content) {
+        require('fs').readFile(filename, 'utf-8', function (err: Error, content: string) {
             if (err) {
                 if ($require$.onError) {
                     return $require$.oe(err);
@@ -35,7 +35,7 @@ export = function () {
         // eslint-disable-line no-unused-vars
         const filename = require('path').join(__dirname, $hotMainFilename$);
         return new Promise((resolve, reject) => {
-            require('fs').readFile(filename, 'utf-8', (err, content) => {
+            require('fs').readFile(filename, 'utf-8', (err: Error, content: string) => {
                 if (err) {
                     return resolve();
                 }
@@ -50,7 +50,7 @@ export = function () {
         });
     }
 
-    function hotDisposeChunk(chunkId) {
+    function hotDisposeChunk(chunkId: number) {
         delete installedChunks[chunkId];
     }
 };

@@ -2,7 +2,19 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { CachedSource } from 'webpack-sources'
+import { CachedSource, Source, SourceMapSource, RawSource, ConcatSource } from 'webpack-sources'
+import { SourceLocation } from 'estree'
+import {
+    WebpackOutputOptions,
+    Record,
+    WebpackOptions,
+    AggressiveSplit,
+    ErrCallback,
+    PlainObject,
+    TimeStampMap,
+    WebpackError, AbstractInputFileSystem
+} from '../typings/webpack-types'
+import { ResolveError } from 'enhanced-resolve/lib/common-types'
 import async = require('async');
 import crypto = require('crypto')
 import Tapable = require('tapable');
@@ -22,65 +34,62 @@ import ModuleTemplate = require('./ModuleTemplate');
 import Dependency = require('./Dependency');
 import ChunkRenderError = require('./ChunkRenderError');
 import NormalModule = require('./NormalModule')
+import DependenciesBlock = require('./DependenciesBlock')
+import AsyncDependenciesBlock = require('./AsyncDependenciesBlock')
+import * as Resolve from 'enhanced-resolve'
 
-interface SimpleChunk {
+interface SlotChunk {
     name: string
     module: Module
 }
 
 class Compilation extends Tapable {
-    compiler: Compiler
-    resolvers
-    inputFileSystem
-    options
-    outputOptions
-    bail: boolean
-    profile: boolean
-    mainTemplate: MainTemplate
-    chunkTemplate: ChunkTemplate
-    hotUpdateChunkTemplate: HotUpdateChunkTemplate
-    moduleTemplate: ModuleTemplate
-    entries: string[];
-    preparedChunks: SimpleChunk[]
-    entrypoints: {}
-    chunks: Chunk[]
-    namedChunks: {
-        [propName: string]: Chunk
-    }
-    modules: NormalModule[]
-    _modules: {
-        [propName: string]: Module
-    }
-    cache
-    records
-    nextFreeModuleIndex: number
-    nextFreeModuleIndex2: number
+    _modules: Dictionary<Module>
+    _aggressiveSplittingSplits: AggressiveSplit[]
     additionalChunkAssets: string[]
-    assets: {}
-    errors: (Error & {
-        missing?: string[]
-    })[]
-    warnings: Error[]
+    assets: Dictionary<Compilation.Asset>
+    bail: boolean
+    cache: PlainObject
     children: Compilation[]
+    chunks: Chunk[]
+    chunkTemplate: ChunkTemplate
+    compilationDependencies: string[]
+    compiler: Compiler
+    contextDependencies: string[]
+    contextTimestamps: TimeStampMap
     dependencyFactories: ArrayMap
     dependencyTemplates: ArrayMap
-    usedModuleIds: string[]
-    usedChunkIds: number[]
-    fileTimestamps: Compilation.TimeStampMap
-    contextTimestamps: Compilation.TimeStampMap
-    name: string
-    needAdditionalPass: boolean
+    entries: Module[];
+    entrypoints: Dictionary<Entrypoint>
+    errors: WebpackError[]
     fileDependencies: string[]
-    compilationDependencies: string[]
-    contextDependencies: string[]
-    missingDependencies: string[]
+    fileTimestamps: TimeStampMap
     fullHash: string
     hash: string
+    hotUpdateChunkTemplate: HotUpdateChunkTemplate
+    inputFileSystem: AbstractInputFileSystem
+    mainTemplate: MainTemplate
+    missingDependencies: string[]
+    modules: Module[]
+    moduleTemplate: ModuleTemplate
+    name: string
+    namedChunks: Dictionary<Chunk>
+    needAdditionalPass: boolean
     nextFreeChunkId: number
+    nextFreeModuleIndex2: number
+    nextFreeModuleIndex: number
     notCacheable: string
-    _aggressiveSplittingSplits: any[]
+    options: WebpackOptions
+    outputOptions: WebpackOutputOptions
+    preparedChunks: SlotChunk[]
+    profile: boolean
+    records: Record
+    resolvers: Compiler.Resolvers
+    usedModuleIds: Dictionary<number>
+    usedChunkIds: Dictionary<number>
+    warnings: WebpackError[]
 
-    constructor(compiler) {
+    constructor(compiler: Compiler) {
         super();
         this.compiler = compiler;
         this.resolvers = compiler.resolvers;
@@ -116,18 +125,18 @@ class Compilation extends Tapable {
         this.dependencyTemplates = new ArrayMap();
     }
 
-    templatesPlugin(name, fn) {
+    templatesPlugin(name: string, fn: Tapable.Handler) {
         this.mainTemplate.plugin(name, fn);
         this.chunkTemplate.plugin(name, fn);
     }
 
-    addModule(module, cacheGroup = 'm') {
+    addModule(module: Module, cacheGroup = 'm') {
         const identifier = module.identifier();
         if (this._modules[identifier]) {
             return false;
         }
         if (this.cache && this.cache[cacheGroup + identifier]) {
-            const cacheModule = this.cache[cacheGroup + identifier];
+            const cacheModule: Module = this.cache[cacheGroup + identifier];
 
             let rebuild = true;
             if (!cacheModule.error && cacheModule.cacheable && this.fileTimestamps && this.contextTimestamps) {
@@ -158,23 +167,26 @@ class Compilation extends Tapable {
         return true;
     }
 
-    getModule(module) {
+    getModule(module: Module) {
         const identifier = module.identifier();
         return this._modules[identifier];
     }
 
-    findModule(identifier) {
+    findModule(identifier: string) {
         return this._modules[identifier];
     }
 
-    buildModule(module, optional, origin, dependencies, thisCallback) {
+    buildModule(
+        module: Module, optional: boolean, origin: Module, dependencies: Dependency[],
+        thisCallback: ErrCallback
+    ) {
         this.applyPlugins('build-module', module);
         if (module.building) {
             return module.building.push(thisCallback);
         }
         const building = module.building = [thisCallback];
 
-        function callback(err) {
+        function callback(err: Error) {
             module.building = undefined;
             building.forEach(cb => {
                 cb(err);
@@ -186,8 +198,8 @@ class Compilation extends Tapable {
             this,
             this.resolvers.normal,
             this.inputFileSystem,
-            (err) => {
-                module.errors.forEach(err => {
+            (err: Error) => {
+                module.errors.forEach((err: ModuleNotFoundError) => {
                     err.origin = origin;
                     err.dependencies = dependencies;
                     if (optional) {
@@ -197,7 +209,7 @@ class Compilation extends Tapable {
                         this.errors.push(err);
                     }
                 }, this);
-                module.warnings.forEach(err => {
+                module.warnings.forEach((err: ModuleNotFoundError) => {
                     err.origin = origin;
                     err.dependencies = dependencies;
                     this.warnings.push(err);
@@ -213,10 +225,10 @@ class Compilation extends Tapable {
         );
     }
 
-    processModuleDependencies(module, callback) {
-        const dependencies = [];
+    processModuleDependencies(module: Module, callback: ErrCallback) {
+        const dependencies: Dependency[][] = [];
 
-        function addDependency(dep) {
+        function addDependency(dep: Dependency) {
             for (let i = 0; i < dependencies.length; i++) {
                 if (dep.isEqualResource(dependencies[i][0])) {
                     return dependencies[i].push(dep);
@@ -225,7 +237,7 @@ class Compilation extends Tapable {
             dependencies.push([dep]);
         }
 
-        function addDependenciesBlock(block) {
+        function addDependenciesBlock(block: DependenciesBlock) {
             if (block.dependencies) {
                 block.dependencies.forEach(addDependency);
             }
@@ -243,7 +255,14 @@ class Compilation extends Tapable {
         this.addModuleDependencies(module, dependencies, this.bail, null, true, callback);
     }
 
-    addModuleDependencies(module: NormalModule, dependencies, bail, cacheGroup, recursive, callback) {
+    addModuleDependencies(
+        module: Module,
+        dependencies: Dependency[][],
+        bail: boolean,
+        cacheGroup: string,
+        recursive: boolean,
+        callback: ErrCallback
+    ) {
         let self = this;
         const start = self.profile && +new Date();
         const factories = [];
@@ -257,10 +276,10 @@ class Compilation extends Tapable {
         }
         async.each(
             factories,
-            (item, callback) => {
+            (item: [any, Dependency[]], callback: ErrCallback) => {
                 const dependencies = item[1];
 
-                const errorAndCallback = function errorAndCallback(err) {
+                const errorAndCallback = function errorAndCallback(err: ModuleNotFoundError) {
                     err.origin = module;
                     self.errors.push(err);
                     if (bail) {
@@ -270,7 +289,7 @@ class Compilation extends Tapable {
                         callback();
                     }
                 };
-                const warningAndCallback = function warningAndCallback(err) {
+                const warningAndCallback = function warningAndCallback(err: ModuleNotFoundError) {
                     err.origin = module;
                     self.warnings.push(err);
                     callback();
@@ -283,12 +302,12 @@ class Compilation extends Tapable {
                     },
                     context: module.context,
                     dependencies
-                }, (err, dependentModule) => {
+                }, (err: ResolveError, dependentModule: Module) => {
                     function isOptional() {
                         return dependencies.filter(d => !d.optional).length === 0;
                     }
 
-                    function errorOrWarningAndCallback(err) {
+                    function errorOrWarningAndCallback(err: ModuleNotFoundError) {
                         if (isOptional()) {
                             return warningAndCallback(err);
                         }
@@ -304,10 +323,10 @@ class Compilation extends Tapable {
                         return process.nextTick(callback);
                     }
 
-                    let afterFactory
+                    let afterFactory: number
                     if (self.profile) {
                         if (!dependentModule.profile) {
-                            dependentModule.profile = {};
+                            dependentModule.profile = {} as any;
                         }
                         afterFactory = +new Date();
                         dependentModule.profile.factory = afterFactory - start;
@@ -331,7 +350,7 @@ class Compilation extends Tapable {
 
                         if (self.profile) {
                             if (!module.profile) {
-                                module.profile = {};
+                                module.profile = {} as any;
                             }
                             const time = +new Date() - start;
                             if (!module.profile.dependencies || time > module.profile.dependencies) {
@@ -376,7 +395,7 @@ class Compilation extends Tapable {
                         dependentModule.addReason(module, dep);
                     });
 
-                    self.buildModule(dependentModule, isOptional(), module, dependencies, err => {
+                    self.buildModule(dependentModule, isOptional(), module, dependencies, (err: ModuleNotFoundError) => {
                         if (err) {
                             return errorOrWarningAndCallback(err);
                         }
@@ -411,12 +430,15 @@ class Compilation extends Tapable {
         );
     }
 
-    _addModuleChain(context, dependency, onModule, callback) {
+    _addModuleChain(
+        context: string, dependency: Dependency, onModule: (module: Module) => any,
+        callback: ErrCallback
+    ) {
         const start = this.profile && +new Date();
 
-        const errorAndCallback = this.bail ? function errorAndCallback(err) {
+        const errorAndCallback = this.bail ? function errorAndCallback(err: ModuleNotFoundError) {
             callback(err);
-        } : function errorAndCallback(err) {
+        } : function errorAndCallback(err: ModuleNotFoundError) {
             err.dependencies = [dependency];
             this.errors.push(err);
             callback();
@@ -434,14 +456,14 @@ class Compilation extends Tapable {
         moduleFactory.create({
             context,
             dependencies: [dependency]
-        }, (err, module) => {
+        }, (err: ModuleNotFoundError, module: Module) => {
             if (err) {
                 return errorAndCallback(new EntryModuleNotFoundError(err));
             }
-            let afterFactory
+            let afterFactory: number
             if (this.profile) {
                 if (!module.profile) {
-                    module.profile = {};
+                    module.profile = {} as any;
                 }
                 afterFactory = +new Date();
                 module.profile.factory = afterFactory - start;
@@ -476,7 +498,7 @@ class Compilation extends Tapable {
 
             onModule(module);
 
-            this.buildModule(module, false, null, null, err => {
+            this.buildModule(module, false, null, null, (err: Error) => {
                 if (err) {
                     return errorAndCallback(err);
                 }
@@ -490,7 +512,7 @@ class Compilation extends Tapable {
             });
 
             function moduleReady() {
-                this.processModuleDependencies(module, err => {
+                this.processModuleDependencies(module, (err: Error) => {
                     if (err) {
                         return callback(err);
                     }
@@ -501,11 +523,11 @@ class Compilation extends Tapable {
         });
     }
 
-    addEntry(context, entry, name, callback) {
+    addEntry(context: string, entry: Dependency, name: string, callback: ErrCallback) {
         const slot = {
             name,
             module: null
-        };
+        } as SlotChunk;
         this.preparedChunks.push(slot);
         this._addModuleChain(context, entry, module => {
             entry.module = module;
@@ -527,14 +549,15 @@ class Compilation extends Tapable {
         });
     }
 
-    prefetch(context, dependency, callback) {
+    prefetch(context: string, dependency: Dependency, callback: ErrCallback) {
         this._addModuleChain(context, dependency, module => {
             module.prefetched = true;
             module.issuer = null;
         }, callback);
     }
 
-    rebuildModule(module, thisCallback) {
+    // todo: thisCallback has no this binding, this could cause confusion
+    rebuildModule(module: Module, thisCallback: ErrCallback) {
         if (module.variables.length || module.blocks.length) {
             throw new Error('Cannot rebuild a complex module with variables or blocks');
         }
@@ -543,7 +566,7 @@ class Compilation extends Tapable {
         }
         const rebuilding = module.rebuilding = [thisCallback];
 
-        function callback(err) {
+        function callback(err: Error) {
             module.rebuilding = undefined;
             rebuilding.forEach(cb => {
                 cb(err);
@@ -594,7 +617,7 @@ class Compilation extends Tapable {
         });
     }
 
-    seal(callback) {
+    seal(callback: ErrCallback) {
         this.applyPlugins('seal');
         this.nextFreeModuleIndex = 0;
         this.nextFreeModuleIndex2 = 0;
@@ -634,7 +657,7 @@ class Compilation extends Tapable {
 
         this.applyPlugins('after-optimize-chunks', this.chunks);
 
-        this.applyPluginsAsync('optimize-tree', this.chunks, this.modules, err => {
+        this.applyPluginsAsync('optimize-tree', this.chunks, this.modules, (err: Error) => {
             if (err) {
                 return callback(err);
             }
@@ -692,16 +715,16 @@ class Compilation extends Tapable {
                 this.applyPlugins('record', this, this.records);
             }
 
-            this.applyPluginsAsync('additional-assets', err => {
+            this.applyPluginsAsync('additional-assets', (err: Error) => {
                 if (err) {
                     return callback(err);
                 }
-                this.applyPluginsAsync('optimize-chunk-assets', this.chunks, err => {
+                this.applyPluginsAsync('optimize-chunk-assets', this.chunks, (err: Error) => {
                     if (err) {
                         return callback(err);
                     }
                     this.applyPlugins('after-optimize-chunk-assets', this.chunks);
-                    this.applyPluginsAsync('optimize-assets', this.assets, err => {
+                    this.applyPluginsAsync('optimize-assets', this.assets, (err: Error) => {
                         if (err) {
                             return callback(err);
                         }
@@ -717,7 +740,7 @@ class Compilation extends Tapable {
         });
     }
 
-    sortModules(modules) {
+    sortModules(modules: Module[]) {
         modules.sort((a, b) => {
             if (a.index < b.index) {
                 return -1;
@@ -729,14 +752,14 @@ class Compilation extends Tapable {
         });
     }
 
-    reportDependencyWarnings(module, blocks) {
+    reportDependencyWarnings(module: Module, blocks: DependenciesBlock[]) {
         const self = this;
         blocks.forEach(block => {
             block.dependencies.forEach(d => {
                 const warnings = d.getWarnings();
                 if (warnings) {
                     warnings.forEach(w => {
-                        const warning = new ModuleDependencyWarning(module, w, d.loc);
+                        const warning = new ModuleDependencyWarning(module, w, d.loc as SourceLocation);
                         self.warnings.push(warning);
                     });
                 }
@@ -745,7 +768,7 @@ class Compilation extends Tapable {
         });
     }
 
-    addChunk(name?, module?, loc?) {
+    addChunk(name?: string, module?: Module, loc?: SourceLocation) {
         let chunk;
         if (name) {
             if (Object.prototype.hasOwnProperty.call(this.namedChunks, name)) {
@@ -764,7 +787,7 @@ class Compilation extends Tapable {
         return chunk;
     }
 
-    processDependenciesBlockForChunk(block, chunk) {
+    processDependenciesBlockForChunk(block: Module, chunk: Chunk) {
         if (block.variables) {
             block.variables.forEach(function (v) {
                 v.dependencies.forEach(iteratorDependency, this);
@@ -774,7 +797,7 @@ class Compilation extends Tapable {
             block.dependencies.forEach(iteratorDependency, this);
         }
         if (block.blocks) {
-            block.blocks.forEach(function (b) {
+            block.blocks.forEach(function (b: AsyncDependenciesBlock) {
                 let c;
                 if (!b.chunks) {
                     c = this.addChunk(b.chunkName, b.module, b.loc);
@@ -790,7 +813,7 @@ class Compilation extends Tapable {
             }, this);
         }
 
-        function iteratorDependency(d) {
+        function iteratorDependency(d: Dependency & { weak?: boolean }) {
             if (!d.module) {
                 return;
             }
@@ -810,7 +833,7 @@ class Compilation extends Tapable {
         }
     }
 
-    removeChunkFromDependencies(block, chunk) {
+    removeChunkFromDependencies(block: Module, chunk: Chunk) {
         block.blocks.forEach(function (b) {
             b.chunks.forEach(function (c) {
                 chunk.removeChunk(c);
@@ -819,7 +842,7 @@ class Compilation extends Tapable {
             }, this);
         }, this);
 
-        function iteratorDependency(d) {
+        function iteratorDependency(d: Dependency) {
             if (!d.module) {
                 return;
             }
@@ -837,9 +860,9 @@ class Compilation extends Tapable {
     }
 
     applyModuleIds() {
-        const unusedIds = [];
+        const unusedIds: number[] = [];
         let nextFreeModuleId = 0;
-        const usedIds = [];
+        const usedIds: number[] = [];
         const usedIdMap = {};
         if (this.usedModuleIds) {
             Object.keys(this.usedModuleIds).forEach(function (key) {
@@ -879,7 +902,7 @@ class Compilation extends Tapable {
     }
 
     applyChunkIds() {
-        const unusedIds = [];
+        const unusedIds: number[] = [];
         let nextFreeChunkId = 0;
         if (this.usedChunkIds) {
             const usedIds = Object.keys(this.usedChunkIds).map(function (key) {
@@ -930,7 +953,7 @@ class Compilation extends Tapable {
     }
 
     summarizeDependencies() {
-        function filterDups(array) {
+        function filterDups(array: any[]) {
             const newArray = [];
             for (let i = 0; i < array.length; i++) {
                 if (i === 0 || array[i - 1] !== array[i]) {
@@ -948,7 +971,7 @@ class Compilation extends Tapable {
             this.contextDependencies = this.contextDependencies.concat(child.contextDependencies);
             this.missingDependencies = this.missingDependencies.concat(child.missingDependencies);
         });
-        this.modules.forEach(function (module) {
+        this.modules.forEach(function (module: NormalModule) {
             if (module.fileDependencies) {
                 module.fileDependencies.forEach(function (item) {
                     this.fileDependencies.push(item);
@@ -1023,7 +1046,7 @@ class Compilation extends Tapable {
         this.hash = this.fullHash.substr(0, hashDigestLength);
     }
 
-    modifyHash(update) {
+    modifyHash(update: string) {
         const outputOptions = this.outputOptions;
         const hashFunction = outputOptions.hashFunction;
         const hashDigest = outputOptions.hashDigest;
@@ -1037,7 +1060,7 @@ class Compilation extends Tapable {
 
     createModuleAssets() {
         for (let i = 0; i < this.modules.length; i++) {
-            const module = this.modules[i];
+            const module = this.modules[i] as NormalModule;
             if (module.assets) {
                 Object.keys(module.assets)
                     .forEach(name => {
@@ -1060,7 +1083,7 @@ class Compilation extends Tapable {
             let source;
             let file;
             const filenameTemplate = chunk.filenameTemplate
-                ? chunk.filenameTemplate
+                ? chunk.filenameTemplate as string
                 : chunk.isInitial() ? filename : chunkFilename;
             try {
                 const useChunkHash = !chunk.hasRuntime() || this.mainTemplate.useChunkHash && this.mainTemplate.useChunkHash(chunk);
@@ -1098,7 +1121,7 @@ class Compilation extends Tapable {
         }
     }
 
-    getPath(filename, data: any = {}) {
+    getPath(filename: string, data: any = {}) {
         data.hash = data.hash || this.hash;
         return this.mainTemplate.applyPluginsWaterfall('asset-path', filename, data);
     }
@@ -1107,7 +1130,7 @@ class Compilation extends Tapable {
         return new Stats(this);
     }
 
-    createChildCompiler(name, outputOptions) {
+    createChildCompiler(name: string, outputOptions: WebpackOutputOptions) {
         return this.compiler.createChildCompiler(this, name, outputOptions);
     }
 
@@ -1128,14 +1151,17 @@ class Compilation extends Tapable {
 }
 
 declare namespace Compilation {
-    interface TimeStampMap {
-        [prop: string]: number
+    interface Asset extends Source {
+        __UglifyJsPlugin?: SourceMapSource | RawSource
+        __SourceMapDevToolData?: Dictionary<RawSource | ConcatSource>
+        emitted?: boolean
+        existsAt?: string
     }
 }
 
 export = Compilation;
 
-function byId(a, b) {
+function byId(a: any, b: any) {
     if (a.id < b.id) {
         return -1;
     }
