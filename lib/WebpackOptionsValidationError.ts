@@ -9,8 +9,11 @@ const webpackOptionsSchema = require('../schemas/webpackOptionsSchema.json')
 class WebpackOptionsValidationError extends Error {
     constructor(public validationErrors: Ajv.ErrorObject[]) {
         super();
-        Error.captureStackTrace(this, WebpackOptionsValidationError);
+        // this is because of Typescript's design limitation,
+        // see https://github.com/Microsoft/TypeScript/wiki/What's-new-in-TypeScript#typescript-21
+        Object.setPrototypeOf(this, WebpackOptionsValidationError.prototype);
         this.name = 'WebpackOptionsValidationError';
+        Error.captureStackTrace(this, WebpackOptionsValidationError);
         this.message = `Invalid configuration object. Webpack has been initialised using a configuration object that does not match the API schema.\n${validationErrors.map(
             err => ' - ' + indent(WebpackOptionsValidationError.formatValidationError(err), '   ', false)).join('\n')}`;
     }
