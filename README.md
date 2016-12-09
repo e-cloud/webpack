@@ -85,7 +85,6 @@ or are automatically applied via regex from your webpack configuration.
 Please see [Using Loaders](https://webpack.github.io/docs/using-loaders.html) for more information.
 
 **basic**
-* [`json`](https://github.com/webpack/json-loader): Loads file as JSON
 * [`raw`](https://github.com/webpack/raw-loader): Loads raw content of a file (as utf-8)
 * [`val`](https://github.com/webpack/val-loader): Executes code as module and consider exports as JavaScript code
 * [`script`](https://github.com/webpack/script-loader): Executes a JavaScript file once in global context (like in script tag), requires are not parsed.
@@ -276,7 +275,7 @@ Most of the core team members, webpack contributors and contributors in the ecos
 
 This is how we use the donations:
 
-* Allow the core team to work on weback
+* Allow the core team to work on webpack
 * Thank contributors if they invested a large amount of time in contributing
 * Support projects in the ecosystem that are of great value for users
 * Support projects that are voted most (work in progress)
