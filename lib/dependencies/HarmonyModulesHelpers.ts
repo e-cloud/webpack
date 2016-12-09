@@ -36,7 +36,7 @@ export function checkModuleVar(state: ParserState, request: string) {
     return getModuleVar(state, request);
 }
 
-// checks if an harmory dependency is active in a module according to
+// checks if an harmony dependency is active in a module according to
 // precedence rules.
 export function isActive(module: Module, depInQuestion: HarmonyExportDependency) {
     const desc = depInQuestion.describeHarmonyExport();
@@ -73,12 +73,17 @@ type HarmonyExportDependency = HarmonyExportSpecifierDependency | HarmonyExportI
 
 // get a list of named exports defined in a module
 // doesn't include * reexports.
-export function getActiveExports(module: Module): string[] {
-    // todo: there is no activeExports assignment at all across the repo
-    if (module.activeExports) {
-        return module.activeExports;
-    }
-    return module.dependencies.reduce(function (arr, dep: HarmonyExportDependency) {
+export function getActiveExports(module: Module, currentDependency: HarmonyExportDependency): string[] {
+    const desc = currentDependency && currentDependency.describeHarmonyExport();
+    const currentIndex = currentDependency ? module.dependencies.indexOf(currentDependency) : -1;
+
+    return module.dependencies.map(function (dep: HarmonyExportDependency, idx) {
+        return {
+            dep: dep,
+            idx: idx
+        }
+    }).reduce(function (arr, data) {
+        const dep = data.dep;
         if (!dep.describeHarmonyExport) {
             return arr;
         }
@@ -86,11 +91,17 @@ export function getActiveExports(module: Module): string[] {
         if (!d) {
             return arr;
         }
-        const name = d.exportedName;
-        if (!name || arr.includes(name)) {
-            return arr;
+        if (!desc
+            || (d.precedence < desc.precedence)
+            || (d.precedence === desc.precedence && data.idx < currentIndex)
+        ) {
+            const names = [].concat(d.exportedName);
+            names.forEach(function (name) {
+                if (name && arr.indexOf(name) < 0) {
+                    arr.push(name);
+                }
+            });
         }
-        arr.push(name);
         return arr;
     }, []);
 }

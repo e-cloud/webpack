@@ -4,7 +4,6 @@
  */
 import Watchpack = require('watchpack');
 import { WatchOptions, ErrCallback, AbstractInputFileSystem } from '../../typings/webpack-types'
-import * as Resolve from 'enhanced-resolve'
 
 class NodeWatchFileSystem {
     watcherOptions: {

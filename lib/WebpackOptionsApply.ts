@@ -24,6 +24,7 @@ import LoaderPlugin = require('./dependencies/LoaderPlugin');
 import CommonJsPlugin = require('./dependencies/CommonJsPlugin');
 import HarmonyModulesPlugin = require('./dependencies/HarmonyModulesPlugin');
 import SystemPlugin = require('./dependencies/SystemPlugin');
+import ImportPlugin = require('./dependencies/ImportPlugin');
 import AMDPlugin = require('./dependencies/AMDPlugin');
 import RequireContextPlugin = require('./dependencies/RequireContextPlugin');
 import RequireEnsurePlugin = require('./dependencies/RequireEnsurePlugin');
@@ -36,6 +37,7 @@ import FlagIncludedChunksPlugin = require('./optimize/FlagIncludedChunksPlugin')
 import OccurrenceOrderPlugin = require('./optimize/OccurrenceOrderPlugin');
 import FlagDependencyUsagePlugin = require('./FlagDependencyUsagePlugin');
 import FlagDependencyExportsPlugin = require('./FlagDependencyExportsPlugin');
+import EmittedAssetSizeLimitPlugin = require('./performance/EmittedAssetSizeLimitPlugin');
 import { ResolverFactory } from 'enhanced-resolve'
 import { WebpackOptions } from '../typings/webpack-types'
 import Compiler = require('./Compiler')
@@ -209,10 +211,10 @@ class WebpackOptionsApply extends OptionsApply {
             let comment = legacy && modern
                 ? '\n/*\n//@ sourceMappingURL=[url]\n//# sourceMappingURL=[url]\n*/'
                 : legacy
-                ? '\n/*\n//@ sourceMappingURL=[url]\n*/'
-                : modern
-                ? '\n//# sourceMappingURL=[url]'
-                : undefined;
+                    ? '\n/*\n//@ sourceMappingURL=[url]\n*/'
+                    : modern
+                        ? '\n//# sourceMappingURL=[url]'
+                        : undefined;
             const Plugin = evalWrapped ? EvalSourceMapDevToolPlugin : SourceMapDevToolPlugin;
             compiler.apply(
                 new Plugin(
@@ -235,10 +237,10 @@ class WebpackOptionsApply extends OptionsApply {
             let comment = legacy && modern
                 ? '\n//@ sourceURL=[url]\n//# sourceURL=[url]'
                 : legacy
-                ? '\n//@ sourceURL=[url]'
-                : modern
-                ? '\n//# sourceURL=[url]'
-                : undefined;
+                    ? '\n//@ sourceURL=[url]'
+                    : modern
+                        ? '\n//# sourceURL=[url]'
+                        : undefined;
             compiler.apply(new EvalDevToolModulePlugin(comment, options.output.devtoolModuleFilenameTemplate));
         }
 
@@ -259,6 +261,7 @@ class WebpackOptionsApply extends OptionsApply {
             new AMDPlugin(options.module, options.amd || {}),
             new CommonJsPlugin(options.module),
             new HarmonyModulesPlugin(),
+            new ImportPlugin(options.module),
             new SystemPlugin(options.module)
         );
 
@@ -273,13 +276,15 @@ class WebpackOptionsApply extends OptionsApply {
             new FlagDependencyUsagePlugin()
         );
 
+        compiler.apply(new EmittedAssetSizeLimitPlugin(options.performance));
+
         compiler.apply(new TemplatedPathPlugin());
 
         compiler.apply(new RecordIdsPlugin());
 
         compiler.apply(new WarnCaseSensitiveModulesPlugin());
 
-        if (options.cache === undefined ? options.watch : options.cache) {
+        if (options.cache) {
             const CachePlugin = require('./CachePlugin');
             compiler.apply(new CachePlugin(typeof options.cache === 'object' ? options.cache : undefined));
         }

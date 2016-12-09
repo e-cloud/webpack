@@ -147,13 +147,13 @@ class UmdMainTemplatePlugin {
 ` +
                     (requiredExternals.length > 0
                             ? (this.name && this.namedDefine === true
-                                ? `        define(${libraryName(this.name)}, ${externalsDepsArray(requiredExternals)}, ${amdFactory});`
-                                : `        define(${externalsDepsArray(requiredExternals)}, ${amdFactory});`
-                        )
+                                    ? `        define(${libraryName(this.name)}, ${externalsDepsArray(requiredExternals)}, ${amdFactory});`
+                                    : `        define(${externalsDepsArray(requiredExternals)}, ${amdFactory});`
+                            )
                             : (this.name && this.namedDefine === true
-                                ? `        define(${libraryName(this.name)}, [], ${amdFactory});`
-                                : `        define([], ${amdFactory});`
-                        )
+                                    ? `        define(${libraryName(this.name)}, [], ${amdFactory});`
+                                    : `        define([], ${amdFactory});`
+                            )
                     ) +
                     (this.name
                         ? `
@@ -167,8 +167,8 @@ class UmdMainTemplatePlugin {
                         : `
     else {
 ${(externals.length > 0
-                        ? `        var a = typeof exports === "object" ? factory(${externalsRequireArray('commonjs')}) : factory(${externalsRootArray(externals)});`
-                        : '        var a = factory();')}
+                            ? `        var a = typeof exports === "object" ? factory(${externalsRequireArray('commonjs')}) : factory(${externalsRootArray(externals)});`
+                            : '        var a = factory();')}
         for(var i in a) (typeof exports === "object" ? exports : root)[i] = a[i];
     }
 `)

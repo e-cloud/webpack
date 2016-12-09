@@ -19,7 +19,8 @@ import {
     WebpackOutputOptions,
     TimeStampMap,
     SourceRange,
-    ErrCallback, AbstractInputFileSystem
+    ErrCallback,
+    AbstractInputFileSystem
 } from '../typings/webpack-types'
 import crypto = require('crypto')
 import path = require('path');
@@ -38,7 +39,6 @@ import DependenciesBlockVariable = require('./DependenciesBlockVariable')
 import DependenciesBlock = require('./DependenciesBlock')
 import Parser = require('./Parser')
 import Resolver = require('enhanced-resolve/lib/Resolver')
-import * as Resolve from 'enhanced-resolve'
 
 function asString(buf: string | Buffer) {
     if (Buffer.isBuffer(buf)) {
@@ -110,7 +110,10 @@ class NormalModule extends Module {
         return this.resource;
     }
 
-    doBuild(options: WebpackOptions, compilation: Compilation, resolver: Resolver, fs: AbstractInputFileSystem, callback: ErrCallback) {
+    doBuild(
+        options: WebpackOptions, compilation: Compilation, resolver: Resolver, fs: AbstractInputFileSystem,
+        callback: ErrCallback
+    ) {
         this.cacheable = false;
         const self = this;
         const loaderContext: LoaderContext = {
@@ -205,7 +208,10 @@ class NormalModule extends Module {
         super.disconnect();
     }
 
-    build(options: WebpackOptions, compilation: Compilation, resolver: Resolver, fs: AbstractInputFileSystem, callback: ErrCallback) {
+    build(
+        options: WebpackOptions, compilation: Compilation, resolver: Resolver, fs: AbstractInputFileSystem,
+        callback: ErrCallback
+    ) {
         const self = this;
         self.buildTimestamp = new Date().getTime();
         self.built = true;

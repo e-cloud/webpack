@@ -8,17 +8,17 @@ import WebpackMissingModule = require('./WebpackMissingModule');
 import RequestShortener = require('../RequestShortener')
 import { WebpackOutputOptions } from '../../typings/webpack-types'
 import { ReplaceSource } from 'webpack-sources'
-import SystemImportDependenciesBlock = require('./SystemImportDependenciesBlock')
+import ImportDependenciesBlock = require('./ImportDependenciesBlock')
 
 class Template {
     apply(
-        dep: SystemImportDependency,
+        dep: ImportDependency,
         source: ReplaceSource,
         outputOptions: WebpackOutputOptions,
         requestShortener: RequestShortener
     ) {
         const depBlock = dep.block;
-        const promise = DepBlockHelpers.getDepBlockPromise(depBlock, outputOptions, requestShortener, 'System.import');
+        const promise = DepBlockHelpers.getDepBlockPromise(depBlock, outputOptions, requestShortener, 'import()');
         let comment = '';
         if (outputOptions.pathinfo) {
             comment = `/*! ${requestShortener.shorten(dep.request)} */ `;
@@ -35,14 +35,14 @@ class Template {
     }
 }
 
-class SystemImportDependency extends ModuleDependency {
-    constructor(request: string, public block: SystemImportDependenciesBlock) {
+class ImportDependency extends ModuleDependency {
+    constructor(request: string, public block: ImportDependenciesBlock) {
         super(request);
     }
 
     static Template = Template
 }
 
-SystemImportDependency.prototype.type = 'System.import';
+ImportDependency.prototype.type = 'import()';
 
-export = SystemImportDependency;
+export = ImportDependency;

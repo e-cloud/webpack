@@ -8,8 +8,11 @@ import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Parser = require('./Parser')
 import { CallExpression } from 'estree'
-import { CompilationParams, ParserOptions } from '../typings/webpack-types'
+import { CompilationParams, ParserOptions, NMFAfterResolveResult } from '../typings/webpack-types'
 import ContextDependency = require('./dependencies/ContextDependency')
+
+const jsonLoaderPath = require.resolve('json-loader');
+const matchJson = /\.json$/i;
 
 class CompatibilityPlugin {
     apply(compiler: Compiler) {
@@ -47,6 +50,16 @@ class CompatibilityPlugin {
                     this.state.current.addDependency(dep);
                     return true;
                 });
+            });
+            params.normalModuleFactory.plugin('after-resolve', function (data: NMFAfterResolveResult, done) {
+                // if this is a json file and there are no loaders active, we use the json-loader in order to avoid
+                // parse errors @see https://github.com/webpack/webpack/issues/3363
+                if (matchJson.test(data.request) && data.loaders.length === 0) {
+                    data.loaders.push({
+                        loader: jsonLoaderPath
+                    });
+                }
+                done(null, data);
             });
         });
     }

@@ -12,7 +12,9 @@ import {
     ErrCallback,
     PlainObject,
     TimeStampMap,
-    WebpackError, AbstractInputFileSystem
+    WebpackError,
+    AbstractInputFileSystem,
+    PerformanceOptions
 } from '../typings/webpack-types'
 import { ResolveError } from 'enhanced-resolve/lib/common-types'
 import async = require('async');
@@ -36,7 +38,6 @@ import ChunkRenderError = require('./ChunkRenderError');
 import NormalModule = require('./NormalModule')
 import DependenciesBlock = require('./DependenciesBlock')
 import AsyncDependenciesBlock = require('./AsyncDependenciesBlock')
-import * as Resolve from 'enhanced-resolve'
 
 interface SlotChunk {
     name: string
@@ -82,6 +83,7 @@ class Compilation extends Tapable {
     options: WebpackOptions
     outputOptions: WebpackOutputOptions
     preparedChunks: SlotChunk[]
+    performance: PerformanceOptions
     profile: boolean
     records: Record
     resolvers: Compiler.Resolvers
@@ -99,6 +101,7 @@ class Compilation extends Tapable {
         this.outputOptions = options && options.output;
         this.bail = options && options.bail;
         this.profile = options && options.profile;
+        this.performance = options && options.performance;
 
         this.mainTemplate = new MainTemplate(this.outputOptions);
         this.chunkTemplate = new ChunkTemplate(this.outputOptions);
@@ -437,12 +440,12 @@ class Compilation extends Tapable {
         const start = this.profile && +new Date();
 
         const errorAndCallback = this.bail ? function errorAndCallback(err: ModuleNotFoundError) {
-            callback(err);
-        } : function errorAndCallback(err: ModuleNotFoundError) {
-            err.dependencies = [dependency];
-            this.errors.push(err);
-            callback();
-        }.bind(this);
+                callback(err);
+            } : function errorAndCallback(err: ModuleNotFoundError) {
+                err.dependencies = [dependency];
+                this.errors.push(err);
+                callback();
+            }.bind(this);
 
         if (typeof dependency !== 'object' || dependency === null || !dependency.constructor) {
             throw new Error('Parameter \'dependency\' must be a Dependency');
@@ -1083,7 +1086,7 @@ class Compilation extends Tapable {
             let source;
             let file;
             const filenameTemplate = chunk.filenameTemplate
-                ? chunk.filenameTemplate as string
+                ? chunk.filenameTemplate
                 : chunk.isInitial() ? filename : chunkFilename;
             try {
                 const useChunkHash = !chunk.hasRuntime() || this.mainTemplate.useChunkHash && this.mainTemplate.useChunkHash(chunk);
@@ -1156,6 +1159,7 @@ declare namespace Compilation {
         __SourceMapDevToolData?: Dictionary<RawSource | ConcatSource>
         emitted?: boolean
         existsAt?: string
+        isOverSizeLimit?: boolean
     }
 }
 

@@ -2,12 +2,9 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import SystemImportDependency = require('./SystemImportDependency');
-import SystemImportContextDependency = require('./SystemImportContextDependency');
 import UnsupportedFeatureWarning = require('../UnsupportedFeatureWarning');
 import ConstDependency = require('./ConstDependency');
 import BasicEvaluatedExpression = require('../BasicEvaluatedExpression');
-import SystemImportParserPlugin = require('./SystemImportParserPlugin');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
@@ -22,12 +19,6 @@ class SystemPlugin {
         compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
             const normalModuleFactory = params.normalModuleFactory;
             const contextModuleFactory = params.contextModuleFactory;
-
-            compilation.dependencyFactories.set(SystemImportDependency, normalModuleFactory);
-            compilation.dependencyTemplates.set(SystemImportDependency, new SystemImportDependency.Template());
-
-            compilation.dependencyFactories.set(SystemImportContextDependency, contextModuleFactory);
-            compilation.dependencyTemplates.set(SystemImportContextDependency, new SystemImportContextDependency.Template());
 
             params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions: ParserOptions) {
                 if (typeof parserOptions.system !== 'undefined' && !parserOptions.system) {
@@ -73,7 +64,6 @@ class SystemPlugin {
                     this.state.current.addDependency(dep);
                     return true;
                 });
-                parser.apply(new SystemImportParserPlugin(options));
             });
         });
     }

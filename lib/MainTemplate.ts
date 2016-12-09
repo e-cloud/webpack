@@ -68,22 +68,22 @@ class MainTemplate extends Template {
                 '};',
                 '',
                 this.asString(outputOptions.strictModuleExceptionHandling ? [
-                    '// Execute the module function',
-                    'var threw = true;',
-                    'try {',
-                    this.indent([
+                        '// Execute the module function',
+                        'var threw = true;',
+                        'try {',
+                        this.indent([
+                            `modules[moduleId].call(module.exports, module, module.exports, ${this.renderRequireFunctionForModule(hash, chunk, 'moduleId')});`,
+                            'threw = false;'
+                        ]),
+                        '} finally {',
+                        this.indent([
+                            'if(threw) delete installedModules[moduleId];'
+                        ]),
+                        '}'
+                    ] : [
+                        '// Execute the module function',
                         `modules[moduleId].call(module.exports, module, module.exports, ${this.renderRequireFunctionForModule(hash, chunk, 'moduleId')});`,
-                        'threw = false;'
                     ]),
-                    '} finally {',
-                    this.indent([
-                        'if(threw) delete installedModules[moduleId];'
-                    ]),
-                    '}'
-                ] : [
-                    '// Execute the module function',
-                    `modules[moduleId].call(module.exports, module, module.exports, ${this.renderRequireFunctionForModule(hash, chunk, 'moduleId')});`,
-                ]),
                 '',
                 '// Flag the module as loaded',
                 'module.l = true;',
@@ -113,16 +113,20 @@ class MainTemplate extends Template {
             buf.push(`${this.requireFn}.c = installedModules;`);
 
             buf.push('');
-            buf.push('// identity function for calling harmory imports with the correct context');
+            buf.push('// identity function for calling harmony imports with the correct context');
             buf.push(`${this.requireFn}.i = function(value) { return value; };`);
 
             buf.push('');
-            buf.push('// define getter function for harmory exports');
+            buf.push('// define getter function for harmony exports');
             buf.push(`${this.requireFn}.d = function(exports, name, getter) {`);
             buf.push(this.indent([
-                'Object.defineProperty(exports, name, {',
-                this.indent(['configurable: false,', 'enumerable: true,', 'get: getter']),
-                '});'
+                `if(!${this.requireFn}.o(exports, name)) \{`,
+                this.indent([
+                    'Object.defineProperty(exports, name, {',
+                    this.indent(['configurable: false,', 'enumerable: true,', 'get: getter']),
+                    '});'
+                ]),
+                '}'
             ]));
             buf.push('};');
 

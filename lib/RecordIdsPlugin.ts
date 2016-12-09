@@ -24,7 +24,10 @@ class RecordIdsPlugin {
                     records.modules.usedIds = {};
                 }
                 modules.forEach(module => {
-                    const identifier = makeRelative(compiler, module.identifier());
+                    if (!module.portableId) {
+                        module.portableId = makeRelative(compiler, module.identifier());
+                    }
+                    const identifier = module.portableId;
                     records.modules.byIdentifier[identifier] = module.id;
                     records.modules.usedIds[module.id] = module.id;
                 });
@@ -39,7 +42,10 @@ class RecordIdsPlugin {
                         if (module.id !== null) {
                             return;
                         }
-                        const identifier = makeRelative(compiler, module.identifier());
+                        if (!module.portableId) {
+                            module.portableId = makeRelative(compiler, module.identifier());
+                        }
+                        const identifier = module.portableId;
                         const id = records.modules.byIdentifier[identifier];
                         if (id === undefined) {
                             return;

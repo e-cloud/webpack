@@ -27,7 +27,7 @@ class SetVarMainTemplatePlugin {
             }
         });
         mainTemplate.plugin('global-hash-paths', function (paths: string[]) {
-            // todo: this is no varExpression in MainTemplate, may refer wrongly
+            // todo: this is no varExpression in MainTemplate, may refer wrongly, dead code
             if (this.varExpression) {
                 paths.push(this.varExpression);
             }

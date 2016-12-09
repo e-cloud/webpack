@@ -3,6 +3,7 @@
  Author Tobias Koppers @sokra
  */
 import Chunk = require('./Chunk')
+import Compilation = require('./Compilation')
 
 class Entrypoint {
     chunks: Chunk[]
@@ -25,6 +26,28 @@ class Entrypoint {
             throw new Error('before chunk not found');
         }
         chunk.entrypoints.push(this);
+    }
+
+    getFiles() {
+        const files: string[] = [];
+
+        for (let chunk of this.chunks) {
+            for (let file of chunk.files) {
+                if (!files.includes(file)) {
+                    files.push(file)
+                }
+            }
+        }
+
+        return files;
+    }
+
+    getSize(compilation: Compilation) {
+        const files = this.getFiles();
+
+        return files
+            .map(file => compilation.assets[file].size())
+            .reduce((currentSize, nextSize) => currentSize + nextSize, 0);
     }
 }
 

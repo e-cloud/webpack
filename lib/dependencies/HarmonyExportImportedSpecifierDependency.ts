@@ -51,7 +51,7 @@ class Template {
         }
         else if (Array.isArray(dep.originModule.usedExports)) {
             // we know which exports are used
-            activeExports = HarmonyModulesHelpers.getActiveExports(dep.originModule);
+            activeExports = HarmonyModulesHelpers.getActiveExports(dep.originModule, dep);
             items = dep.originModule.usedExports.map(id => {
                 if (id === 'default') {
                     return;
@@ -77,7 +77,7 @@ class Template {
         }
         else if (dep.originModule.usedExports && importedModule && Array.isArray(importedModule.providedExports)) {
             // not sure which exports are used, but we know which are provided
-            activeExports = HarmonyModulesHelpers.getActiveExports(dep.originModule);
+            activeExports = HarmonyModulesHelpers.getActiveExports(dep.originModule, dep);
             items = importedModule.providedExports.map(id => {
                 if (id === 'default') {
                     return;
@@ -101,7 +101,7 @@ class Template {
         }
         else if (dep.originModule.usedExports) {
             // not sure which exports are used and provided
-            activeExports = HarmonyModulesHelpers.getActiveExports(dep.originModule);
+            activeExports = HarmonyModulesHelpers.getActiveExports(dep.originModule, dep);
             content = `/* harmony namespace reexport (unknown) */ for(var __WEBPACK_IMPORT_KEY__ in ${name}) `;
 
             // Filter out exports which are defined by other exports
@@ -117,7 +117,7 @@ class Template {
         else {
             content = '/* unused harmony reexport namespace */\n';
         }
-        source.insert(dep.position, content);
+        source.insert(-1, content);
     }
 }
 
@@ -127,8 +127,7 @@ class HarmonyExportImportedSpecifierDependency extends NullDependency {
         public importDependency: Dependency,
         public importedVar: string,
         public id: string,
-        public name: string,
-        public position: number
+        public name: string
     ) {
         super();
     }
@@ -148,7 +147,7 @@ class HarmonyExportImportedSpecifierDependency extends NullDependency {
             const providedExports = m.providedExports
             if (Array.isArray(this.originModule.usedExports)) {
                 // reexport * with known used exports
-                const activeExports = HarmonyModulesHelpers.getActiveExports(this.originModule);
+                const activeExports = HarmonyModulesHelpers.getActiveExports(this.originModule, this);
                 if (Array.isArray(providedExports)) {
                     return {
                         module: m,
@@ -232,6 +231,14 @@ class HarmonyExportImportedSpecifierDependency extends NullDependency {
     }
 
     describeHarmonyExport() {
+        const importedModule = this.importDependency.module;
+        if (!this.name && importedModule && Array.isArray(importedModule.providedExports)) {
+            // for a star export and when we know which exports are provided, we can tell so
+            return {
+                exportedName: importedModule.providedExports,
+                precedence: 3
+            }
+        }
         return {
             exportedName: this.name,
             precedence: this.name ? 2 : 3

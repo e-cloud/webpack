@@ -71,6 +71,13 @@ class WebpackOptionsDefaulter extends OptionsDefaulter {
         this.set('node.__filename', 'mock');
         this.set('node.__dirname', 'mock');
 
+        this.set('performance.maxAssetSize', 250000);
+        this.set('performance.maxInitialChunkSize', 250000);
+        this.set('performance.errorOnHint', false);
+        this.set('performance.hints', 'make', function (options: WebpackOptions) {
+            return options.target === 'web';
+        });
+
         this.set('resolve', {});
         this.set('resolve.unsafeCache', true);
         this.set('resolve.modules', ['node_modules']);

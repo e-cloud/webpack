@@ -33,6 +33,8 @@ The available options are:
     names: string[]
     filename: string
     minChunks: number
+    chunks: string[]
+    children: boolean
     async: boolean
     minSize: number
 `);
@@ -59,7 +61,7 @@ The available options are:
         const filenameTemplate = this.filenameTemplate;
         const minChunks = this.minChunks;
         const selectedChunks = this.selectedChunks;
-        const async = this.async;
+        const asyncOption = this.async;
         const minSize = this.minSize;
         const ident = this.ident;
         compiler.plugin('this-compilation', function (compilation: Compilation) {
@@ -71,7 +73,7 @@ The available options are:
                 compilation[ident] = true;
 
                 let commonChunks: Chunk[];
-                if (!chunkNames && (selectedChunks === false || async)) {
+                if (!chunkNames && (selectedChunks === false || asyncOption)) {
                     commonChunks = chunks;
                 }
                 else if (Array.isArray(chunkNames) || typeof chunkNames === 'string') {
@@ -96,9 +98,9 @@ The available options are:
                             return selectedChunks.includes(chunk.name);
                         });
                     }
-                    else if (selectedChunks === false || async) {
+                    else if (selectedChunks === false || asyncOption) {
                         usedChunks = (commonChunk.chunks || []).filter(chunk => // we can only move modules from this chunk if the "commonChunk" is the only parent
-                        async || chunk.parents.length === 1);
+                        asyncOption || chunk.parents.length === 1);
                     }
                     else {
                         if (commonChunk.parents.length > 0) {
@@ -114,8 +116,8 @@ The available options are:
                         });
                     }
                     let asyncChunk: Chunk
-                    if (async) {
-                        asyncChunk = this.addChunk(typeof async === 'string' ? async : undefined);
+                    if (asyncOption) {
+                        asyncChunk = this.addChunk(typeof asyncOption === 'string' ? asyncOption : undefined);
                         asyncChunk.chunkReason = 'async commons chunk';
                         asyncChunk.extraAsync = true;
                         asyncChunk.addParent(commonChunk);
@@ -170,7 +172,7 @@ The available options are:
                         commonChunk.addModule(module);
                         module.addChunk(commonChunk);
                     });
-                    if (async) {
+                    if (asyncOption) {
                         reallyUsedChunks.forEach(chunk => {
                             if (chunk.isInitial()) {
                                 return;

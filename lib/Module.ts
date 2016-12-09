@@ -37,6 +37,7 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
     meta: Module.Meta;
     optional?: boolean
     parent: Module
+    portableId: string
     prefetched: boolean
     profile?: Module.Profile
     providedExports: string[] | boolean;
@@ -56,6 +57,7 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
         this.debugId = debugId++;
         this.lastId = -1;
         this.id = null;
+        this.portableId = null;
         this.index = null;
         this.index2 = null;
         this.used = null;

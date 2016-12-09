@@ -20,7 +20,8 @@ import {
     TimeStampMap,
     WatchFileSystem,
     WatchOptions,
-    AbstractInputFileSystem, AbstractStats
+    AbstractInputFileSystem,
+    AbstractStats
 } from '../typings/webpack-types'
 import Parser = require('./Parser')
 import Stats = require('./Stats')

@@ -6,7 +6,7 @@ import ContextDependency = require('./ContextDependency');
 import CriticalDependencyWarning = require('./CriticalDependencyWarning');
 import { SourceRange } from '../../typings/webpack-types'
 
-class SystemImportContextDependency extends ContextDependency {
+class ImportContextDependency extends ContextDependency {
     async: boolean
     critical: false | string
 
@@ -30,6 +30,6 @@ class SystemImportContextDependency extends ContextDependency {
     static Template = require('./ContextDependencyTemplateAsRequireCall')
 }
 
-SystemImportContextDependency.prototype.type = 'System.import context';
+ImportContextDependency.prototype.type = 'System.import context';
 
-export = SystemImportContextDependency;
+export = ImportContextDependency;

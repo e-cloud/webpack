@@ -6,7 +6,7 @@ import AMDRequireContextDependency = require('./AMDRequireContextDependency')
 import { ReplaceSource } from 'webpack-sources'
 import { WebpackOutputOptions } from '../../typings/webpack-types'
 import RequestShortener = require('../RequestShortener')
-import SystemImportContextDependency = require('./SystemImportContextDependency')
+import SystemImportContextDependency = require('./ImportContextDependency')
 import CommonJsRequireContextDependency = require('./CommonJsRequireContextDependency')
 
 type RequireContextDependency = AMDRequireContextDependency | SystemImportContextDependency | CommonJsRequireContextDependency

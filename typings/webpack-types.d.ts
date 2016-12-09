@@ -173,6 +173,7 @@ declare interface StatsOptions {
     modulesSort?: string;
     // Add public path information
     publicPath?: boolean;
+    performance?: boolean;
     providedExports?: boolean;
     // Add information about the reasons why modules are included
     reasons: boolean;
@@ -240,6 +241,13 @@ declare interface FilenameTemplateInfo {
     shortIdentifier: string;
 }
 
+declare interface PerformanceOptions {
+    maxAssetSize?: number
+    maxInitialChunkSize?: number
+    hints?
+    errorOnHint?: boolean
+}
+
 declare interface WebpackOptions {
     /** Set the value of require.amd and define.amd. */
     amd?: { [moduleName: string]: boolean };
@@ -272,6 +280,7 @@ declare interface WebpackOptions {
     plugins?: Tapable.Plugin;
     /** Capture timing information for each module. */
     profile?: boolean;
+    performance?: PerformanceOptions;
     /** Used for recordsInputPath and recordsOutputPath */
     recordsPath?: string;
     /** Load compiler state from a json file. */
@@ -472,6 +481,7 @@ declare interface ParserOptions {
     requireJs: boolean;
     node: false | NodeOption;
     ident: string
+    import: boolean
 }
 
 declare interface WatchFileSystem {

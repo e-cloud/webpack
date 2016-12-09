@@ -142,15 +142,15 @@ class JsonpMainTemplatePlugin {
                         'while(resolves.length)',
                         this.indent('resolves.shift()();'),
                         this.entryPointInChildren(chunk) ? [
-                            'if(executeModules) {',
-                            this.indent([
-                                'for(i=0; i < executeModules.length; i++) {',
-                                this.indent(`result = ${this.requireFn}(${this.requireFn}.s = executeModules[i]);`),
-                                '}'
-                            ]),
-                            '}',
-                            'return result;'
-                        ] : ''
+                                'if(executeModules) {',
+                                this.indent([
+                                    'for(i=0; i < executeModules.length; i++) {',
+                                    this.indent(`result = ${this.requireFn}(${this.requireFn}.s = executeModules[i]);`),
+                                    '}'
+                                ]),
+                                '}',
+                                'return result;'
+                            ] : ''
                     ]),
                     '};'
                 ]);

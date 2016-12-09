@@ -11,7 +11,7 @@
     ],
     "declaration": false,
     "noImplicitAny": true,
-    "noImplicitThis": true,
+    "noImplicitThis": false,
     "suppressImplicitAnyIndexErrors": true,
     "pretty": true,
     "noImplicitReturns": false,

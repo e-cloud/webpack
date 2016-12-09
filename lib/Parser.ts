@@ -4,19 +4,21 @@
  */
 import * as ESTree from 'estree'
 import { PlainObject, SourceRange, ParserState } from '../typings/webpack-types'
-import acorn = require('acorn');
+import acorn from 'acorn-dynamic-import'
 import Tapable = require('tapable');
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import Module = require('./Module')
 import DependenciesBlock = require('./DependenciesBlock')
 import Compilation = require('./Compilation')
 
+// todo: once update acorn.d.ts, remove this interface
 interface ASTOPTION {
     ecmaVersion: number
     locations: boolean
     onComment: any[]
     ranges: boolean
     sourceType: string
+    plugins: any
 }
 
 interface IdentCallback {
@@ -28,12 +30,18 @@ const POSSIBLE_AST_OPTIONS = [
         ranges: true,
         locations: true,
         ecmaVersion: 2017,
-        sourceType: 'module'
+        sourceType: 'module',
+        plugins: {
+            dynamicImport: true
+        }
     }, {
         ranges: true,
         locations: true,
         ecmaVersion: 2017,
-        sourceType: 'script'
+        sourceType: 'script',
+        plugins: {
+            dynamicImport: true
+        }
     }
 ] as ASTOPTION[];
 
@@ -41,7 +49,7 @@ interface ParserScope {
     definitions: string[]
     inShorthand?: boolean
     inTry: boolean
-    renames: Dictionary<Parser>
+    renames: Dictionary<string>
 }
 
 //noinspection JSUnusedGlobalSymbols,JSMethodCanBeStatic
@@ -1112,6 +1120,16 @@ class Parser extends Tapable {
             // (function(...) { }(...))
             walkIIFE.call(this, expression.callee, expression.arguments);
         }
+        else if (expression.callee.type === 'Import') {
+            const result = this.applyPluginsBailResult1('import-call', expression);
+            if (result === true) {
+                return;
+            }
+
+            if (expression.arguments) {
+                this.walkExpressions(expression.arguments);
+            }
+        }
         else {
 
             const callee = this.evaluateExpression(expression.callee);
@@ -1335,6 +1353,9 @@ class Parser extends Tapable {
                 locations: true,
                 ecmaVersion: 2017,
                 sourceType: 'module',
+                plugins: {
+                    dynamicImport: true
+                },
                 onComment: comments
             });
         }
@@ -1362,7 +1383,10 @@ class Parser extends Tapable {
             ranges: true,
             locations: true,
             ecmaVersion: 2017,
-            sourceType: 'module'
+            sourceType: 'module',
+            plugins: {
+                dynamicImport: true
+            }
         });
         if (!ast || typeof ast !== 'object' || ast.type !== 'Program') {
             throw new Error('evaluate: Source couldn\'t be parsed');

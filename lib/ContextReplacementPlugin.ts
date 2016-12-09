@@ -8,7 +8,9 @@ import Compiler = require('./Compiler')
 import ContextModuleFactory = require('./ContextModuleFactory')
 import ContextDependency = require('./dependencies/ContextDependency')
 import {
-    CMFAfterResolveResult, CMFBeforeResolveResult, ErrCallback,
+    CMFAfterResolveResult,
+    CMFBeforeResolveResult,
+    ErrCallback,
     AbstractInputFileSystem
 } from '../typings/webpack-types'
 import * as Resolve from 'enhanced-resolve'

@@ -23,8 +23,14 @@ interface NodeOutputFileSystem {
     rmdir(path: string | Buffer, callback?: (err?: NodeJS.ErrnoException) => void): void;
     unlink(path: string | Buffer, callback?: (err?: NodeJS.ErrnoException) => void): void;
     writeFile(filename: string, data: any, callback?: (err: NodeJS.ErrnoException) => void): void;
-    writeFile(filename: string, data: any, options: { encoding?: string; mode?: number; flag?: string; }, callback?: (err: NodeJS.ErrnoException) => void): void;
-    writeFile(filename: string, data: any, options: { encoding?: string; mode?: string; flag?: string; }, callback?: (err: NodeJS.ErrnoException) => void): void;
+    writeFile(
+        filename: string, data: any, options: { encoding?: string; mode?: number; flag?: string; },
+        callback?: (err: NodeJS.ErrnoException) => void
+    ): void;
+    writeFile(
+        filename: string, data: any, options: { encoding?: string; mode?: string; flag?: string; },
+        callback?: (err: NodeJS.ErrnoException) => void
+    ): void;
     join(...paths: string[]): string;
 }
 

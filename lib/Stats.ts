@@ -5,6 +5,7 @@
 import RequestShortener = require('./RequestShortener');
 import Compilation = require('./Compilation')
 import { StatsOptions, PlainObject, WebpackError } from '../typings/webpack-types'
+import { formatSize } from './SizeFormatHelpers'
 import Module = require('./Module')
 import NormalModule = require('./NormalModule')
 import ModuleNotFoundError = require('./ModuleNotFoundError');
@@ -96,6 +97,7 @@ interface StatsAsset {
     emitted: boolean
     name: string
     size: number
+    isOverSizeLimit?: boolean
 }
 
 interface StatsEntryPoint {
@@ -156,6 +158,7 @@ class Stats {
 
         const compilation = this.compilation;
         const requestShortener = new RequestShortener(d(options.context, process.cwd()));
+        const showPerformance = d(options.performance, true);
         const showHash = d(options.hash, true);
         const showVersion = d(options.version, true);
         const showTimings = d(options.timings, true);
@@ -193,7 +196,7 @@ class Stats {
             if (excludeModules.length === 0) {
                 return true;
             }
-            const ident = module.identifier();
+            const ident = module.resource;
             return !excludeModules.some(regExp => regExp.test(ident));
         }
 
@@ -221,14 +224,14 @@ class Stats {
         function formatError(e: WebpackError | string) {
             let text = '';
             let err: WebpackError = typeof e === 'string' ? {
-                message: e
-            } : e;
+                    message: e
+                } : e;
             if (err.chunk) {
                 text += `chunk ${err.chunk.name || err.chunk.id}${err.chunk.hasRuntime()
                     ? ' [entry]'
                     : err.chunk.isInitial()
-                    ? ' [initial]'
-                    : ''}\n`;
+                        ? ' [initial]'
+                        : ''}\n`;
             }
             if (err.file) {
                 text += `${err.file}\n`;
@@ -271,7 +274,6 @@ class Stats {
             return text;
         }
 
-        // todo: remove any type
         const obj: StatsJson = {
             errors: compilation.errors.map(formatError),
             warnings: compilation.warnings.map(formatError)
@@ -317,7 +319,12 @@ class Stats {
                         chunks: [] as number[],
                         chunkNames: [] as string[],
                         emitted: compilation.assets[asset].emitted
-                    };
+                    } as StatsAsset;
+
+                    if (showPerformance) {
+                        obj.isOverSizeLimit = compilation.assets[asset].isOverSizeLimit;
+                    }
+
                     assetsByFile[asset] = obj;
                     return obj;
                 })
@@ -357,7 +364,6 @@ class Stats {
         }
 
         function fnModule(module: NormalModule) {
-            // todo: remove any type
             const obj: StatsModule = {
                 id: module.id,
                 identifier: module.identifier(),
@@ -383,7 +389,6 @@ class Stats {
                 obj.reasons = module.reasons
                     .filter(reason => reason.dependency && reason.module)
                     .map(reason => {
-                        // todo: remove any type
                         const obj: StatsReason = {
                             moduleId: reason.module.id,
                             moduleIdentifier: reason.module.identifier(),
@@ -446,9 +451,9 @@ class Stats {
                         moduleName: origin.module ? origin.module.readableIdentifier(requestShortener) : '',
                         loc: typeof origin.loc === 'object'
                             ? (
-                            obj.loc = `${origin.loc.start.line}:${origin.loc.start.column}-${origin.loc.start.line !== origin.loc.end.line
-                                ? origin.loc.end.line + ':'
-                                : ''}${origin.loc.end.column}`)
+                                obj.loc = `${origin.loc.start.line}:${origin.loc.start.column}-${origin.loc.start.line !== origin.loc.end.line
+                                    ? origin.loc.end.line + ':'
+                                    : ''}${origin.loc.end.column}`)
                             : '',
                         name: origin.name,
                         reasons: origin.reasons || []
@@ -552,7 +557,16 @@ class Stats {
             buffer.push('\n');
         }
 
-        function table(array: string[][], formats: Function[], align: string, splitter = '  ') {
+        function getText(arr: any[], row: number, col: number) {
+            return arr[row][col].value;
+        }
+
+        type TableItem = {
+            value: string
+            color: (str: string| number) => void
+        }
+
+        function table(array: TableItem[][], align: string, splitter = '  ') {
             let row;
             const rows = array.length;
             let col;
@@ -564,7 +578,10 @@ class Stats {
             }
             for (row = 0; row < rows; row++) {
                 for (col = 0; col < cols; col++) {
-                    value = `${array[row][col]}`;
+                    value = `${getText(array, row, col)}`;
+                    if (value.length === 0) {
+                        colSizes[col] = 0;
+                    }
                     if (value.length > colSizes[col]) {
                         colSizes[col] = value.length;
                     }
@@ -572,8 +589,8 @@ class Stats {
             }
             for (row = 0; row < rows; row++) {
                 for (col = 0; col < cols; col++) {
-                    const format = row === 0 ? colors.bold : formats[col];
-                    value = `${array[row][col]}`;
+                    const format = array[row][col].color;
+                    value = `${getText(array, row, col)}`;
                     let l = value.length;
                     if (align[col] === 'l') {
                         format(value);
@@ -585,7 +602,7 @@ class Stats {
                     if (align[col] === 'r') {
                         format(value);
                     }
-                    if (col + 1 < cols) {
+                    if (col + 1 < cols && colSizes[col] != 0) {
                         colors.normal(splitter);
                     }
                 }
@@ -593,15 +610,12 @@ class Stats {
             }
         }
 
-        function formatSize(size: number) {
-            if (size <= 0) {
-                return '0 bytes';
+        function getAssetColor(asset: StatsAsset, defaultColor: (str: string| number) => void) {
+            if (asset.isOverSizeLimit) {
+                return colors.yellow;
             }
 
-            const abbreviations = ['bytes', 'kB', 'MB', 'GB'];
-            const index = Math.floor(Math.log(size) / Math.log(1000));
-
-            return `${+(size / Math.pow(1000, index)).toPrecision(3)} ${abbreviations[index]}`;
+            return defaultColor;
         }
 
         if (obj.hash) {
@@ -626,17 +640,59 @@ class Stats {
             newline();
         }
         if (obj.assets && obj.assets.length > 0) {
-            const t = [['Asset', 'Size', 'Chunks', '', 'Chunk Names']];
-            obj.assets.forEach(asset => {
+            const t = [
+                [
+                    {
+                        value: 'Asset',
+                        color: colors.bold
+                    },
+                    {
+                        value: 'Size',
+                        color: colors.bold
+                    }
+                    ,
+                    {
+                        value: 'Chunks',
+                        color: colors.bold
+                    },
+                    {
+                        value: '',
+                        color: colors.bold
+                    },
+                    {
+                        value: '',
+                        color: colors.bold
+                    },
+                    {
+                        value: 'Chunk Names',
+                        color: colors.bold
+                    }
+                ]
+            ];
+            obj.assets.forEach(function (asset) {
                 t.push([
-                    asset.name,
-                    formatSize(asset.size),
-                    asset.chunks.join(', '),
-                    asset.emitted ? '[emitted]' : '',
-                    asset.chunkNames.join(', ')
+                    {
+                        value: asset.name,
+                        color: getAssetColor(asset, colors.green)
+                    }, {
+                        value: formatSize(asset.size),
+                        color: getAssetColor(asset, colors.normal)
+                    }, {
+                        value: asset.chunks.join(', '),
+                        color: colors.bold
+                    }, {
+                        value: asset.emitted ? '[emitted]' : '',
+                        color: colors.green
+                    }, {
+                        value: asset.isOverSizeLimit ? '[big]' : '',
+                        color: getAssetColor(asset, colors.normal)
+                    }, {
+                        value: asset.chunkNames.join(', '),
+                        color: colors.normal
+                    }
                 ]);
             });
-            table(t, [colors.green, colors.normal, colors.bold, colors.green, colors.normal], 'rrrll');
+            table(t, 'rrrlll');
         }
         if (obj.entrypoints) {
             Object.keys(obj.entrypoints).forEach(name => {
@@ -725,6 +781,7 @@ class Stats {
                     colors.normal(reason.type);
                     colors.normal(' ');
                     colors.cyan(reason.userRequest);
+                    // todo: dead code
                     if (reason.templateModules) {
                         colors.cyan(reason.templateModules.join(' '));
                     }

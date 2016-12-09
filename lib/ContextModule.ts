@@ -10,7 +10,6 @@ import AsyncDependenciesBlock = require('./AsyncDependenciesBlock');
 import ModuleDependency = require('./dependencies/ModuleDependency');
 import RequestShortener = require('./RequestShortener')
 import Compilation = require('./Compilation')
-import * as Resolve from 'enhanced-resolve'
 
 class ContextModule extends Module {
     async: boolean
@@ -90,7 +89,10 @@ class ContextModule extends Module {
         super.disconnect();
     }
 
-    build(options: WebpackOptions, compilation: Compilation, resolver: any, fs: AbstractInputFileSystem, callback: ErrCallback) {
+    build(
+        options: WebpackOptions, compilation: Compilation, resolver: any, fs: AbstractInputFileSystem,
+        callback: ErrCallback
+    ) {
         this.built = true;
         this.builtTime = new Date().getTime();
         const addon = this.addon;

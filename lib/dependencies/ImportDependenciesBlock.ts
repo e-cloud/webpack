@@ -3,18 +3,18 @@
  Author Tobias Koppers @sokra
  */
 import AsyncDependenciesBlock = require('../AsyncDependenciesBlock');
-import SystemImportDependency = require('./SystemImportDependency');
+import ImportDependency = require('./ImportDependency');
 import { SourceRange } from '../../typings/webpack-types'
 import { SourceLocation } from 'estree'
 import Module = require('../Module')
 
-class SystemImportDependenciesBlock extends AsyncDependenciesBlock {
+class ImportDependenciesBlock extends AsyncDependenciesBlock {
     constructor(request: string, public range: SourceRange, module: Module, loc: SourceLocation) {
         super(null, module, loc);
-        const dep = new SystemImportDependency(request, this);
+        const dep = new ImportDependency(request, this);
         dep.loc = loc;
         this.addDependency(dep);
     }
 }
 
-export = SystemImportDependenciesBlock;
+export = ImportDependenciesBlock;

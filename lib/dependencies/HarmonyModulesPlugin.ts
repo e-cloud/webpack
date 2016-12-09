@@ -17,6 +17,7 @@ import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
 import { CompilationParams, ParserOptions } from '../../typings/webpack-types'
+import HarmonyCompatiblilityDependency = require('./HarmonyCompatiblilityDependency')
 
 class HarmonyModulesPlugin {
     apply(compiler: Compiler) {
@@ -28,6 +29,10 @@ class HarmonyModulesPlugin {
 
             compilation.dependencyFactories.set(HarmonyImportSpecifierDependency, new NullFactory());
             compilation.dependencyTemplates.set(HarmonyImportSpecifierDependency, new HarmonyImportSpecifierDependency.Template());
+
+            compilation.dependencyFactories.set(HarmonyCompatiblilityDependency, new NullFactory());
+            compilation.dependencyTemplates.set(HarmonyCompatiblilityDependency, new HarmonyCompatiblilityDependency.Template());
+
 
             compilation.dependencyFactories.set(HarmonyExportHeaderDependency, new NullFactory());
             compilation.dependencyTemplates.set(HarmonyExportHeaderDependency, new HarmonyExportHeaderDependency.Template());
