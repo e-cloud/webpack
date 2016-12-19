@@ -20,8 +20,8 @@ describe("Compiler", function() {
 		};
 
 		var c = new Compiler();
-		c.options = new WebpackOptionsApply().process(options, c);
 		new NodeEnvironmentPlugin().apply(c);
+		c.options = new WebpackOptionsApply().process(options, c);
 		var files = {};
 		c.outputFileSystem = {
 			join: path.join.bind(path),
@@ -41,6 +41,7 @@ describe("Compiler", function() {
 		c.run(function(err, stats) {
 			if(err) throw err;
 			should.strictEqual(typeof stats, "object");
+			var compilation = stats.compilation;
 			stats = stats.toJson({
 				modules: true,
 				reasons: true
@@ -53,7 +54,7 @@ describe("Compiler", function() {
 				throw stats.errors[0];
 			}
 			stats.logs = logs;
-			callback(stats, files);
+			callback(stats, files, compilation);
 		});
 	}
 	it("should compile a single file to deep output", function(done) {
