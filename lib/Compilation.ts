@@ -162,6 +162,7 @@ class Compilation extends Tapable {
                 module.lastId = cacheModule.id;
             }
         }
+        module.unbuild();
         this._modules[identifier] = module;
         if (this.cache) {
             this.cache[cacheGroup + identifier] = module;
@@ -183,7 +184,7 @@ class Compilation extends Tapable {
         module: Module, optional: boolean, origin: Module, dependencies: Dependency[],
         thisCallback: ErrCallback
     ) {
-        this.applyPlugins('build-module', module);
+        this.applyPlugins1('build-module', module);
         if (module.building) {
             return module.building.push(thisCallback);
         }
@@ -219,10 +220,10 @@ class Compilation extends Tapable {
                 }, this);
                 module.dependencies.sort(Dependency.compare);
                 if (err) {
-                    this.applyPlugins('failed-module', module, err);
+                    this.applyPlugins2('failed-module', module, err);
                     return callback(err);
                 }
-                this.applyPlugins('succeed-module', module);
+                this.applyPlugins1('succeed-module', module);
                 return callback(undefined)
             }
         );
@@ -279,7 +280,7 @@ class Compilation extends Tapable {
         }
         async.each(
             factories,
-            (item: [any, Dependency[]], callback: ErrCallback) => {
+            function iteratorFactory(item: [any, Dependency[]], callback: ErrCallback) {
                 const dependencies = item[1];
 
                 const errorAndCallback = function errorAndCallback(err: ModuleNotFoundError) {
@@ -305,7 +306,7 @@ class Compilation extends Tapable {
                     },
                     context: module.context,
                     dependencies
-                }, (err: ResolveError, dependentModule: Module) => {
+                }, function factoryCallback(err: ResolveError, dependentModule: Module) {
                     function isOptional() {
                         return dependencies.filter(d => !d.optional).length === 0;
                     }
@@ -417,7 +418,7 @@ class Compilation extends Tapable {
                     });
                 });
             },
-            err => {
+            function finalCallbackAddModuleDependencies(err) {
                 // In V8, the Error objects keep a reference to the functions on the stack. These warnings &
                 // errors are created inside closures that keep a reference to the Compilation, so errors are
                 // leaking the Compilation object. Setting _this to null workarounds the following issue in V8.
@@ -428,13 +429,15 @@ class Compilation extends Tapable {
                     return callback(err);
                 }
 
-                return callback();
+                return process.nextTick(callback);
             }
         );
     }
 
     _addModuleChain(
-        context: string, dependency: Dependency, onModule: (module: Module) => any,
+        context: string,
+        dependency: Dependency,
+        onModule: (module: Module) => any,
         callback: ErrCallback
     ) {
         const start = this.profile && +new Date();
@@ -603,14 +606,14 @@ class Compilation extends Tapable {
     }
 
     finish() {
-        this.applyPlugins('finish-modules', this.modules);
+        this.applyPlugins1('finish-modules', this.modules);
         this.modules.forEach(function (m) {
             this.reportDependencyWarnings(m, [m]);
         }, this);
     }
 
     unseal() {
-        this.applyPlugins('unseal');
+        this.applyPlugins0('unseal');
         this.chunks.length = 0;
         this.namedChunks = {};
         this.additionalChunkAssets.length = 0;
@@ -621,7 +624,7 @@ class Compilation extends Tapable {
     }
 
     seal(callback: ErrCallback) {
-        this.applyPlugins('seal');
+        this.applyPlugins0('seal');
         this.nextFreeModuleIndex = 0;
         this.nextFreeModuleIndex2 = 0;
         this.preparedChunks.forEach(preparedChunk => {
@@ -633,89 +636,84 @@ class Compilation extends Tapable {
             chunk.addModule(module);
             module.addChunk(chunk);
             chunk.entryModule = module;
-            if (typeof module.index !== 'number') {
-                module.index = this.nextFreeModuleIndex++;
-            }
+            this.assignIndex(module);
             this.processDependenciesBlockForChunk(module, chunk);
-            if (typeof module.index2 !== 'number') {
-                module.index2 = this.nextFreeModuleIndex2++;
-            }
         }, this);
         this.sortModules(this.modules);
-        this.applyPlugins('optimize');
+        this.applyPlugins0('optimize');
 
         while (
-        this.applyPluginsBailResult('optimize-modules-basic', this.modules)
-        || this.applyPluginsBailResult('optimize-modules', this.modules)
-        || this.applyPluginsBailResult('optimize-modules-advanced', this.modules)
+        this.applyPluginsBailResult1('optimize-modules-basic', this.modules)
+        || this.applyPluginsBailResult1('optimize-modules', this.modules)
+        || this.applyPluginsBailResult1('optimize-modules-advanced', this.modules)
             ); // eslint-disable-line no-extra-semi
 
-        this.applyPlugins('after-optimize-modules', this.modules);
+        this.applyPlugins1('after-optimize-modules', this.modules);
 
         while (
-        this.applyPluginsBailResult('optimize-chunks-basic', this.chunks)
-        || this.applyPluginsBailResult('optimize-chunks', this.chunks)
-        || this.applyPluginsBailResult('optimize-chunks-advanced', this.chunks)
+        this.applyPluginsBailResult1('optimize-chunks-basic', this.chunks)
+        || this.applyPluginsBailResult1('optimize-chunks', this.chunks)
+        || this.applyPluginsBailResult1('optimize-chunks-advanced', this.chunks)
             );
 
-        this.applyPlugins('after-optimize-chunks', this.chunks);
+        this.applyPlugins1('after-optimize-chunks', this.chunks);
 
-        this.applyPluginsAsync('optimize-tree', this.chunks, this.modules, (err: Error) => {
+        this.applyPluginsAsyncSeries('optimize-tree', this.chunks, this.modules, (err: Error) => {
             if (err) {
                 return callback(err);
             }
 
-            this.applyPlugins('after-optimize-tree', this.chunks, this.modules);
+            this.applyPlugins2('after-optimize-tree', this.chunks, this.modules);
 
             const shouldRecord = this.applyPluginsBailResult('should-record') !== false;
 
             this.sortItemsBeforeIds();
 
-            this.applyPlugins('revive-modules', this.modules, this.records);
-            this.applyPlugins('optimize-module-order', this.modules);
-            this.applyPlugins('advanced-optimize-module-order', this.modules);
-            this.applyPlugins('before-module-ids', this.modules);
-            this.applyPlugins('module-ids', this.modules);
+            this.applyPlugins2('revive-modules', this.modules, this.records);
+            this.applyPlugins1('optimize-module-order', this.modules);
+            this.applyPlugins1('advanced-optimize-module-order', this.modules);
+            this.applyPlugins1('before-module-ids', this.modules);
+            this.applyPlugins1('module-ids', this.modules);
             this.applyModuleIds();
-            this.applyPlugins('optimize-module-ids', this.modules);
-            this.applyPlugins('after-optimize-module-ids', this.modules);
+            this.applyPlugins1('optimize-module-ids', this.modules);
+            this.applyPlugins1('after-optimize-module-ids', this.modules);
 
             this.sortItemsWithModuleIds();
 
-            this.applyPlugins('revive-chunks', this.chunks, this.records);
-            this.applyPlugins('optimize-chunk-order', this.chunks);
-            this.applyPlugins('before-chunk-ids', this.chunks);
+            this.applyPlugins2('revive-chunks', this.chunks, this.records);
+            this.applyPlugins1('optimize-chunk-order', this.chunks);
+            this.applyPlugins1('before-chunk-ids', this.chunks);
             this.applyChunkIds();
-            this.applyPlugins('optimize-chunk-ids', this.chunks);
-            this.applyPlugins('after-optimize-chunk-ids', this.chunks);
+            this.applyPlugins1('optimize-chunk-ids', this.chunks);
+            this.applyPlugins1('after-optimize-chunk-ids', this.chunks);
 
-            this.sortItemswithChunkIds();
+            this.sortItemsWithChunkIds();
 
             if (shouldRecord) {
-                this.applyPlugins('record-modules', this.modules, this.records);
+                this.applyPlugins2('record-modules', this.modules, this.records);
             }
             if (shouldRecord) {
-                this.applyPlugins('record-chunks', this.chunks, this.records);
+                this.applyPlugins2('record-chunks', this.chunks, this.records);
             }
 
-            this.applyPlugins('before-hash');
+            this.applyPlugins0('before-hash');
             this.createHash();
-            this.applyPlugins('after-hash');
+            this.applyPlugins0('after-hash');
 
             if (shouldRecord) {
-                this.applyPlugins('record-hash', this.records);
+                this.applyPlugins1('record-hash', this.records);
             }
 
-            this.applyPlugins('before-module-assets');
+            this.applyPlugins0('before-module-assets');
             this.createModuleAssets();
             if (this.applyPluginsBailResult('should-generate-chunk-assets') !== false) {
-                this.applyPlugins('before-chunk-assets');
+                this.applyPlugins0('before-chunk-assets');
                 this.createChunkAssets();
             }
-            this.applyPlugins('additional-chunk-assets', this.chunks);
+            this.applyPlugins1('additional-chunk-assets', this.chunks);
             this.summarizeDependencies();
             if (shouldRecord) {
-                this.applyPlugins('record', this, this.records);
+                this.applyPlugins2('record', this, this.records);
             }
 
             this.applyPluginsAsync('additional-assets', (err: Error) => {
@@ -726,12 +724,12 @@ class Compilation extends Tapable {
                     if (err) {
                         return callback(err);
                     }
-                    this.applyPlugins('after-optimize-chunk-assets', this.chunks);
+                    this.applyPlugins1('after-optimize-chunk-assets', this.chunks);
                     this.applyPluginsAsync('optimize-assets', this.assets, (err: Error) => {
                         if (err) {
                             return callback(err);
                         }
-                        this.applyPlugins('after-optimize-assets', this.assets);
+                        this.applyPlugins1('after-optimize-assets', this.assets);
                         if (this.applyPluginsBailResult('need-additional-seal')) {
                             this.unseal();
                             return this.seal(callback);
@@ -756,18 +754,17 @@ class Compilation extends Tapable {
     }
 
     reportDependencyWarnings(module: Module, blocks: DependenciesBlock[]) {
-        const self = this;
         blocks.forEach(block => {
             block.dependencies.forEach(d => {
                 const warnings = d.getWarnings();
                 if (warnings) {
                     warnings.forEach(w => {
                         const warning = new ModuleDependencyWarning(module, w, d.loc as SourceLocation);
-                        self.warnings.push(warning);
+                        this.warnings.push(warning);
                     });
                 }
             });
-            self.reportDependencyWarnings(module, block.blocks);
+            this.reportDependencyWarnings(module, block.blocks);
         });
     }
 
@@ -790,48 +787,121 @@ class Compilation extends Tapable {
         return chunk;
     }
 
-    processDependenciesBlockForChunk(block: Module, chunk: Chunk) {
-        if (block.variables) {
-            block.variables.forEach(function (v) {
-                v.dependencies.forEach(iteratorDependency, this);
-            }, this);
+    assignIndex(module: Module) {
+        const self = this;
+
+        function assignIndexToModule(module: Module) {
+            // enter module
+            if (typeof module.index !== 'number') {
+                module.index = self.nextFreeModuleIndex++;
+
+                queue.push(function () {
+                    // leave module
+                    module.index2 = self.nextFreeModuleIndex2++;
+                });
+
+                // enter it as block
+                assignIndexToDependencyBlock(module);
+            }
         }
-        if (block.dependencies) {
-            block.dependencies.forEach(iteratorDependency, this);
+
+        function assignIndexToDependency(dependency: Dependency) {
+            if (dependency.module) {
+                queue.push(function () {
+                    assignIndexToModule(dependency.module);
+                });
+            }
         }
-        if (block.blocks) {
-            block.blocks.forEach(function (b: AsyncDependenciesBlock) {
-                let c;
-                if (!b.chunks) {
-                    c = this.addChunk(b.chunkName, b.module, b.loc);
-                    b.chunks = [c];
-                    c.addBlock(b);
-                }
-                else {
-                    c = b.chunks[0];
-                }
-                chunk.addChunk(c);
-                c.addParent(chunk);
-                this.processDependenciesBlockForChunk(b, c);
-            }, this);
+
+        function assignIndexToDependencyBlock(block: DependenciesBlock) {
+            const allDependencies: Dependency[] = [];
+
+            function iteratorDependency(d: Dependency) {
+                allDependencies.push(d);
+            }
+
+            function iteratorBlock(b: DependenciesBlock) {
+                queue.push(function () {
+                    assignIndexToDependencyBlock(b);
+                });
+            }
+
+            if (block.variables) {
+                block.variables.forEach(function (v) {
+                    v.dependencies.forEach(iteratorDependency);
+                });
+            }
+            if (block.dependencies) {
+                block.dependencies.forEach(iteratorDependency);
+            }
+            if (block.blocks) {
+                block.blocks.slice().reverse().forEach(iteratorBlock, this);
+            }
+
+            allDependencies.reverse();
+            allDependencies.forEach(function (d) {
+                queue.push(function () {
+                    assignIndexToDependency(d);
+                });
+            });
+        }
+
+        const queue = [
+            function () {
+                assignIndexToModule(module);
+            }
+        ];
+        while (queue.length) {
+            queue.pop()();
+        }
+    }
+
+    processDependenciesBlockForChunk(block: DependenciesBlock, chunk: Chunk) {
+        const queue: [DependenciesBlock, Chunk][] = [
+            [block, chunk]
+        ];
+        while (queue.length) {
+            const queueItem = queue.pop();
+            block = queueItem[0];
+            chunk = queueItem[1];
+            if (block.variables) {
+                block.variables.forEach(function (v) {
+                    v.dependencies.forEach(iteratorDependency, this);
+                }, this);
+            }
+            if (block.dependencies) {
+                block.dependencies.forEach(iteratorDependency, this);
+            }
+            if (block.blocks) {
+                block.blocks.forEach(iteratorBlock, this);
+            }
+        }
+
+        function iteratorBlock(this: Compilation, b: AsyncDependenciesBlock) {
+            let c;
+            if (!b.chunks) {
+                c = this.addChunk(b.chunkName, b.module, b.loc);
+                b.chunks = [c];
+                c.addBlock(b);
+            }
+            else {
+                c = b.chunks[0];
+            }
+            chunk.addChunk(c);
+            c.addParent(chunk);
+            queue.push([b, c]);
         }
 
         function iteratorDependency(d: Dependency & { weak?: boolean }) {
             if (!d.module) {
                 return;
             }
-            if (typeof d.module.index !== 'number') {
-                d.module.index = this.nextFreeModuleIndex++;
-            }
             if (d.weak) {
                 return;
             }
             if (chunk.addModule(d.module)) {
                 d.module.addChunk(chunk);
-                this.processDependenciesBlockForChunk(d.module, chunk);
-            }
-            if (typeof d.module.index2 !== 'number') {
-                d.module.index2 = this.nextFreeModuleIndex2++;
+                queue.push([d.module, chunk]);
             }
         }
     }
@@ -948,10 +1018,13 @@ class Compilation extends Tapable {
         });
     }
 
-    sortItemswithChunkIds() {
+    sortItemsWithChunkIds() {
         this.chunks.sort(byId);
         this.modules.forEach(module => {
             module.sortItems();
+        });
+        this.chunks.forEach(function (chunk) {
+            chunk.sortItems();
         });
     }
 
@@ -1040,7 +1113,7 @@ class Compilation extends Tapable {
             else {
                 this.chunkTemplate.updateHashForChunk(chunkHash);
             }
-            this.applyPlugins('chunk-hash', chunk, chunkHash);
+            this.applyPlugins2('chunk-hash', chunk, chunkHash);
             chunk.hash = chunkHash.digest(hashDigest);
             hash.update(chunk.hash);
             chunk.renderedHash = chunk.hash.substr(0, hashDigestLength);
@@ -1069,7 +1142,7 @@ class Compilation extends Tapable {
                     .forEach(name => {
                         const file = this.getPath(name);
                         this.assets[file] = module.assets[name];
-                        this.applyPlugins('module-asset', module, file);
+                        this.applyPlugins2('module-asset', module, file);
                     });
             }
         }
@@ -1117,7 +1190,7 @@ class Compilation extends Tapable {
                 }
                 this.assets[file] = source;
                 chunk.files.push(file);
-                this.applyPlugins('chunk-asset', chunk, file);
+                this.applyPlugins2('chunk-asset', chunk, file);
             } catch (err) {
                 this.errors.push(new ChunkRenderError(chunk, file || filenameTemplate, err));
             }

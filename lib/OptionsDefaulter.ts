@@ -72,7 +72,10 @@ function getProperty(obj: PlainObject, name: string) {
 function setProperty(obj: PlainObject, name: string, value: any) {
     const props = name.split('.');
     for (let prop of props.slice(0, props.length - 1)) {
-        if (typeof obj[prop] !== 'object' || !obj[prop]) {
+        if (typeof obj[prop] !== 'object' && typeof obj[prop] !== 'undefined') {
+            return;
+        }
+        if (!obj[prop]) {
             obj[prop] = {};
         }
         obj = obj[prop];

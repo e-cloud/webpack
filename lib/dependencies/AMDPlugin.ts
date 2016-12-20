@@ -114,20 +114,22 @@ class AMDPlugin {
                 setTypeof('require', 'function');
             });
         });
-        compiler.resolvers.normal.apply(
-            new AliasPlugin('described-resolve', {
-                name: 'amdefine',
-                alias: path.join(__dirname, '..', '..', 'buildin', 'amd-define.js')
-            }, 'resolve'),
-            new AliasPlugin('described-resolve', {
-                name: 'webpack amd options',
-                alias: path.join(__dirname, '..', '..', 'buildin', 'amd-options.js')
-            }, 'resolve'),
-            new AliasPlugin('described-resolve', {
-                name: 'webpack amd define',
-                alias: path.join(__dirname, '..', '..', 'buildin', 'amd-define.js')
-            }, 'resolve')
-        );
+        compiler.plugin('after-resolvers', function () {
+            compiler.resolvers.normal.apply(
+                new AliasPlugin('described-resolve', {
+                    name: 'amdefine',
+                    alias: path.join(__dirname, '..', '..', 'buildin', 'amd-define.js')
+                }, 'resolve'),
+                new AliasPlugin('described-resolve', {
+                    name: 'webpack amd options',
+                    alias: path.join(__dirname, '..', '..', 'buildin', 'amd-options.js')
+                }, 'resolve'),
+                new AliasPlugin('described-resolve', {
+                    name: 'webpack amd define',
+                    alias: path.join(__dirname, '..', '..', 'buildin', 'amd-define.js')
+                }, 'resolve')
+            );
+        })
     }
 }
 

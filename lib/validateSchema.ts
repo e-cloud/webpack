@@ -44,26 +44,26 @@ function validateSchema(schema: any, options: Options) {
 }
 
 function filterErrors(errors: ErrorObject[]) {
-    const errorsByDataPath = {};
-    const newErrors: ErrorObject[] = [];
+    let newErrors: ErrorObject[] = [];
     errors.forEach(err => {
         const dataPath = err.dataPath;
-        const key = `$${dataPath}`;
-        if (errorsByDataPath[key]) {
-            const oldError = errorsByDataPath[key];
-            const idx = newErrors.indexOf(oldError);
-            newErrors.splice(idx, 1);
-            if (oldError.children) {
-                const children = oldError.children;
-                delete oldError.children;
+        const children: ErrorObject[] = [];
+        newErrors = newErrors.filter(function (oldError) {
+            if (oldError.dataPath.indexOf(dataPath) >= 0) {
+                if (oldError.children) {
+                    oldError.children.forEach(function (child) {
+                        children.push(child);
+                    });
+                }
+                oldError.children = undefined;
                 children.push(oldError);
-                err.children = children;
+                return false;
             }
-            else {
-                err.children = [oldError];
-            }
+            return true;
+        });
+        if (children.length) {
+            err.children = children;
         }
-        errorsByDataPath[key] = err;
         newErrors.push(err);
     });
     return newErrors;

@@ -7,6 +7,7 @@ import Module = require('../Module')
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import { FilenameTemplate } from '../../typings/webpack-types'
+import ExternalModule = require('../ExternalModule')
 
 let nextIdent = 0;
 
@@ -151,6 +152,12 @@ The available options are:
                             else if (count < _minChunks) {
                                 return;
                             }
+
+                            // module instanceof ExternalModule
+                            if (module.chunkCondition && !module.chunkCondition(commonChunk)) {
+                                return;
+                            }
+
                             reallyUsedModules.push(module);
                         });
                     }

@@ -4,6 +4,7 @@
  */
 import AbstractPlugin = require('../AbstractPlugin');
 
+import HarmonyCompatiblilityDependency = require('./HarmonyCompatiblilityDependency');
 import HarmonyImportDependency = require('./HarmonyImportDependency');
 import HarmonyImportSpecifierDependency = require('./HarmonyImportSpecifierDependency');
 import HarmonyAcceptImportDependency = require('./HarmonyAcceptImportDependency');
@@ -16,11 +17,24 @@ import {
     MemberExpression,
     CallExpression,
     SimpleLiteral,
-    FunctionExpression
+    FunctionExpression,
+    SourceLocation
 } from 'estree'
+import Module = require('../Module')
+
+function makeHarmonyModule(module: Module, loc: SourceLocation) {
+    if (!module.meta.harmonyModule) {
+        const dep = new HarmonyCompatiblilityDependency(module);
+        dep.loc = loc;
+        module.addDependency(dep);
+        module.meta.harmonyModule = true;
+        module.strict = true;
+    }
+}
 
 export = AbstractPlugin.create({
     'import'(this: Parser, statement: ImportDeclaration, source: string) {
+        makeHarmonyModule(this.state.module, statement.loc);
         const dep = new HarmonyImportDependency(source, HarmonyModulesHelpers.getNewModuleVar(this.state, source), statement.range);
         dep.loc = statement.loc;
         this.state.current.addDependency(dep);

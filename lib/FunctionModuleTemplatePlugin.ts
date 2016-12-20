@@ -6,13 +6,14 @@ import { ConcatSource, Source } from 'webpack-sources'
 import { Hash } from 'crypto'
 import ModuleTemplate = require('./ModuleTemplate')
 import Module = require('./Module')
+import NormalModule = require('./NormalModule')
 
 class FunctionModuleTemplatePlugin {
     apply(moduleTemplate: ModuleTemplate) {
-        moduleTemplate.plugin('render', function (moduleSource: Source, module: Module) {
+        moduleTemplate.plugin('render', function (moduleSource: Source, module: NormalModule) {
             const source = new ConcatSource();
             const defaultArguments = ['module', 'exports'];
-            // todo: there is no arguments assignment in the repo
+
             if (module.arguments && module.arguments.length !== 0 || module.hasDependencies()) {
                 defaultArguments.push('__webpack_require__');
             }

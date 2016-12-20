@@ -5,21 +5,12 @@
 import * as ESTree from 'estree'
 import { PlainObject, SourceRange, ParserState } from '../typings/webpack-types'
 import acorn from 'acorn-dynamic-import'
+import acornNS = require('acorn')
 import Tapable = require('tapable');
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import Module = require('./Module')
 import DependenciesBlock = require('./DependenciesBlock')
 import Compilation = require('./Compilation')
-
-// todo: once update acorn.d.ts, remove this interface
-interface ASTOPTION {
-    ecmaVersion: number
-    locations: boolean
-    onComment: any[]
-    ranges: boolean
-    sourceType: string
-    plugins: any
-}
 
 interface IdentCallback {
     (name: string, decl: ESTree.Pattern): void
@@ -43,7 +34,7 @@ const POSSIBLE_AST_OPTIONS = [
             dynamicImport: true
         }
     }
-] as ASTOPTION[];
+] as acornNS.Options[];
 
 interface ParserScope {
     definitions: string[]
@@ -270,7 +261,7 @@ class Parser extends Tapable {
                 if (expr.argument.type === 'Identifier') {
                     name = this.scope.renames[`$${expr.argument.name}`] || expr.argument.name;
                     if (!this.scope.definitions.includes(name)) {
-                        res = this.applyPluginsBailResult(`evaluate typeof ${name}`, expr);
+                        res = this.applyPluginsBailResult1(`evaluate typeof ${name}`, expr);
                         if (res !== undefined) {
                             return res;
                         }
@@ -288,7 +279,7 @@ class Parser extends Tapable {
                         // todo: what's the name? it hasn't been initialized
                         if (!this.scope.definitions.includes(name)) {
                             const exprNameStr = exprName.join('.');
-                            res = this.applyPluginsBailResult(`evaluate typeof ${exprNameStr}`, expr);
+                            res = this.applyPluginsBailResult1(`evaluate typeof ${exprNameStr}`, expr);
                             if (res !== undefined) {
                                 return res;
                             }
@@ -335,14 +326,14 @@ class Parser extends Tapable {
         this.plugin('evaluate Identifier', function (expr: ESTree.Identifier) {
             const name = this.scope.renames[`$${expr.name}`] || expr.name;
             if (!this.scope.definitions.includes(expr.name)) {
-                const result = this.applyPluginsBailResult(`evaluate Identifier ${name}`, expr);
+                const result = this.applyPluginsBailResult1(`evaluate Identifier ${name}`, expr);
                 if (result) {
                     return result;
                 }
                 return new BasicEvaluatedExpression().setIdentifier(name).setRange(expr.range);
             }
             else {
-                return this.applyPluginsBailResult(`evaluate defined Identifier ${name}`, expr);
+                return this.applyPluginsBailResult1(`evaluate defined Identifier ${name}`, expr);
             }
         });
         this.plugin('evaluate MemberExpression', function (expression: ESTree.MemberExpression) {
@@ -360,14 +351,14 @@ class Parser extends Tapable {
                     exprName.unshift(name);
                     const exprNameStr = exprName.join('.');
                     if (!this.scope.definitions.includes(expr.name)) {
-                        const result = this.applyPluginsBailResult(`evaluate Identifier ${exprNameStr}`, expression);
+                        const result = this.applyPluginsBailResult1(`evaluate Identifier ${exprNameStr}`, expression);
                         if (result) {
                             return result;
                         }
                         return new BasicEvaluatedExpression().setIdentifier(exprNameStr).setRange(expression.range);
                     }
                     else {
-                        return this.applyPluginsBailResult(`evaluate defined Identifier ${exprNameStr}`, expression);
+                        return this.applyPluginsBailResult1(`evaluate defined Identifier ${exprNameStr}`, expression);
                     }
                 }
             }
@@ -612,7 +603,7 @@ class Parser extends Tapable {
     }
 
     walkStatement(statement: ESTree.Node) {
-        if (this.applyPluginsBailResult('statement', statement) !== undefined) {
+        if (this.applyPluginsBailResult1('statement', statement) !== undefined) {
             return;
         }
         if (this[`walk${statement.type}`]) {
@@ -630,7 +621,7 @@ class Parser extends Tapable {
     }
 
     walkIfStatement(statement: ESTree.IfStatement) {
-        const result = this.applyPluginsBailResult('statement if', statement);
+        const result = this.applyPluginsBailResult1('statement if', statement);
         if (result === undefined) {
             this.walkExpression(statement.test);
             this.walkStatement(statement.consequent);
@@ -649,7 +640,7 @@ class Parser extends Tapable {
     }
 
     walkLabeledStatement(statement: ESTree.LabeledStatement) {
-        const result = this.applyPluginsBailResult(`label ${statement.label.name}`, statement);
+        const result = this.applyPluginsBailResult1(`label ${statement.label.name}`, statement);
         if (result !== true) {
             this.walkStatement(statement.body);
         }
@@ -764,7 +755,7 @@ class Parser extends Tapable {
             this.applyPluginsBailResult('export import', statement, source);
         }
         else {
-            this.applyPluginsBailResult('export', statement);
+            this.applyPluginsBailResult1('export', statement);
         }
         if (statement.declaration) {
             if (/Expression$/.test(statement.declaration.type)) {
@@ -799,7 +790,7 @@ class Parser extends Tapable {
     }
 
     walkExportDefaultDeclaration(statement: ESTree.ExportDefaultDeclaration) {
-        this.applyPluginsBailResult('export', statement);
+        this.applyPluginsBailResult1('export', statement);
         if (/Declaration$/.test(statement.declaration.type)) {
             if (!this.applyPluginsBailResult('export declaration', statement, statement.declaration)) {
                 const pos = this.scope.definitions.length;
@@ -863,9 +854,9 @@ class Parser extends Tapable {
             switch (declarator.type) {
                 case 'VariableDeclarator':
                     const renameIdentifier = declarator.init && this.getRenameIdentifier(declarator.init);
-                    if (renameIdentifier && declarator.id.type === 'Identifier' && this.applyPluginsBailResult(`can-rename ${renameIdentifier}`, declarator.init)) {
+                    if (renameIdentifier && declarator.id.type === 'Identifier' && this.applyPluginsBailResult1(`can-rename ${renameIdentifier}`, declarator.init)) {
                         // renaming with "var a = b;"
-                        if (!this.applyPluginsBailResult(`rename ${renameIdentifier}`, declarator.init)) {
+                        if (!this.applyPluginsBailResult1(`rename ${renameIdentifier}`, declarator.init)) {
                             this.scope.renames[`$${declarator.id.name}`] = this.scope.renames[`$${renameIdentifier}`] || renameIdentifier;
                             const idx = this.scope.definitions.indexOf(declarator.id.name);
                             if (idx >= 0) {
@@ -875,7 +866,7 @@ class Parser extends Tapable {
                     }
                     else {
                         this.enterPattern(declarator.id, (name: string, decl: ESTree.Pattern) => {
-                            if (!this.applyPluginsBailResult(`var ${name}`, decl)) {
+                            if (!this.applyPluginsBailResult1(`var ${name}`, decl)) {
                                 this.scope.renames[`$${name}`] = undefined;
                                 this.scope.definitions.push(name);
                             }
@@ -982,7 +973,7 @@ class Parser extends Tapable {
             if (expr.type === 'Identifier' && !this.scope.definitions.includes(expr.name)) {
                 exprName.unshift(this.scope.renames[`$${expr.name}`] || expr.name);
                 const exprNameStr = exprName.join('.');
-                const result = this.applyPluginsBailResult(`typeof ${exprNameStr}`, expression);
+                const result = this.applyPluginsBailResult1(`typeof ${exprNameStr}`, expression);
                 if (result === true) {
                     return;
                 }
@@ -993,9 +984,9 @@ class Parser extends Tapable {
 
     walkAssignmentExpression(expression: ESTree.AssignmentExpression) {
         const renameIdentifier = this.getRenameIdentifier(expression.right);
-        if (expression.left.type === 'Identifier' && renameIdentifier && this.applyPluginsBailResult(`can-rename ${renameIdentifier}`, expression.right)) {
+        if (expression.left.type === 'Identifier' && renameIdentifier && this.applyPluginsBailResult1(`can-rename ${renameIdentifier}`, expression.right)) {
             // renaming "a = b;"
-            if (!this.applyPluginsBailResult(`rename ${renameIdentifier}`, expression.right)) {
+            if (!this.applyPluginsBailResult1(`rename ${renameIdentifier}`, expression.right)) {
                 this.scope.renames[`$${expression.left.name}`] = renameIdentifier;
                 const idx = this.scope.definitions.indexOf(expression.left.name);
                 if (idx >= 0) {
@@ -1004,11 +995,11 @@ class Parser extends Tapable {
             }
         }
         else if (expression.left.type === 'Identifier') {
-            if (!this.applyPluginsBailResult(`assigned ${expression.left.name}`, expression)) {
+            if (!this.applyPluginsBailResult1(`assigned ${expression.left.name}`, expression)) {
                 this.walkExpression(expression.right);
             }
             this.scope.renames[`$${expression.left.name}`] = undefined;
-            if (!this.applyPluginsBailResult(`assign ${expression.left.name}`, expression)) {
+            if (!this.applyPluginsBailResult1(`assign ${expression.left.name}`, expression)) {
                 this.walkExpression(expression.left);
             }
         }
@@ -1022,7 +1013,7 @@ class Parser extends Tapable {
     }
 
     walkConditionalExpression(expression: ESTree.ConditionalExpression) {
-        const result = this.applyPluginsBailResult('expression ?:', expression);
+        const result = this.applyPluginsBailResult1('expression ?:', expression);
         if (result === undefined) {
             this.walkExpression(expression.test);
             this.walkExpression(expression.consequent);
@@ -1080,8 +1071,8 @@ class Parser extends Tapable {
             const params = functionExpression.params;
             args = args.map(function (arg) {
                 const renameIdentifier = this.getRenameIdentifier(arg);
-                if (renameIdentifier && this.applyPluginsBailResult(`can-rename ${renameIdentifier}`, arg)) {
-                    if (!this.applyPluginsBailResult(`rename ${renameIdentifier}`, arg)) {
+                if (renameIdentifier && this.applyPluginsBailResult1(`can-rename ${renameIdentifier}`, arg)) {
+                    if (!this.applyPluginsBailResult1(`rename ${renameIdentifier}`, arg)) {
                         return renameIdentifier;
                     }
                 }
@@ -1134,7 +1125,7 @@ class Parser extends Tapable {
 
             const callee = this.evaluateExpression(expression.callee);
             if (callee.isIdentifier()) {
-                const result = this.applyPluginsBailResult(`call ${callee.identifier}`, expression);
+                const result = this.applyPluginsBailResult1(`call ${callee.identifier}`, expression);
                 if (result === true) {
                     return;
                 }
@@ -1158,12 +1149,12 @@ class Parser extends Tapable {
         }
         if (expr.type === 'Identifier' && !this.scope.definitions.includes(expr.name)) {
             exprName.unshift(this.scope.renames[`$${expr.name}`] || expr.name);
-            let result = this.applyPluginsBailResult(`expression ${exprName.join('.')}`, expression);
+            let result = this.applyPluginsBailResult1(`expression ${exprName.join('.')}`, expression);
             if (result === true) {
                 return;
             }
             exprName[exprName.length - 1] = '*';
-            result = this.applyPluginsBailResult(`expression ${exprName.join('.')}`, expression);
+            result = this.applyPluginsBailResult1(`expression ${exprName.join('.')}`, expression);
             if (result === true) {
                 return;
             }
@@ -1176,7 +1167,7 @@ class Parser extends Tapable {
 
     walkIdentifier(expression: ESTree.Identifier) {
         if (!this.scope.definitions.includes(expression.name)) {
-            const result = this.applyPluginsBailResult(`expression ${this.scope.renames['$' + expression.name] || expression.name}`, expression);
+            const result = this.applyPluginsBailResult1(`expression ${this.scope.renames['$' + expression.name] || expression.name}`, expression);
             if (result === true) {
                 return;
             }

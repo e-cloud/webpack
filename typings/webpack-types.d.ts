@@ -61,6 +61,7 @@ declare interface ModuleOptions {
     unknownContextRecursive?: boolean;
     unknownContextRegExp?: RegExp;
     unknownContextRequest?: string;
+    unsafeCache?: boolean | Function;
     wrappedContextCritical?: boolean;
     wrappedContextRecursive?: boolean;
     wrappedContextRegExp?: RegExp;
@@ -242,10 +243,12 @@ declare interface FilenameTemplateInfo {
 }
 
 declare interface PerformanceOptions {
-    maxAssetSize?: number
-    maxInitialChunkSize?: number
-    hints?
+    assetFilter: (asset: string) => boolean
     errorOnHint?: boolean
+    hints?: 'error' | 'warning' | false
+    maxAssetSize?: number
+    maxEntrypointSize: number
+    maxInitialChunkSize?: number
 }
 
 declare interface WebpackOptions {

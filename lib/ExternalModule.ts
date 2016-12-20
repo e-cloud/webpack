@@ -52,7 +52,7 @@ class ExternalModule extends Module {
                 // todo: it seems to be unclear about use case of array type request
                 if (Array.isArray(request)) {
                     str = `(function() { module.exports = ${this.type}${request.map(
-                        r => '[' + JSON.stringify(r) + ']')
+                        r => `[${JSON.stringify(r)}]`)
                         .join('')}; }());`;
                 }
                 else {
@@ -63,7 +63,7 @@ class ExternalModule extends Module {
             case 'commonjs2':
                 if (Array.isArray(request)) {
                     str = `module.exports = require(${JSON.stringify(request[0])})${request.slice(1)
-                        .map(r => '[' + JSON.stringify(r) + ']')
+                        .map(r => `[${JSON.stringify(r)}]`)
                         .join('')};`;
                 }
                 else {

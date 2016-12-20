@@ -2,6 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import path = require('path');
 import { OriginalSource, RawSource } from 'webpack-sources'
 import { WebpackOptions, TimeStampMap, ErrCallback, AbstractInputFileSystem } from '../typings/webpack-types'
 import { SourceLocation } from 'estree'
@@ -76,6 +77,27 @@ class ContextModule extends Module {
         return identifier.replace(/ $/, '');
     }
 
+    libIdent(
+        options: {
+            context: string
+        }
+    ) {
+        let identifier = `${contextify(options, this.context)} `;
+        if (this.async) {
+            identifier += 'async ';
+        }
+        if (this.recursive) {
+            identifier += 'recursive ';
+        }
+        if (this.addon) {
+            identifier += contextify(options, this.addon);
+        }
+        if (this.regExp) {
+            identifier += prettyRegExp(`${this.regExp}`)
+        }
+        return identifier.replace(/ $/, '');
+    }
+
     needRebuild(fileTimestamps: TimeStampMap, contextTimestamps: TimeStampMap) {
         const ts = contextTimestamps[this.context];
         if (!ts) {
@@ -84,9 +106,9 @@ class ContextModule extends Module {
         return ts >= this.builtTime;
     }
 
-    disconnect() {
+    unbuild() {
         this.built = false;
-        super.disconnect();
+        super.unbuild();
     }
 
     build(
@@ -154,7 +176,7 @@ class ContextModule extends Module {
                 '};\n',
                 'webpackContext.resolve = webpackContextResolve;\n',
                 'module.exports = webpackContext;\n',
-                `webpackContext.id = ${this.id};\n`
+                `webpackContext.id = ${JSON.stringify(this.id)};\n`
             ];
         }
         else if (this.blocks && this.blocks.length > 0) {
@@ -198,7 +220,7 @@ class ContextModule extends Module {
                 '\treturn Object.keys(map);\n',
                 '};\n',
                 'module.exports = webpackAsyncContext;\n',
-                `webpackAsyncContext.id = ${this.id};\n`
+                `webpackAsyncContext.id = ${JSON.stringify(this.id)};\n`
             ];
         }
         else {
@@ -209,7 +231,7 @@ class ContextModule extends Module {
                 'webpackEmptyContext.keys = function() { return []; };\n',
                 'webpackEmptyContext.resolve = webpackEmptyContext;\n',
                 'module.exports = webpackEmptyContext;\n',
-                `webpackEmptyContext.id = ${this.id};\n`
+                `webpackEmptyContext.id = ${JSON.stringify(this.id)};\n`
             ];
         }
         if (this.useSourceMap) {
@@ -230,4 +252,21 @@ export = ContextModule;
 
 function prettyRegExp(str: string) {
     return str.substring(1, str.length - 1);
+}
+
+function contextify(
+    options: {
+        context: string
+    }, request: string
+) {
+    return request.split('!').map(function (r) {
+        let rp = path.relative(options.context, r);
+        if (path.sep === '\\') {
+            rp = rp.replace(/\\/g, '/');
+        }
+        if (rp.indexOf('../') !== 0) {
+            rp = `./${rp}`;
+        }
+        return rp;
+    }).join('!');
 }

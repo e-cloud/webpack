@@ -20,15 +20,15 @@ class DelegatedModule extends Module {
     useSourceMap: boolean
 
     constructor(
-        public sourceRequest: string, data: LibManifestPlugin.ManifestContentItem, public type: string,
+        public sourceRequest: string,
+        public delegateData: LibManifestPlugin.ManifestContentItem,
+        public type: string,
         public userRequest: string
     ) {
         super();
-        this.request = data.id;
-        this.meta = data.meta;
+        this.request = delegateData.id;
+        this.meta = delegateData.meta;
         this.built = false;
-        this.usedExports = true;
-        this.providedExports = data.exports || true;
     }
 
     identifier() {
@@ -44,10 +44,18 @@ class DelegatedModule extends Module {
     }
 
     build(options: WebpackOptions, compilation: Compilation, resolver: any, fs: any, callback: ErrCallback) {
+        this.built = true;
         this.builtTime = new Date().getTime();
+        this.usedExports = true;
+        this.providedExports = this.delegateData.exports || true;
         this.dependencies.length = 0;
         this.addDependency(new DelegatedSourceDependency(this.sourceRequest));
         callback();
+    }
+
+    unbuild() {
+        this.built = false;
+        super.unbuild();
     }
 
     source() {

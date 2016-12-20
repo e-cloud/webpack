@@ -246,9 +246,9 @@ class Compiler extends Tapable {
         this.contextTimestamps = {};
 
         this.resolvers = {
-            normal: new Resolver(null),
-            loader: new Resolver(null),
-            context: new Resolver(null)
+            normal: null,
+            loader: null,
+            context: null
         };
         let deprecationReported = false;
         this.parser = {
@@ -444,7 +444,7 @@ class Compiler extends Tapable {
         }
 
         function afterEmit(this: Compiler) {
-            this.applyPluginsAsync('after-emit', compilation, (err: Error) => {
+            this.applyPluginsAsyncSeries1('after-emit', compilation, (err: Error) => {
                 if (err) {
                     return callback(err);
                 }

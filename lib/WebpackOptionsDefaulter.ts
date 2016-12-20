@@ -27,6 +27,8 @@ class WebpackOptionsDefaulter extends OptionsDefaulter {
         this.set('module.wrappedContextRecursive', true);
         this.set('module.wrappedContextCritical', false);
 
+        this.set('module.unsafeCache', true);
+
         this.set('output', 'call', (value: any, options: WebpackOptions) => {
             if (typeof value === 'string') {
                 return {
@@ -72,10 +74,15 @@ class WebpackOptionsDefaulter extends OptionsDefaulter {
         this.set('node.__dirname', 'mock');
 
         this.set('performance.maxAssetSize', 250000);
-        this.set('performance.maxInitialChunkSize', 250000);
+        this.set('performance.maxEntrypointSize', 250000);
         this.set('performance.errorOnHint', false);
         this.set('performance.hints', 'make', function (options: WebpackOptions) {
-            return options.target === 'web';
+            if (options.target === 'web' || options.target === 'webworker') {
+                return 'warning';
+            }
+            else {
+                return false;
+            }
         });
 
         this.set('resolve', {});

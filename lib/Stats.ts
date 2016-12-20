@@ -103,6 +103,7 @@ interface StatsAsset {
 interface StatsEntryPoint {
     chunks: number[]
     assets: string[]
+    isOverSizeLimit: boolean
 }
 
 interface StatsJson {
@@ -359,7 +360,10 @@ class Stats {
                 obj.entrypoints[name] = {
                     chunks: ep.chunks.map(c => c.id),
                     assets: ep.chunks.reduce((array, c) => array.concat(c.files || []), [])
-                };
+                } as StatsEntryPoint;
+                if (showPerformance) {
+                    obj.entrypoints[name].isOverSizeLimit = ep.isOverSizeLimit;
+                }
             });
         }
 
@@ -602,7 +606,7 @@ class Stats {
                     if (align[col] === 'r') {
                         format(value);
                     }
-                    if (col + 1 < cols && colSizes[col] != 0) {
+                    if (col + 1 < cols && colSizes[col] !== 0) {
                         colors.normal(splitter);
                     }
                 }
@@ -696,10 +700,15 @@ class Stats {
         }
         if (obj.entrypoints) {
             Object.keys(obj.entrypoints).forEach(name => {
+                const ep = obj.entrypoints[name];
                 colors.normal('Entrypoint ');
                 colors.bold(name);
+                if (ep.isOverSizeLimit) {
+                    colors.normal(' ');
+                    colors.yellow('[big]');
+                }
                 colors.normal(' =');
-                obj.entrypoints[name].assets.forEach(asset => {
+                ep.assets.forEach(asset => {
                     colors.normal(' ');
                     colors.green(asset);
                 });

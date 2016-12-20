@@ -37,7 +37,7 @@ import FlagIncludedChunksPlugin = require('./optimize/FlagIncludedChunksPlugin')
 import OccurrenceOrderPlugin = require('./optimize/OccurrenceOrderPlugin');
 import FlagDependencyUsagePlugin = require('./FlagDependencyUsagePlugin');
 import FlagDependencyExportsPlugin = require('./FlagDependencyExportsPlugin');
-import EmittedAssetSizeLimitPlugin = require('./performance/EmittedAssetSizeLimitPlugin');
+import SizeLimitsPlugin = require('./performance/SizeLimitsPlugin');
 import { ResolverFactory } from 'enhanced-resolve'
 import { WebpackOptions } from '../typings/webpack-types'
 import Compiler = require('./Compiler')
@@ -276,7 +276,9 @@ class WebpackOptionsApply extends OptionsApply {
             new FlagDependencyUsagePlugin()
         );
 
-        compiler.apply(new EmittedAssetSizeLimitPlugin(options.performance));
+        if (options.performance) {
+            compiler.apply(new SizeLimitsPlugin(options.performance));
+        }
 
         compiler.apply(new TemplatedPathPlugin());
 
@@ -290,17 +292,26 @@ class WebpackOptionsApply extends OptionsApply {
         }
 
         compiler.applyPlugins('after-plugins', compiler);
+
+        if (!compiler.inputFileSystem) {
+            throw new Error('No input filesystem provided');
+        }
+
         compiler.resolvers.normal = ResolverFactory.createResolver(
-            assign({ resolver: compiler.resolvers.normal }, options.resolve)
+            assign({
+                fileSystem: compiler.inputFileSystem
+            }, options.resolve)
         );
         compiler.resolvers.context = ResolverFactory.createResolver(
             assign({
-                resolver: compiler.resolvers.context,
+                fileSystem: compiler.inputFileSystem,
                 resolveToContext: true
             }, options.resolve)
         );
         compiler.resolvers.loader = ResolverFactory.createResolver(
-            assign({ resolver: compiler.resolvers.loader }, options.resolveLoader)
+            assign({
+                fileSystem: compiler.inputFileSystem
+            }, options.resolveLoader)
         );
         compiler.applyPlugins('after-resolvers', compiler);
 

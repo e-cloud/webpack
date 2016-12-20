@@ -12,6 +12,7 @@ interface IHasDependencies {
 }
 
 abstract class DependenciesBlock {
+    __NormalModuleFactoryCache: DependenciesBlock
     // todo: what is blocks?
     blocks: DependenciesBlock[]
     chunkReason: string
@@ -31,7 +32,7 @@ abstract class DependenciesBlock {
         block.parent = this;
     }
 
-    addVariable(name: string, expression: string, dependencies: Dependency[]) {
+    addVariable(name: string, expression: string, dependencies?: Dependency[]) {
         for (let v of this.variables) {
             if (v.name === name && v.expression === expression) {
                 return;

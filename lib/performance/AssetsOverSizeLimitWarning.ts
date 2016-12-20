@@ -24,7 +24,6 @@ declare namespace AssetsOverSizeLimitWarning {
     interface OverSizeLimit {
         name: string
         size: number
-        isOverSizeLimit?: boolean
     }
 }
 

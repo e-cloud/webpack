@@ -84,6 +84,10 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
         throw new Error('Module.entry was removed. Use Chunk.entryModule');
     }
 
+    unbuild() {
+        this.disconnect();
+    }
+
     disconnect() {
         this.reasons.length = 0;
         this.lastId = this.id;

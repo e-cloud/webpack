@@ -32,11 +32,11 @@ function webpack(options: any, callback?: WatchCallback<AbstractStats>) {
         new WebpackOptionsDefaulter().process(options);
 
         compiler = new Compiler();
-        compiler.options = options;
-        compiler.options = new WebpackOptionsApply().process(options, compiler);
         new NodeEnvironmentPlugin().apply(compiler);
         compiler.applyPlugins('environment');
         compiler.applyPlugins('after-environment');
+        compiler.options = options;
+        compiler.options = new WebpackOptionsApply().process(options, compiler);
     }
     else {
         throw new Error('Invalid argument: options');

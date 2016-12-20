@@ -2,12 +2,11 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Gajus Kuizinas @gajus
  */
-import Ajv = require('ajv')
 import ajv = require('ajv')
 const webpackOptionsSchema = require('../schemas/webpackOptionsSchema.json')
 
 class WebpackOptionsValidationError extends Error {
-    constructor(public validationErrors: Ajv.ErrorObject[]) {
+    constructor(public validationErrors: ajv.ErrorObject[]) {
         super();
         // this is because of Typescript's design limitation,
         // see https://github.com/Microsoft/TypeScript/wiki/What's-new-in-TypeScript#typescript-21
@@ -18,7 +17,7 @@ class WebpackOptionsValidationError extends Error {
             err => ' - ' + indent(WebpackOptionsValidationError.formatValidationError(err), '   ', false)).join('\n')}`;
     }
 
-    static formatValidationError(err: Ajv.ErrorObject) {
+    static formatValidationError(err: ajv.ErrorObject) {
         const dataPath = `configuration${err.dataPath}`;
         switch (err.keyword) {
             case 'additionalProperties':
@@ -54,7 +53,19 @@ For loader options: webpack 2 no longer allows custom properties in configuratio
                 return baseMessage;
             case 'oneOf':
             case 'anyOf':
+                if (err.children && err.children.length > 0) {
+                    return `${dataPath} should be one of these:
+${`${getSchemaPartText(err.parentSchema)}
+Details:
+${err.children.map(function (err: ajv.ErrorObject) {
+                        return ` * ${indent(WebpackOptionsValidationError.formatValidationError(err), '   ', false)}`;
+                    }).join('\n')}`}`
+                }
+                return `${dataPath} should be one of these:\n${getSchemaPartText(err.parentSchema)}`;
             case 'enum':
+                if (err.parentSchema && err.parentSchema.enum && err.parentSchema.enum.length === 1) {
+                    return `${dataPath} should be ${getSchemaPartText(err.parentSchema)}`;
+                }
                 return `${dataPath} should be one of these:\n${getSchemaPartText(err.parentSchema)}`;
             case 'allOf':
                 return `${dataPath} should be:\n${getSchemaPartText(err.parentSchema)}`;
@@ -69,6 +80,8 @@ For loader options: webpack 2 no longer allows custom properties in configuratio
                         return `${dataPath} should be a boolean.`;
                     case 'number':
                         return `${dataPath} should be a number.`;
+                    case 'array':
+                        return `${dataPath} should be an array:\n${getSchemaPartText(err.parentSchema)}`;
                 }
                 return `${dataPath} should be ${typeParams.type}:\n${getSchemaPartText(err.parentSchema)}`;
             case 'instanceof':
@@ -104,6 +117,12 @@ For loader options: webpack 2 no longer allows custom properties in configuratio
 
         switch (schema.type) {
             case 'string':
+                if (schema.minLength === 1) {
+                    return 'non-empty string';
+                }
+                else if (schema.minLength > 1) {
+                    return `string (min length ${schema.minLength})`;
+                }
                 return 'string';
             case 'boolean':
                 return 'boolean';

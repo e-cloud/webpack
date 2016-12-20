@@ -7,6 +7,7 @@ import Compilation = require('./Compilation')
 
 class Entrypoint {
     chunks: Chunk[]
+    isOverSizeLimit: boolean
 
     constructor(public name: string) {
         this.chunks = [];
@@ -40,14 +41,6 @@ class Entrypoint {
         }
 
         return files;
-    }
-
-    getSize(compilation: Compilation) {
-        const files = this.getFiles();
-
-        return files
-            .map(file => compilation.assets[file].size())
-            .reduce((currentSize, nextSize) => currentSize + nextSize, 0);
     }
 }
 

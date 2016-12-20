@@ -8,7 +8,9 @@ class NoAsyncChunksWarning extends Error {
         Error.captureStackTrace(this, NoAsyncChunksWarning);
         this.name = 'NoAsyncChunksWarning';
 
-        this.message = 'webpack performance recommendations: \n' + 'You can limit the size of your bundles by using System.import() or require.ensure to lazy load some parts of your application.\n' + 'For more info visit https://webpack.js.org/guides/code-splitting/';
+        this.message = `webpack performance recommendations: 
+You can limit the size of your bundles by using import() or require.ensure to lazy load some parts of your application.
+For more info visit https://webpack.js.org/guides/code-splitting/`;
     }
 }
 

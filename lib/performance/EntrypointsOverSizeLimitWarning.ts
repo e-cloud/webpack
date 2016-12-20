@@ -7,20 +7,28 @@ import Compilation = require('../Compilation')
 import Entrypoint = require('../Entrypoint')
 
 class EntrypointsOverSizeLimitWarning extends Error {
-    constructor(public entrypoints: Entrypoint[], compilation: Compilation, entrypointLimit: number) {
+    constructor(public entrypoints: EntrypointsOverSizeLimitWarning.OverSizeLimit[], entrypointLimit: number) {
         super();
         Error.captureStackTrace(this, EntrypointsOverSizeLimitWarning);
         this.name = 'EntrypointsOverSizeLimitWarning';
 
-        const entrypointCompilation = compilation;
         const entrypointList = this.entrypoints.map(entrypoint =>
-                `\n  ${entrypoint.name} (${SizeFormatHelpers.formatSize(entrypoint.getSize(entrypointCompilation))})\n${entrypoint.getFiles()
-                    .map((filename, index) => '      ' + entrypoint.getFiles()[index] + '\n')
-                    .join('')}`
+                `\n  ${entrypoint.name} (${SizeFormatHelpers.formatSize(entrypoint.size)})\n${
+                    entrypoint.files
+                        .map((asset) => `      ${asset}\n`)
+                        .join('')}`
             )
             .join('');
 
         this.message = `entrypoint size limit: The following entrypoint(s) combined asset size exceeds the recommended limit (${SizeFormatHelpers.formatSize(entrypointLimit)}). This can impact web performance.\nEntrypoints:${entrypointList}`;
+    }
+}
+
+declare namespace EntrypointsOverSizeLimitWarning {
+    interface OverSizeLimit {
+        name: string
+        size: number
+        files: string[]
     }
 }
 

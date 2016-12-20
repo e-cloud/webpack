@@ -12,14 +12,11 @@ import Compiler = require('../Compiler')
 class NodeEnvironmentPlugin {
     apply(compiler: Compiler) {
         // todo: useless assignment?
-        compiler.inputFileSystem = new NodeJsInputFileSystem();
-        const inputFileSystem = compiler.inputFileSystem = new CachedInputFileSystem(compiler.inputFileSystem, 60000);
-        compiler.resolvers.normal.fileSystem = compiler.inputFileSystem;
-        compiler.resolvers.context.fileSystem = compiler.inputFileSystem;
-        compiler.resolvers.loader.fileSystem = compiler.inputFileSystem;
+        compiler.inputFileSystem = new CachedInputFileSystem(new NodeJsInputFileSystem(), 60000);
+        const inputFileSystem = compiler.inputFileSystem;
         compiler.outputFileSystem = new NodeOutputFileSystem();
         compiler.watchFileSystem = new NodeWatchFileSystem(compiler.inputFileSystem);
-        compiler.plugin('before-run', function (compiler: Compiler, callback) {
+        compiler.plugin('before-run', function (compiler: Compiler, callback: Function) {
             if (compiler.inputFileSystem === inputFileSystem) {
                 inputFileSystem.purge();
             }

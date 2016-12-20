@@ -18,60 +18,72 @@ class FlagDependencyUsagePlugin {
                     module.used = false;
                 });
 
+                const queue: [DependenciesBlock, any][] = [];
                 compilation.chunks.forEach((chunk: Chunk) => {
                     if (chunk.entryModule) {
                         processModule(chunk.entryModule, true);
                     }
                 });
-            });
 
-            function processModule(module: Module, usedExports: boolean | any[]) {
-                module.used = true;
-                if (usedExports === true || module.usedExports === true) {
-                    module.usedExports = true;
-                }
-                else if (Array.isArray(usedExports)) {
-                    module.usedExports = addToSet(module.usedExports || [], usedExports);
-                }
-                else if (Array.isArray(module.usedExports)) {
-                    // todo: what?
-                    module.usedExports = module.usedExports;
-                }
-                else {
-                    module.usedExports = false;
+                while (queue.length) {
+                    const queueItem = queue.pop();
+                    processDependenciesBlock(queueItem[0], queueItem[1]);
                 }
 
-                processDependenciesBlock(module, module.usedExports as boolean);
-            }
+                function processModule(module: Module, usedExports: boolean | any[]) {
+                    module.used = true;
+                    if (module.usedExports === true) {
+                        return;
+                    }
+                    else if (usedExports === true) {
+                        module.usedExports = true;
+                    }
+                    else if (Array.isArray(usedExports)) {
+                        const old = module.usedExports ? module.usedExports.length : -1;
+                        module.usedExports = addToSet(module.usedExports || [], usedExports);
+                        if (module.usedExports.length === old) {
+                            return;
+                        }
+                    }
+                    else if (Array.isArray(module.usedExports)) {
+                        return;
+                    }
+                    else {
+                        module.usedExports = false;
+                    }
 
-            // todo: usedExports is uesless
-            function processDependenciesBlock(depBlock: DependenciesBlock, usedExports: boolean) {
-                depBlock.dependencies.forEach(dep => {
-                    processDependency(dep, usedExports);
-                });
-                depBlock.variables.forEach(variable => {
-                    variable.dependencies.forEach(dep => {
+                    queue.push([module, module.usedExports]);
+                }
+
+                function processDependenciesBlock(depBlock: DependenciesBlock, usedExports: boolean) {
+                    depBlock.dependencies.forEach(dep => {
                         processDependency(dep, usedExports);
                     });
-                });
-                depBlock.blocks.forEach(block => {
-                    processDependenciesBlock(block, usedExports);
-                });
-            }
+                    depBlock.variables.forEach(variable => {
+                        variable.dependencies.forEach(dep => {
+                            processDependency(dep, usedExports);
+                        });
+                    });
+                    depBlock.blocks.forEach(block => {
+                        queue.push([block, usedExports]);
+                    });
+                }
 
-            function processDependency(dep: Dependency, usedExports: boolean) {
-                const reference = dep.getReference && dep.getReference();
-                if (!reference) {
-                    return;
+                // todo: usedExports is uesless
+                function processDependency(dep: Dependency, usedExports: boolean) {
+                    const reference = dep.getReference && dep.getReference();
+                    if (!reference) {
+                        return;
+                    }
+                    const module = reference.module;
+                    const importedNames = reference.importedNames;
+                    const oldUsed = module.used;
+                    const oldUsedExports = module.usedExports;
+                    if (!oldUsed || importedNames && (!oldUsedExports || !isSubset(oldUsedExports, importedNames))) {
+                        processModule(module, importedNames);
+                    }
                 }
-                const module = reference.module;
-                const importedNames = reference.importedNames;
-                const oldUsed = module.used;
-                const oldUsedExports = module.usedExports;
-                if (!oldUsed || importedNames && (!oldUsedExports || !isSubset(oldUsedExports, importedNames))) {
-                    processModule(module, importedNames);
-                }
-            }
+            });
 
             function addToSet(a: any[], b: any[]) {
                 b.forEach(item => {

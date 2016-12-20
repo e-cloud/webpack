@@ -106,7 +106,7 @@ class UglifyJsPlugin {
                             ast = ast.transform(compress);
                         }
                         if (options.mangle !== false) {
-                            ast.figure_out_scope();
+                            ast.figure_out_scope(options.mangle || {});
                             ast.compute_char_frequency(options.mangle || {});
                             ast.mangle_names(options.mangle || {});
                             if (options.mangle && options.mangle.props) {

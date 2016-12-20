@@ -350,6 +350,8 @@ class Chunk implements IRemoveAndDo {
                 origin.reasons.sort();
             }
         });
+        this.parents.sort(byId);
+        this.chunks.sort(byId);
     }
 
     toString() {
@@ -411,6 +413,12 @@ declare namespace Chunk {
 export = Chunk;
 
 // todo: this should be inlined
-function byId(a: Module, b: Module) {
-    return a.id - b.id;
+function byId(a: { id: number }, b: { id: number }) {
+    if (a.id < b.id) {
+        return -1;
+    }
+    if (b.id < a.id) {
+        return 1;
+    }
+    return 0;
 }

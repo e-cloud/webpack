@@ -26,16 +26,23 @@ class OccurrenceOrderPlugin {
                 }
 
                 function occursInEntry(m: Module) {
-                    return m.reasons.map(r => {
+                    if (typeof m.__OccurenceOrderPlugin_occursInEntry === 'number') {
+                        return m.__OccurenceOrderPlugin_occursInEntry;
+                    }
+                    const result = m.reasons.map(r => {
                             if (!r.module) {
                                 return 0;
                             }
                             return entryChunks(r.module);
                         }).reduce((a, b) => a + b, 0) + entryChunks(m);
+                    return m.__OccurenceOrderPlugin_occursInEntry = result;
                 }
 
                 function occurs(m: Module) {
-                    return m.reasons.map(r => {
+                    if (typeof m.__OccurenceOrderPlugin_occurs === 'number') {
+                        return m.__OccurenceOrderPlugin_occurs;
+                    }
+                    const result = m.reasons.map(r => {
                             if (!r.module) {
                                 return 0;
                             }
@@ -46,6 +53,7 @@ class OccurrenceOrderPlugin {
                             // todo: what? may need a return
                             c.entryModule === m;
                         }).length;
+                    return m.__OccurenceOrderPlugin_occurs = result;
                 }
 
                 modules.sort((a, b) => {
@@ -75,12 +83,21 @@ class OccurrenceOrderPlugin {
                     }
                     return 0;
                 });
+                // TODO refactor to Map
+                modules.forEach(function (m) {
+                    m.__OccurenceOrderPlugin_occursInEntry = undefined;
+                    m.__OccurenceOrderPlugin_occurs = undefined;
+                });
             });
             compilation.plugin('optimize-chunk-order', (chunks: Chunk[]) => {
                 function occursInEntry(c: Chunk) {
-                    return c.parents
+                    if (typeof c.__OccurenceOrderPlugin_occursInEntry === 'number') {
+                        return c.__OccurenceOrderPlugin_occursInEntry;
+                    }
+                    const result = c.parents
                         .filter(p => p.isInitial())
                         .length;
+                    return c.__OccurenceOrderPlugin_occursInEntry = result;
                 }
 
                 function occurs(c: Chunk) {
@@ -131,6 +148,10 @@ class OccurrenceOrderPlugin {
                         }
                     }
                     return 0;
+                });
+                // TODO refactor to Map
+                chunks.forEach(function (c) {
+                    c.__OccurenceOrderPlugin_occursInEntry = undefined;
                 });
             });
         });

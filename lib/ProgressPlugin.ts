@@ -52,6 +52,7 @@ class ProgressPlugin {
             let doneModules = 0;
             const activeModules: string[] = [];
 
+            // todo: to be refactor
             function update() {
                 handler(
                     0.1 + doneModules / Math.max(lastModulesCount, moduleCount) * 0.6,

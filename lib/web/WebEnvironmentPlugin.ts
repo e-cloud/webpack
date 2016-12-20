@@ -10,9 +10,6 @@ class WebEnvironmentPlugin {
 
     apply(compiler: Compiler) {
         const inputFileSystem = compiler.inputFileSystem = this.inputFileSystem;
-        compiler.resolvers.normal.fileSystem = inputFileSystem;
-        compiler.resolvers.context.fileSystem = inputFileSystem;
-        compiler.resolvers.loader.fileSystem = inputFileSystem;
         compiler.outputFileSystem = this.outputFileSystem;
     }
 }
