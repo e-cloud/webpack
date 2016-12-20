@@ -1,21 +1,25 @@
 {
   "compileOnSave": true,
   "compilerOptions": {
-    "module": "commonjs",
-    "target": "es5",
-    "noEmit": false,
-    "sourceMap": true,
+    "declaration": false,
+    "importHelpers": true,
     "lib": [
       "es2016",
       "dom"
     ],
-    "declaration": false,
+    "module": "commonjs",
+    "noEmit": false,
+    "noEmitHelpers": true,
     "noImplicitAny": true,
-    "noImplicitThis": false,
-    "suppressImplicitAnyIndexErrors": true,
-    "pretty": true,
     "noImplicitReturns": false,
-    "strictNullChecks": false
+    "noImplicitThis": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "pretty": true,
+    "sourceMap": true,
+    "strictNullChecks": false,
+    "target": "es5",
+    "suppressImplicitAnyIndexErrors": true
   },
   "exclude": [
     "node_modules"
