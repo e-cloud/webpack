@@ -11,11 +11,11 @@ import ContextDependency = require('./dependencies/ContextDependency')
 import {
     CMFBeforeResolveResult,
     ErrCallback,
-    AlternativeModule,
-    AbstractInputFileSystem
+    AlternativeModule
 } from '../typings/webpack-types'
 import { Stats } from 'fs'
 import Compiler = require('./Compiler')
+import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
 
 class ContextModuleFactory extends Tapable {
     constructor(public resolvers: Compiler.Resolvers) {
@@ -84,7 +84,7 @@ class ContextModuleFactory extends Tapable {
 
             async.parallel([
                 callback => {
-                    resolvers.context.resolve({}, context, resource, (err: Error, result) => {
+                    resolvers.context.resolve({}, context, resource, (err: Error, result: string) => {
                         if (err) {
                             return callback(err);
                         }
@@ -93,7 +93,7 @@ class ContextModuleFactory extends Tapable {
                 },
                 callback => {
                     async.map(loaders, (loader, callback) => {
-                        resolvers.loader.resolve({}, context, loader, (err: Error, result) => {
+                        resolvers.loader.resolve({}, context, loader, (err: Error, result: string) => {
                             if (err) {
                                 return callback(err, null);
                             }
@@ -101,7 +101,7 @@ class ContextModuleFactory extends Tapable {
                         });
                     }, callback);
                 }
-            ], (err: Error, result: string[][]) => {
+            ], (err: Error, result: [string, string[]]) => {
                 if (err) {
                     return callback(err);
                 }

@@ -83,7 +83,7 @@ function setProperty(obj: PlainObject, name: string, value: any) {
     obj[props.pop()] = value;
 }
 
-// tslint:disable-next-line
+// todo: unused
 function hasProperty(obj: PlainObject, name: string) {
     const props = name.split('.');
     for (let prop of props.slice(0, props.length - 1)) {

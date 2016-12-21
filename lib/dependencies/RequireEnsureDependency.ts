@@ -7,7 +7,6 @@ import DepBlockHelpers = require('./DepBlockHelpers');
 import { ReplaceSource } from 'webpack-sources'
 import { WebpackOutputOptions } from '../../typings/webpack-types'
 import RequestShortener = require('../RequestShortener')
-import DependenciesBlock = require('../DependenciesBlock')
 import RequireEnsureDependenciesBlock = require('./RequireEnsureDependenciesBlock')
 
 class Template {

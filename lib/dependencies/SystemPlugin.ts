@@ -15,8 +15,10 @@ class SystemPlugin {
     }
 
     apply(compiler: Compiler) {
+        // todo: unused
         const options = this.options;
         compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
+            // todo: unused
             const normalModuleFactory = params.normalModuleFactory;
             const contextModuleFactory = params.contextModuleFactory;
 

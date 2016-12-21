@@ -6,7 +6,6 @@ import Template = require('./Template');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Chunk = require('./Chunk')
-import MainTemplate = require('./MainTemplate')
 import { Hash } from 'crypto'
 
 const REGEXP_HASH = /\[hash(?::(\d+))?\]/gi;

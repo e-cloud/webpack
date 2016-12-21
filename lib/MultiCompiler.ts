@@ -9,7 +9,6 @@ import Compiler = require('./Compiler')
 import { WatchCallback, ErrCallback, WatchOptions, AbstractStats } from '../typings/webpack-types'
 import MultiStats from './MultiStats'
 import Watching = Compiler.Watching
-import Dependency = require('./Dependency')
 
 class MultiWatching {
     constructor(public watchings: Watching[]) {

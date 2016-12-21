@@ -13,7 +13,6 @@ interface IHasDependencies {
 
 abstract class DependenciesBlock {
     __NormalModuleFactoryCache: DependenciesBlock
-    // todo: what is blocks?
     blocks: DependenciesBlock[]
     chunkReason: string
     chunks: Chunk[]

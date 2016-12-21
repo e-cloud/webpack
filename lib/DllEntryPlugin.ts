@@ -7,7 +7,6 @@ import SingleEntryDependency = require('./dependencies/SingleEntryDependency');
 import DllModuleFactory = require('./DllModuleFactory');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
-import NormalModuleFactory = require('./NormalModuleFactory')
 import { CompilationParams } from '../typings/webpack-types'
 
 class DllEntryPlugin {

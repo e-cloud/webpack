@@ -33,7 +33,6 @@ class HarmonyModulesPlugin {
             compilation.dependencyFactories.set(HarmonyCompatiblilityDependency, new NullFactory());
             compilation.dependencyTemplates.set(HarmonyCompatiblilityDependency, new HarmonyCompatiblilityDependency.Template());
 
-
             compilation.dependencyFactories.set(HarmonyExportHeaderDependency, new NullFactory());
             compilation.dependencyTemplates.set(HarmonyExportHeaderDependency, new HarmonyExportHeaderDependency.Template());
 

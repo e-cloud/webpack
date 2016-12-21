@@ -4,7 +4,6 @@
  */
 import NullDependency = require('./NullDependency');
 import LocalModule = require('./LocalModule')
-import Dependency = require('../Dependency')
 import { ReplaceSource } from 'webpack-sources'
 import { SourceRange } from '../../typings/webpack-types'
 

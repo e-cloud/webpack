@@ -5,9 +5,7 @@
 import Module = require('../Module')
 import HarmonyExportSpecifierDependency = require('./HarmonyExportSpecifierDependency')
 import HarmonyExportImportedSpecifierDependency = require('./HarmonyExportImportedSpecifierDependency')
-import HarmonyExportHeaderDependency = require('./HarmonyExportHeaderDependency')
 import HarmonyExportExpressionDependency = require('./HarmonyExportExpressionDependency')
-import Dependency = require('../Dependency')
 import { ParserState } from '../../typings/webpack-types'
 
 export function getModuleVar(state: ParserState, request: string) {

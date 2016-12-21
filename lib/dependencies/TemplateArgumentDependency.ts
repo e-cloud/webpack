@@ -7,7 +7,6 @@ import Dependency = require('../Dependency')
 import { ReplaceSource } from 'webpack-sources'
 import { WebpackOutputOptions } from '../../typings/webpack-types'
 import { Hash } from 'crypto'
-import RequireIncludeDependency = require('./RequireIncludeDependency')
 import RequestShortener = require('../RequestShortener')
 import ArrayMap = require('../ArrayMap')
 

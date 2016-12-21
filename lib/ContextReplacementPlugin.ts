@@ -6,14 +6,13 @@ import path = require('path');
 import ContextElementDependency = require('./dependencies/ContextElementDependency');
 import Compiler = require('./Compiler')
 import ContextModuleFactory = require('./ContextModuleFactory')
-import ContextDependency = require('./dependencies/ContextDependency')
 import {
     CMFAfterResolveResult,
     CMFBeforeResolveResult,
-    ErrCallback,
-    AbstractInputFileSystem
+    ErrCallback
 } from '../typings/webpack-types'
 import * as Resolve from 'enhanced-resolve'
+import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
 
 interface CreateContextMap {
     (fs: AbstractInputFileSystem, callback: (err: Error, recursive: boolean) => any): void
@@ -149,7 +148,7 @@ export = ContextReplacementPlugin;
 
 function createResolveDependenciesFromContextMap(createContextMap: CreateContextMap) {
     return function resolveDependenciesFromContextMap(
-        fs: Resolve.CachedInputFileSystem,
+        fs: AbstractInputFileSystem,
         resource: string,
         recursive: boolean,
         regExp: RegExp,

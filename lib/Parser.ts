@@ -8,9 +8,6 @@ import acorn from 'acorn-dynamic-import'
 import acornNS = require('acorn')
 import Tapable = require('tapable');
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
-import Module = require('./Module')
-import DependenciesBlock = require('./DependenciesBlock')
-import Compilation = require('./Compilation')
 
 interface IdentCallback {
     (name: string, decl: ESTree.Pattern): void

@@ -8,7 +8,6 @@ import { Hash } from 'crypto'
 import Compilation = require('./Compilation')
 import Chunk = require('./Chunk')
 import ExternalModule = require('./ExternalModule')
-import Module = require('./Module')
 
 function accessorToObjectAccess(accessor: string[]) {
     return accessor.map(a => `[${JSON.stringify(a)}]`).join('');

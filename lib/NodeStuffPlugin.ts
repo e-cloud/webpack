@@ -15,7 +15,6 @@ import Parser = require('./Parser')
 import { CompilationParams, NodeOption, ParserOptions } from '../typings/webpack-types'
 import { Identifier, Expression } from 'estree'
 import Module = require('./Module')
-import NormalModule = require('./NormalModule')
 
 class NodeStuffPlugin {
     constructor(public options: NodeOption) {

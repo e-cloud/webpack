@@ -24,7 +24,6 @@ import {
 } from 'estree'
 import { ModuleOptions } from '../../typings/webpack-types'
 import BasicEvaluatedExpression = require('../BasicEvaluatedExpression')
-import Dependency = require('../Dependency')
 import ModuleDependency = require('./ModuleDependency')
 
 function isBoundFunctionExpression(expr: Expression) {

@@ -17,7 +17,6 @@ import crypto = require('crypto')
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Parser = require('./Parser')
-import MainTemplate = require('./MainTemplate')
 import Chunk = require('./Chunk')
 
 const hotInitCode = Template.getFunctionContent(require('./HotModuleReplacement.runtime.js'));

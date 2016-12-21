@@ -5,7 +5,6 @@
 import { ConcatSource, Source } from 'webpack-sources'
 import { Hash } from 'crypto'
 import ChunkTemplate = require('./ChunkTemplate')
-import Module = require('./Module')
 import Chunk = require('./Chunk')
 
 class JsonpChunkTemplatePlugin {

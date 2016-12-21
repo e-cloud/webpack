@@ -9,14 +9,7 @@ import Chunk = require('../Chunk')
 import { Record } from '../../typings/webpack-types'
 
 class AggressiveSplittingPlugin {
-    constructor(
-        public options: {
-            minSize: number
-            maxSize: number
-            chunkOverhead: number
-            entryChunkMultiplicator: number
-        } = {} as any
-    ) {
+    constructor(public options: AggressiveSplittingPlugin.Option = {} as any) {
         if (typeof this.options.minSize !== 'number') {
             this.options.minSize = 30 * 1024;
         }
@@ -148,6 +141,7 @@ class AggressiveSplittingPlugin {
             compilation.plugin('record-hash', function (records: Record) {
                 // 3. save to made splittings to records
                 const minSize = _this.options.minSize;
+                // todo: unused
                 const maxSize = _this.options.maxSize;
                 if (!records.aggressiveSplits) {
                     records.aggressiveSplits = [];
@@ -192,6 +186,15 @@ class AggressiveSplittingPlugin {
                 }
             });
         });
+    }
+}
+
+declare namespace AggressiveSplittingPlugin {
+    interface Option {
+        minSize: number
+        maxSize: number
+        chunkOverhead: number
+        entryChunkMultiplicator: number
     }
 }
 

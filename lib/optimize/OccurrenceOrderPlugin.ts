@@ -42,7 +42,7 @@ class OccurrenceOrderPlugin {
                     if (typeof m.__OccurenceOrderPlugin_occurs === 'number') {
                         return m.__OccurenceOrderPlugin_occurs;
                     }
-                    const result = m.reasons.map(r => {
+                    const result: number = m.reasons.map(r => {
                             if (!r.module) {
                                 return 0;
                             }

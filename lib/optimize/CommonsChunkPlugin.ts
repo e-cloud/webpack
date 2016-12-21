@@ -6,14 +6,12 @@ import Chunk = require('../Chunk')
 import Module = require('../Module')
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
-import { FilenameTemplate } from '../../typings/webpack-types'
-import ExternalModule = require('../ExternalModule')
 
 let nextIdent = 0;
 
 class CommonsChunkPlugin {
     chunkNames: string | string[]
-    filenameTemplate: FilenameTemplate
+    filenameTemplate: string
     minChunks: number | ((module: Module, count: number) => boolean)
     selectedChunks: string[] | boolean
     async: boolean

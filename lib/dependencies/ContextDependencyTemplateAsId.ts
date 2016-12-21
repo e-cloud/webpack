@@ -3,8 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import WebpackMissingModule = require('./WebpackMissingModule')
-import Dependency = require('../Dependency')
-import ContextDependency = require('./ContextDependency')
 import RequireResolveContextDependency = require('./RequireResolveContextDependency')
 import RequestShortener = require('../RequestShortener')
 import { WebpackOutputOptions } from '../../typings/webpack-types'

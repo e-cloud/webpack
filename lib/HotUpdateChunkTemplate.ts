@@ -16,7 +16,11 @@ class HotUpdateChunkTemplate extends Template {
     }
 
     render(
-        id: number, modules: Module[], removedModules: number[], hash: string, moduleTemplate: ModuleTemplate,
+        id: number,
+        modules: Module[],
+        removedModules: number[],
+        hash: string,
+        moduleTemplate: ModuleTemplate,
         dependencyTemplates: ArrayMap
     ) {
         const modulesSource = this.renderChunkModules({

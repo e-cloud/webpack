@@ -10,7 +10,6 @@ import removeAndDo = require('./removeAndDo');
 import Dependency = require('./Dependency')
 import { Hash } from 'crypto'
 import { Source } from 'webpack-sources'
-import ModuleNotFoundError = require('./ModuleNotFoundError');
 
 let debugId = 1000;
 
@@ -26,7 +25,6 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
     dependenciesWarnings: string[];
     error: Error
     errors: Error[];
-    // todo: what does this mean
     hotUpdate: boolean
     id: number;
     index2: number;

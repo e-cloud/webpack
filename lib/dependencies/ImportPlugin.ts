@@ -4,9 +4,6 @@
  */
 import ImportDependency = require('./ImportDependency');
 import ImportContextDependency = require('./ImportContextDependency');
-import UnsupportedFeatureWarning = require('../UnsupportedFeatureWarning');
-import ConstDependency = require('./ConstDependency');
-import BasicEvaluatedExpression = require('../BasicEvaluatedExpression');
 import ImportParserPlugin = require('./ImportParserPlugin');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')

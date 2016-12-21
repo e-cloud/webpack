@@ -9,7 +9,6 @@ import Tapable = require('tapable');
 import Compilation = require('./Compilation');
 import NormalModuleFactory = require('./NormalModuleFactory');
 import ContextModuleFactory = require('./ContextModuleFactory');
-import Dependency = require('./Dependency')
 import {
     CompilationParams,
     Record,
@@ -20,12 +19,11 @@ import {
     TimeStampMap,
     WatchFileSystem,
     WatchOptions,
-    AbstractInputFileSystem,
-    AbstractStats
+    AbstractStats,
+    Watcher
 } from '../typings/webpack-types'
-import Parser = require('./Parser')
+import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
 import Stats = require('./Stats')
-import NodeWatchFileSystem = require('./node/NodeWatchFileSystem')
 import NodeOutputFileSystem = require('./node/NodeOutputFileSystem')
 
 class Watching {
@@ -35,7 +33,7 @@ class Watching {
     running: boolean
     startTime: number
     stats: Stats
-    watcher
+    watcher: Watcher
     watchOptions: WatchOptions
 
     constructor(public compiler: Compiler, watchOptions: WatchOptions, handler: WatchCallback<Stats>) {
@@ -428,7 +426,7 @@ class Compiler extends Tapable {
                     }
                     let content: string | Buffer = source.source();
                     if (!Buffer.isBuffer(content)) {
-                        content = new Buffer(content, 'utf-8');
+                        content = new Buffer(content as string, 'utf-8');
                     }
                     source.existsAt = targetPath;
                     source.emitted = true;
@@ -501,6 +499,7 @@ class Compiler extends Tapable {
                 }
 
                 try {
+                    // todo: here has hidden to string with 'utf-8'
                     self.records = JSON.parse(content);
                 } catch (e) {
                     e.message = `Cannot parse records: ${e.message}`;

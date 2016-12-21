@@ -3,12 +3,15 @@
  Author Tobias Koppers @sokra
  */
 import Compiler = require('../Compiler')
+import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
+import { AbstractOutputFileSystem } from '../../typings/webpack-types'
 
 class WebEnvironmentPlugin {
-    constructor(public inputFileSystem, public outputFileSystem) {
+    constructor(public inputFileSystem: AbstractInputFileSystem, public outputFileSystem: AbstractOutputFileSystem) {
     }
 
     apply(compiler: Compiler) {
+        // todo: unused
         const inputFileSystem = compiler.inputFileSystem = this.inputFileSystem;
         compiler.outputFileSystem = this.outputFileSystem;
     }

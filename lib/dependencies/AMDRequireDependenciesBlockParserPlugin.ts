@@ -17,7 +17,6 @@ import Parser = require('../Parser')
 import { CallExpression, Expression, Identifier } from 'estree'
 import { ModuleOptions } from '../../typings/webpack-types'
 import BasicEvaluatedExpression = require('../BasicEvaluatedExpression')
-import Dependency = require('../Dependency')
 import ModuleDependency = require('./ModuleDependency')
 
 class AMDRequireDependenciesBlockParserPlugin {

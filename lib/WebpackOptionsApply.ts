@@ -76,6 +76,7 @@ class WebpackOptionsApply extends OptionsApply {
                     const WebWorkerTemplatePlugin = require('./webworker/WebWorkerTemplatePlugin');
                     NodeSourcePlugin = require('./node/NodeSourcePlugin');
                     compiler.apply(
+                        // todo: no param
                         new WebWorkerTemplatePlugin(options.output),
                         new FunctionModulePlugin(options.output),
                         new NodeSourcePlugin(options.node),

@@ -9,7 +9,7 @@ import Entrypoint = require('./Entrypoint')
 import removeAndDo = require('./removeAndDo')
 import { SourceLocation } from 'estree'
 import { Hash } from 'crypto'
-import { FilenameTemplate } from '../typings/webpack-types'
+import AggressiveSplittingPlugin = require('./optimize/AggressiveSplittingPlugin')
 
 let debugId = 1000;
 
@@ -24,7 +24,7 @@ class Chunk implements IRemoveAndDo {
     entryModule: Module
     entrypoints: Entrypoint[]
     extraAsync: boolean
-    filenameTemplate: FilenameTemplate
+    filenameTemplate: string
     files: string[]
     hash: string
     id: number
@@ -268,8 +268,7 @@ class Chunk implements IRemoveAndDo {
         });
     }
 
-    // todo: here the option is option of AggressiveSplittingPlugin
-    size(options: any) {
+    size(options: AggressiveSplittingPlugin.Option) {
         const CHUNK_OVERHEAD = typeof options.chunkOverhead === 'number' ? options.chunkOverhead : 10000;
         const ENTRY_CHUNK_MULTIPLICATOR = options.entryChunkMultiplicator || 10;
 
@@ -412,7 +411,6 @@ declare namespace Chunk {
 
 export = Chunk;
 
-// todo: this should be inlined
 function byId(a: { id: number }, b: { id: number }) {
     if (a.id < b.id) {
         return -1;

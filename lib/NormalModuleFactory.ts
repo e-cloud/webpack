@@ -21,6 +21,7 @@ import Dependency = require('./Dependency')
 import Module = require('./Module')
 import Resolver = require('enhanced-resolve/lib/Resolver')
 import Compiler = require('./Compiler')
+import { ResolveContext } from 'enhanced-resolve/lib/common-types'
 
 function loaderToIdent(data: Loader) {
     if (!data.options) {
@@ -82,7 +83,6 @@ class NormalModuleFactory extends Tapable {
 
     constructor(public context = '', public resolvers: Compiler.Resolvers, options: ModuleOptions) {
         super();
-        // todo: is it legal to use loaders in webpack 2.0
         this.ruleSet = new RuleSet(options.rules || options.loaders);
         this.cachePredicate = typeof options.unsafeCache === 'function'
             ? options.unsafeCache
@@ -184,8 +184,9 @@ class NormalModuleFactory extends Tapable {
                     // translate option idents
                     try {
                         loaders.forEach((item: Loader) => {
-                            if (typeof item.options === 'string' && /^\?/.test(item.options)) {
-                                item.options = this.ruleSet.findOptionsByIdent(item.options.substr(1));
+                            const options = item.options
+                            if (typeof options === 'string' && /^\?/.test(options)) {
+                                item.options = this.ruleSet.findOptionsByIdent(options.substr(1));
                             }
                         })
                     } catch (e) {
@@ -316,7 +317,7 @@ class NormalModuleFactory extends Tapable {
     }
 
     resolveRequestArray(
-        contextInfo,
+        contextInfo: ResolveContext,
         context: string,
         array: Loader[],
         resolver: Resolver,
@@ -349,7 +350,6 @@ BREAKING CHANGE: It's no longer allowed to omit the '-loader' suffix when using 
         }, callback);
     }
 
-    // todo: parser options is not clear yet
     getParser(parserOptions: ParserOptions) {
         let ident = 'null';
         if (parserOptions) {

@@ -3,8 +3,6 @@
  Author Sean Larkin @thelarkinn
  */
 import SizeFormatHelpers = require('../SizeFormatHelpers');
-import Compilation = require('../Compilation')
-import Entrypoint = require('../Entrypoint')
 
 class EntrypointsOverSizeLimitWarning extends Error {
     constructor(public entrypoints: EntrypointsOverSizeLimitWarning.OverSizeLimit[], entrypointLimit: number) {

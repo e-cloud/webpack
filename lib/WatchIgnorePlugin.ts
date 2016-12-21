@@ -3,8 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import Compiler = require('./Compiler')
-import NodeWatchFileSystem = require('./node/NodeWatchFileSystem')
-import Compilation = require('./Compilation')
 import { TimeStampMap, WatchOptions, ErrCallback, WatchFileSystem } from '../typings/webpack-types'
 
 class WatchIgnorePlugin {

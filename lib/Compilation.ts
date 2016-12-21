@@ -13,10 +13,9 @@ import {
     PlainObject,
     TimeStampMap,
     WebpackError,
-    AbstractInputFileSystem,
     PerformanceOptions
 } from '../typings/webpack-types'
-import { ResolveError } from 'enhanced-resolve/lib/common-types'
+import { ResolveError, AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
 import async = require('async');
 import crypto = require('crypto')
 import Tapable = require('tapable');
@@ -861,7 +860,7 @@ class Compilation extends Tapable {
             [block, chunk]
         ];
         while (queue.length) {
-            const queueItem = queue.pop();
+            const queueItem: [DependenciesBlock, Chunk] = queue.pop();
             block = queueItem[0];
             chunk = queueItem[1];
             if (block.variables) {

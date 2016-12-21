@@ -8,7 +8,6 @@ import Compiler = require('./Compiler')
 import Module = require('./Module')
 import { Record } from '../typings/webpack-types'
 import Chunk = require('./Chunk')
-import DependenciesBlock = require('./DependenciesBlock')
 
 class RecordIdsPlugin {
     apply(compiler: Compiler) {

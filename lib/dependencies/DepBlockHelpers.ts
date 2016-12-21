@@ -2,7 +2,6 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import DependenciesBlock = require('../DependenciesBlock')
 import { WebpackOutputOptions } from '../../typings/webpack-types'
 import RequestShortener = require('../RequestShortener')
 import AsyncDependenciesBlock = require('../AsyncDependenciesBlock')

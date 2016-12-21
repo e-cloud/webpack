@@ -8,14 +8,6 @@ import { StatsOptions, PlainObject, WebpackError } from '../typings/webpack-type
 import { formatSize } from './SizeFormatHelpers'
 import Module = require('./Module')
 import NormalModule = require('./NormalModule')
-import ModuleNotFoundError = require('./ModuleNotFoundError');
-import ModuleError = require('./ModuleError');
-import ModuleBuildError = require('./ModuleBuildError');
-import ModuleParseError = require('./ModuleParseError');
-import ModuleWarning = require('./ModuleWarning');
-import ModuleDependencyWarning = require('./ModuleDependencyWarning');
-import Dependency = require('./Dependency');
-import Chunk = require('./Chunk');
 
 interface Colors {
     bold(str: string | number): void

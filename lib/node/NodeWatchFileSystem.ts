@@ -3,7 +3,8 @@
  Author Tobias Koppers @sokra
  */
 import Watchpack = require('watchpack');
-import { WatchOptions, ErrCallback, AbstractInputFileSystem } from '../../typings/webpack-types'
+import { WatchOptions, ErrCallback } from '../../typings/webpack-types'
+import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
 
 class NodeWatchFileSystem {
     watcherOptions: {

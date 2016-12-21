@@ -45,6 +45,7 @@ class NodeMainTemplatePlugin {
             return source;
         });
         mainTemplate.plugin('require-ensure', function (source: string, chunk: Chunk, hash: string) {
+            // todo: unused
             const filename = this.outputOptions.filename;
             const chunkFilename = this.outputOptions.chunkFilename;
             const chunkMaps = chunk.getChunkMaps();

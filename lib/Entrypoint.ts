@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import Chunk = require('./Chunk')
-import Compilation = require('./Compilation')
 
 class Entrypoint {
     chunks: Chunk[]

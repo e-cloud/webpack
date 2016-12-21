@@ -11,7 +11,7 @@ import {
     CachedSource,
     LineToLineMappedSource
 } from 'webpack-sources'
-import { runLoaders, getContext } from 'loader-runner'
+import { runLoaders, getContext, Loader } from 'loader-runner'
 import { Hash } from 'crypto'
 import {
     WebpackOptions,
@@ -19,8 +19,7 @@ import {
     WebpackOutputOptions,
     TimeStampMap,
     SourceRange,
-    ErrCallback,
-    AbstractInputFileSystem
+    ErrCallback
 } from '../typings/webpack-types'
 import crypto = require('crypto')
 import path = require('path');
@@ -39,12 +38,13 @@ import DependenciesBlockVariable = require('./DependenciesBlockVariable')
 import DependenciesBlock = require('./DependenciesBlock')
 import Parser = require('./Parser')
 import Resolver = require('enhanced-resolve/lib/Resolver')
+import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
 
-function asString(buf: string | Buffer) {
+function asString(buf: string | Buffer): string {
     if (Buffer.isBuffer(buf)) {
         return buf.toString('utf-8');
     }
-    return buf;
+    return buf as string;
 }
 
 class NormalModule extends Module {
@@ -69,7 +69,7 @@ class NormalModule extends Module {
         public request: string,
         public userRequest: string,
         public rawRequest: string,
-        public loaders,
+        public loaders: Loader[],
         public resource: string,
         public parser: Parser
     ) {
@@ -186,18 +186,18 @@ class NormalModule extends Module {
             if (!Buffer.isBuffer(source) && typeof source !== 'string') {
                 return callback(self.error = new ModuleBuildError(self, new Error('Final loader didn\'t return a Buffer or String')));
             }
-            source = asString(source);
+            const sourceString = asString(source);
             if (self.identifier && self.lineToLine && resourceBuffer) {
-                self._source = new LineToLineMappedSource(source, self.identifier(), asString(resourceBuffer));
+                self._source = new LineToLineMappedSource(sourceString, self.identifier(), asString(resourceBuffer));
             }
             else if (self.identifier && self.useSourceMap && sourceMap) {
-                self._source = new SourceMapSource(source, self.identifier(), sourceMap, null);
+                self._source = new SourceMapSource(sourceString, self.identifier(), sourceMap, null);
             }
             else if (self.identifier) {
-                self._source = new OriginalSource(source, self.identifier());
+                self._source = new OriginalSource(sourceString, self.identifier());
             }
             else {
-                self._source = new RawSource(source);
+                self._source = new RawSource(sourceString);
             }
             return callback();
         });
@@ -209,7 +209,10 @@ class NormalModule extends Module {
     }
 
     build(
-        options: WebpackOptions, compilation: Compilation, resolver: Resolver, fs: AbstractInputFileSystem,
+        options: WebpackOptions,
+        compilation: Compilation,
+        resolver: Resolver,
+        fs: AbstractInputFileSystem,
         callback: ErrCallback
     ) {
         const self = this;
@@ -273,10 +276,10 @@ class NormalModule extends Module {
     }
 
     source(dependencyTemplates: ArrayMap, outputOptions: WebpackOutputOptions, requestShortener: RequestShortener) {
-        let hash: Hash | string = crypto.createHash('md5');
+        const hash = crypto.createHash('md5');
         this.updateHash(hash);
-        hash = hash.digest('hex');
-        if (this._cachedSource && this._cachedSource.hash === hash) {
+        const hashStr = hash.digest('hex');
+        if (this._cachedSource && this._cachedSource.hash === hashStr) {
             return this._cachedSource.source;
         }
         const _source = this._source;
@@ -286,7 +289,7 @@ class NormalModule extends Module {
         const source = new ReplaceSource(_source, '');
         this._cachedSource = {
             source,
-            hash
+            hash: hashStr
         };
         const topLevelBlock = this;
 

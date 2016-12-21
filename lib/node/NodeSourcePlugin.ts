@@ -10,7 +10,6 @@ import ModuleParserHelpers = require('../ModuleParserHelpers');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
-import Module = require('../Module')
 import { CompilationParams, NodeOption, ParserOptions } from '../../typings/webpack-types'
 
 class NodeSourcePlugin {
@@ -92,6 +91,7 @@ class NodeSourcePlugin {
             });
         });
         compiler.plugin('after-resolvers', function (compiler: Compiler) {
+            // todo: unused
             const alias = {};
             Object.keys(nodeLibsBrowser).forEach(lib => {
                 if (options[lib] !== false) {

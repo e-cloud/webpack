@@ -17,6 +17,8 @@ import LocalModule = require('../lib/dependencies/LocalModule')
 import HarmonyImportDependency = require('../lib/dependencies/HarmonyImportDependency')
 import Chunk = require('../lib/Chunk');
 import fs = require('fs')
+import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
+import { ExtendedLoaderContext } from 'loader-runner'
 
 declare interface Dictionary<T> {
     [prop: string]: T;
@@ -57,6 +59,7 @@ declare interface ModuleOptions {
     /** A RegExp or an array of RegExps. Don’t parse files matching. */
     noParse?: RegExp | RegExp[];
     rules: Rule[];
+    loaders?: Rule[];
     unknownContextCritical?: boolean;
     unknownContextRecursive?: boolean;
     unknownContextRegExp?: RegExp;
@@ -426,19 +429,22 @@ declare interface CMFAfterResolveResult {
     recursive: boolean;
     regExp: RegExp;
     resolveDependencies: (
-        fs: AbstractInputFileSystem, resource: string, recursive: boolean, regExp: RegExp,
+        fs: AbstractInputFileSystem,
+        resource: string,
+        recursive: boolean,
+        regExp: RegExp,
         callback: ErrCallback
     ) => any;
     resource: string;
 }
 
-declare interface LoaderContext {
+declare interface LoaderContext extends ExtendedLoaderContext {
     [prop: string]: any;
     _compilation: Compilation;
     _compiler: Compiler;
     _module: Module;
     emitError(error: string): void;
-    emitFile(name: string, content: string, sourceMap: RawSourceMap): void;
+    emitFile(name: string, content: string, sourceMap: RawSourceMap | string): void;
     emitWarning(warning: string): void;
     exec(code: string, filename: string): any;
     fs: AbstractInputFileSystem;
@@ -487,6 +493,11 @@ declare interface ParserOptions {
     import: boolean
 }
 
+declare interface Watcher {
+    close(): void;
+    pause(): void;
+}
+
 declare interface WatchFileSystem {
     watch(
         files: string[],
@@ -496,7 +507,7 @@ declare interface WatchFileSystem {
         options: WatchOptions,
         callback: ErrCallback,
         callbackUndelayed: (fileName: string, changeTime: number) => any
-    ): void
+    ): Watcher
 }
 
 declare interface AlternativeModule {
@@ -519,16 +530,6 @@ declare interface AbstractStats {
     hasErrors(): boolean
     hasWarnings(): boolean
     toJson(options: StatsOptions, forToString: boolean): any
-}
-
-declare interface AbstractInputFileSystem {
-    isSync(): boolean;
-    purge(what?: string | string[]): void;
-    readdir(path: string, callback: (err: NodeJS.ErrnoException, files: string[]) => void): void;
-    readFile(filename: string, callback: (err: NodeJS.ErrnoException, data: Buffer) => void): void;
-    readJson(path: string, callback: (err: NodeJS.ErrnoException, data: Dictionary<any>) => void): void;
-    readlink(path: string, callback?: (err: NodeJS.ErrnoException, linkString: string) => void): void;
-    stat(path: string, callback?: (err: NodeJS.ErrnoException, stats: fs.Stats) => void): void;
 }
 
 interface AbstractOutputFileSystem {

@@ -23,6 +23,7 @@ class JsonpMainTemplatePlugin {
             return source;
         });
         mainTemplate.plugin('jsonp-script', function (_: string, chunk: Chunk, hash: string) {
+            // todo unused
             const filename = this.outputOptions.filename;
             const chunkFilename = this.outputOptions.chunkFilename;
             const chunkMaps = chunk.getChunkMaps();
@@ -79,6 +80,7 @@ class JsonpMainTemplatePlugin {
             ]);
         });
         mainTemplate.plugin('require-ensure', function (_: string, chunk: Chunk, hash: string) {
+            // todo: unused
             const chunkFilename = this.outputOptions.chunkFilename;
             return this.asString([
                 'if(installedChunks[chunkId] === 0)',
