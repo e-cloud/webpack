@@ -18,7 +18,7 @@ const ajv = new Ajv({
 
 defineKeywords(ajv);
 
-function validateSchema(schema: any, options: Options) {
+function validateSchema(schema: any, options: Options): ErrorObject[] {
     const validate = ajv.compile(schema);
     if (Array.isArray(options)) {
         const errors = options.map(validateObject);

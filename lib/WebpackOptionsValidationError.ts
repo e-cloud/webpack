@@ -3,10 +3,11 @@
  Author Gajus Kuizinas @gajus
  */
 import ajv = require('ajv')
+import { AjvErrorObject, AjvJsonSchema } from '../typings/ajv-custom-schema'
 const webpackOptionsSchema = require('../schemas/webpackOptionsSchema.json')
 
 class WebpackOptionsValidationError extends Error {
-    constructor(public validationErrors: ajv.ErrorObject[]) {
+    constructor(public validationErrors: AjvErrorObject[]) {
         super();
         // this is because of Typescript's design limitation,
         // see https://github.com/Microsoft/TypeScript/wiki/What's-new-in-TypeScript#typescript-21
@@ -17,7 +18,7 @@ class WebpackOptionsValidationError extends Error {
             err => ' - ' + indent(WebpackOptionsValidationError.formatValidationError(err), '   ', false)).join('\n')}`;
     }
 
-    static formatValidationError(err: ajv.ErrorObject) {
+    static formatValidationError(err: AjvErrorObject): string {
         const dataPath = `configuration${err.dataPath}`;
         switch (err.keyword) {
             case 'additionalProperties':
@@ -57,7 +58,7 @@ For loader options: webpack 2 no longer allows custom properties in configuratio
                     return `${dataPath} should be one of these:
 ${`${getSchemaPartText(err.parentSchema)}
 Details:
-${err.children.map(function (err: ajv.ErrorObject) {
+${err.children.map(function (err) {
                         return ` * ${indent(WebpackOptionsValidationError.formatValidationError(err), '   ', false)}`;
                     }).join('\n')}`}`
                 }
