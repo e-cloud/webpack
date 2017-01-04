@@ -39,6 +39,7 @@ jspm_packages
 # tests
 /test/js
 /test/browsertest/js
+/test/fixtures/temp-cache-fixture
 
 # benchmark
 /benchmark/js
