@@ -141,8 +141,6 @@ class AggressiveSplittingPlugin {
             compilation.plugin('record-hash', function (records: Record) {
                 // 3. save to made splittings to records
                 const minSize = _this.options.minSize;
-                // todo: unused
-                const maxSize = _this.options.maxSize;
                 if (!records.aggressiveSplits) {
                     records.aggressiveSplits = [];
                 }

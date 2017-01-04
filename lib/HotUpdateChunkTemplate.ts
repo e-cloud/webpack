@@ -7,7 +7,6 @@ import { Hash } from 'crypto'
 import { WebpackOutputOptions } from '../typings/webpack-types'
 import Module = require('./Module')
 import ModuleTemplate = require('./ModuleTemplate')
-import ArrayMap = require('./ArrayMap')
 import Chunk = require('./Chunk')
 
 class HotUpdateChunkTemplate extends Template {
@@ -21,7 +20,7 @@ class HotUpdateChunkTemplate extends Template {
         removedModules: number[],
         hash: string,
         moduleTemplate: ModuleTemplate,
-        dependencyTemplates: ArrayMap
+        dependencyTemplates: Map<Function, any>
     ) {
         const modulesSource = this.renderChunkModules({
             id,

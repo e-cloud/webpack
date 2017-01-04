@@ -79,6 +79,7 @@ class CachePlugin {
         }
     }
 
+    /* istanbul ignore next */
     applyMtime(mtime: number) {
         if (this.FS_ACCURENCY > 1 && mtime % 2 !== 0) {
             this.FS_ACCURENCY = 1;

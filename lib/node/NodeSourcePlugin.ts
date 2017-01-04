@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import path = require('path')
-import objectAssign = require('object-assign');
 import nodeLibsBrowser = require('node-libs-browser');
 import AliasPlugin = require('enhanced-resolve/lib/AliasPlugin');
 import ModuleParserHelpers = require('../ModuleParserHelpers');
@@ -62,7 +61,7 @@ class NodeSourcePlugin {
 
                 let localOptions = options;
                 if (parserOptions.node) {
-                    localOptions = objectAssign({}, localOptions, parserOptions.node);
+                    localOptions = Object.assign({}, localOptions, parserOptions.node);
                 }
 
                 if (localOptions.global) {
@@ -91,8 +90,6 @@ class NodeSourcePlugin {
             });
         });
         compiler.plugin('after-resolvers', function (compiler: Compiler) {
-            // todo: unused
-            const alias = {};
             Object.keys(nodeLibsBrowser).forEach(lib => {
                 if (options[lib] !== false) {
                     compiler.resolvers.normal.apply(new AliasPlugin('described-resolve', {

@@ -2,7 +2,6 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import objectAssign = require('object-assign');
 import path = require('path');
 import ModuleParserHelpers = require('./ModuleParserHelpers');
 import ConstDependency = require('./dependencies/ConstDependency');
@@ -34,7 +33,7 @@ class NodeStuffPlugin {
 
                 let localOptions = options;
                 if (parserOptions.node) {
-                    localOptions = objectAssign({}, localOptions, parserOptions.node);
+                    localOptions = Object.assign({}, localOptions, parserOptions.node);
                 }
 
                 function ignore() {

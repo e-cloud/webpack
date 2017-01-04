@@ -24,7 +24,7 @@ class ProvidePlugin {
             params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions: ParserOptions) {
                 Object.keys(definitions)
                     .forEach((name: string) => {
-                        const request = definitions[name];
+                        const request = [].concat(definitions[name]);
                         const splitName = name.split('.');
                         if (splitName.length > 0) {
                             splitName.slice(1).forEach((_, i) => {
@@ -35,10 +35,16 @@ class ProvidePlugin {
                         parser.plugin(`expression ${name}`, function (expr: Expression) {
                             let nameIdentifier = name;
                             const scopedName = name.includes('.');
+                            let expression = `require(${JSON.stringify(request[0])})`;
                             if (scopedName) {
                                 nameIdentifier = `__webpack_provided_${name.replace(/\./g, '_dot_')}`;
                             }
-                            if (!ModuleParserHelpers.addParsedVariable(this, nameIdentifier, `require(${JSON.stringify(request)})`)) {
+                            if (request.length > 1) {
+                                expression += request.slice(1).map(function (r) {
+                                    return `[${JSON.stringify(r)}]`;
+                                }).join('');
+                            }
+                            if (!ModuleParserHelpers.addParsedVariable(this, nameIdentifier, expression)) {
                                 return false;
                             }
                             if (scopedName) {

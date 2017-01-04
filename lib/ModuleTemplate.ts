@@ -6,7 +6,6 @@ import Template = require('./Template');
 import RequestShortener = require('./RequestShortener')
 import Module = require('./Module')
 import Chunk = require('./Chunk')
-import ArrayMap = require('./ArrayMap')
 import { WebpackOutputOptions } from '../typings/webpack-types'
 import { Hash } from 'crypto'
 
@@ -17,7 +16,7 @@ class ModuleTemplate extends Template {
         super(outputOptions);
     }
 
-    render(module: Module, dependencyTemplates: ArrayMap, chunk: Chunk): string {
+    render(module: Module, dependencyTemplates: Map<Function, any>, chunk: Chunk): string {
         let moduleSource = module.source(dependencyTemplates, this.outputOptions, this.requestShortener);
         moduleSource = this.applyPluginsWaterfall('module', moduleSource, module, chunk, dependencyTemplates);
         moduleSource = this.applyPluginsWaterfall('render', moduleSource, module, chunk, dependencyTemplates);

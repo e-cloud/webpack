@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import async = require('async');
-import objectAssign = require('object-assign');
 import Tapable = require('tapable');
 import NormalModule = require('./NormalModule');
 import RawModule = require('./RawModule');
@@ -16,7 +15,7 @@ import {
     NMFAfterResolveResult,
     ParserOptions
 } from '../typings/webpack-types'
-import { ResolveError, ResolveContext } from 'enhanced-resolve/lib/common-types'
+import { ResolveError, ResolveContext, ResolverRequest } from 'enhanced-resolve/lib/common-types'
 import Dependency = require('./Dependency')
 import Module = require('./Module')
 import Resolver = require('enhanced-resolve/lib/Resolver')
@@ -78,7 +77,7 @@ function identToLoaderRequest(resultString: string) {
 class NormalModuleFactory extends Tapable {
     ruleSet: RuleSet
     parserCache: Dictionary<Parser>
-    cachePredicate: (val: any) => boolean
+    cachePredicate: (val: ResolverRequest) => boolean
 
     constructor(public context = '', public resolvers: Compiler.Resolvers, options: ModuleOptions) {
         super();
@@ -343,7 +342,7 @@ BREAKING CHANGE: It's no longer allowed to omit the '-loader' suffix when using 
                 const optionsOnly = item.options ? {
                         options: item.options
                     } : undefined;
-                return callback(null, objectAssign({}, item, identToLoaderRequest(result), optionsOnly));
+                return callback(null, Object.assign({}, item, identToLoaderRequest(result), optionsOnly));
 
             });
         }, callback);

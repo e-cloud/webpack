@@ -8,7 +8,6 @@ import Tapable = require('tapable');
 import Module = require('./Module')
 import Chunk = require('./Chunk')
 import ModuleTemplate = require('./ModuleTemplate')
-import ArrayMap = require('./ArrayMap')
 
 const START_LOWERCASE_ALPHABET_CODE = 'a'.charCodeAt(0);
 const START_UPPERCASE_ALPHABET_CODE = 'A'.charCodeAt(0);
@@ -90,7 +89,9 @@ class Template extends Tapable {
     }
 
     renderChunkModules(
-        chunk: Chunk, moduleTemplate: ModuleTemplate, dependencyTemplates: ArrayMap,
+        chunk: Chunk,
+        moduleTemplate: ModuleTemplate,
+        dependencyTemplates: Map<Function, any>,
         prefix = ''
     ): ConcatSource {
         const source = new ConcatSource();

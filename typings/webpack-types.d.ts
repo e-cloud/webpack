@@ -12,13 +12,14 @@ import SourceMap = require('source-map')
 import RawSourceMap = SourceMap.RawSourceMap
 import Stats = require('../lib/Stats')
 import { HexBase64Latin1Encoding } from 'crypto'
+import { AbstractInputFileSystem, ResolverRequest } from 'enhanced-resolve/lib/common-types'
+import { ExtendedLoaderContext } from 'loader-runner'
 import DependenciesBlock = require('../lib/DependenciesBlock')
 import LocalModule = require('../lib/dependencies/LocalModule')
 import HarmonyImportDependency = require('../lib/dependencies/HarmonyImportDependency')
 import Chunk = require('../lib/Chunk');
 import fs = require('fs')
-import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
-import { ExtendedLoaderContext } from 'loader-runner'
+import Resolver = require('enhanced-resolve/lib/Resolver')
 
 declare interface Dictionary<T> {
     [prop: string]: T;
@@ -74,16 +75,16 @@ declare interface ResolveOptions {
     alias?: Dictionary<string> | {
         alias: string;
         name: string;
-        onlyModules: boolean;
+        onlyModule: boolean;
     }[];
     aliasFields: string[];
-    cachePredicate: (request: string) => boolean;
+    cachePredicate: (request: ResolverRequest) => boolean;
     descriptionFiles: string[];
     /**
      * An array of extensions that should be used to resolve modules.
      * For example, in order to discover CoffeeScript files, your array should contain the string ".coffee".
      */
-    extensions?: string[];
+    extensions: string[];
     enforceExtension: boolean;
     enforceModuleExtension: boolean;
     mainFields: string[];
@@ -91,7 +92,7 @@ declare interface ResolveOptions {
     moduleExtensions: string[];
     modules: string[]
     plugins: Tapable.Plugin[];
-    resolver: PlainObject;
+    resolver: Resolver;
     /** Replace modules by other modules or paths. */
     symlinks: boolean;
     unsafeCache?: PlainObject | boolean;

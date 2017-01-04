@@ -2,8 +2,6 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import assign = require('object-assign');
-
 import OptionsApply = require('./OptionsApply');
 import LoaderTargetPlugin = require('./LoaderTargetPlugin');
 import FunctionModulePlugin = require('./FunctionModulePlugin');
@@ -294,18 +292,18 @@ class WebpackOptionsApply extends OptionsApply {
         }
 
         compiler.resolvers.normal = ResolverFactory.createResolver(
-            assign({
+            Object.assign({
                 fileSystem: compiler.inputFileSystem
             }, options.resolve)
         );
         compiler.resolvers.context = ResolverFactory.createResolver(
-            assign({
+            Object.assign({
                 fileSystem: compiler.inputFileSystem,
                 resolveToContext: true
             }, options.resolve)
         );
         compiler.resolvers.loader = ResolverFactory.createResolver(
-            assign({
+            Object.assign({
                 fileSystem: compiler.inputFileSystem
             }, options.resolveLoader)
         );

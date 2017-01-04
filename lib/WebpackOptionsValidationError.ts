@@ -93,6 +93,7 @@ ${err.children.map(function (err) {
                     'properties',
                     missingProperty
                 ])}`;
+            case 'minItems':
             case 'minLength':
                 if ((err.params as ajv.LimitParams).limit === 1) {
                     return `${dataPath} should not be empty.`;
@@ -188,18 +189,6 @@ function getSchemaPart(path: string, parents = 0, additionalPath?: string) {
         }
     }
     return schemaPart;
-}
-
-function getSchemaPartText2(path: string, parents: number, additionalPath: string) {
-    let schemaPart = getSchemaPart(path, parents, additionalPath);
-    while (schemaPart.$ref) {
-        schemaPart = getSchemaPart(schemaPart.$ref);
-    }
-    let schemaText = WebpackOptionsValidationError.formatSchema(schemaPart);
-    if (schemaPart.description) {
-        schemaText += `\n${schemaPart.description}`;
-    }
-    return schemaText;
 }
 
 function getSchemaPartText(schemaPart: AjvJsonSchema, additionalPath?: string[]) {

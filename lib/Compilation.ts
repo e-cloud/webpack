@@ -24,7 +24,6 @@ import EntryModuleNotFoundError = require('./EntryModuleNotFoundError');
 import ModuleNotFoundError = require('./ModuleNotFoundError');
 import ModuleDependencyWarning = require('./ModuleDependencyWarning');
 import Module = require('./Module');
-import ArrayMap = require('./ArrayMap');
 import Chunk = require('./Chunk');
 import Entrypoint = require('./Entrypoint');
 import Stats = require('./Stats');
@@ -57,8 +56,8 @@ class Compilation extends Tapable {
     compiler: Compiler
     contextDependencies: string[]
     contextTimestamps: TimeStampMap
-    dependencyFactories: ArrayMap
-    dependencyTemplates: ArrayMap
+    dependencyFactories: Map<Function, any>
+    dependencyTemplates: Map<Function, any>
     entries: Module[];
     entrypoints: Dictionary<Entrypoint>
     errors: WebpackError[]
@@ -123,8 +122,8 @@ class Compilation extends Tapable {
         this.errors = [];
         this.warnings = [];
         this.children = [];
-        this.dependencyFactories = new ArrayMap();
-        this.dependencyTemplates = new ArrayMap();
+        this.dependencyFactories = new Map();
+        this.dependencyTemplates = new Map();
     }
 
     templatesPlugin(name: string, fn: Tapable.Handler) {
@@ -268,7 +267,7 @@ class Compilation extends Tapable {
     ) {
         let self = this;
         const start = self.profile && +new Date();
-        const factories = [];
+        const factories: [any, Dependency[]][] = [];
 
         for (let i = 0; i < dependencies.length; i++) {
             const factory = self.dependencyFactories.get(dependencies[i][0].constructor);

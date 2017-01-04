@@ -8,7 +8,6 @@ import { Hash } from 'crypto'
 import Template = require('./Template');
 import Chunk = require('./Chunk')
 import ModuleTemplate = require('./ModuleTemplate')
-import ArrayMap = require('./ArrayMap')
 
 // require function shortcuts:
 // __webpack_require__.s = the module id of the entry point
@@ -158,7 +157,7 @@ class MainTemplate extends Template {
         });
     }
 
-    render(hash: string, chunk: Chunk, moduleTemplate: ModuleTemplate, dependencyTemplates: ArrayMap) {
+    render(hash: string, chunk: Chunk, moduleTemplate: ModuleTemplate, dependencyTemplates: Map<Function, any>) {
         const buf = [];
         buf.push(this.applyPluginsWaterfall('bootstrap', '', chunk, hash, moduleTemplate, dependencyTemplates));
         buf.push(this.applyPluginsWaterfall('local-vars', '', chunk, hash));

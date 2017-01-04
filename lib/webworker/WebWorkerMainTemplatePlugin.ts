@@ -24,8 +24,6 @@ class WebWorkerMainTemplatePlugin {
             return source;
         });
         mainTemplate.plugin('require-ensure', function (_: string, chunk: Chunk, hash: string) {
-            // todo: unused
-            const filename = this.outputOptions.filename;
             const chunkFilename = this.outputOptions.chunkFilename;
             return this.asString([
                 '// "1" is the signal for "already loaded"',

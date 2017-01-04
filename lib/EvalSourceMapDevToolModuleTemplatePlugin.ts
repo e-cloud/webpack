@@ -75,7 +75,7 @@ class EvalSourceMapDevToolModuleTemplatePlugin {
             }
             sourceMap.sourceRoot = options.sourceRoot || '';
             sourceMap.file = `${module.id}.js`;
-            const footer = self.sourceMapComment.replace(/\[url\]/g, `data:application/json;charset=utf-8;base64,${new Buffer(JSON.stringify(sourceMap)).toString('base64')}`);
+            const footer = self.sourceMapComment.replace(/\[url\]/g, `data:application/json;charset=utf-8;base64,${Buffer.from(JSON.stringify(sourceMap)).toString('base64')}`);
             source.__EvalSourceMapDevToolData = new RawSource(`eval(${JSON.stringify(content + footer)});`);
             return source.__EvalSourceMapDevToolData;
         });

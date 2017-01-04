@@ -11,8 +11,7 @@ class WebEnvironmentPlugin {
     }
 
     apply(compiler: Compiler) {
-        // todo: unused
-        const inputFileSystem = compiler.inputFileSystem = this.inputFileSystem;
+        compiler.inputFileSystem = this.inputFileSystem;
         compiler.outputFileSystem = this.outputFileSystem;
     }
 }

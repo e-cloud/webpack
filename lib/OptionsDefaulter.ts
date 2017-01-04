@@ -82,15 +82,3 @@ function setProperty(obj: PlainObject, name: string, value: any) {
     }
     obj[props.pop()] = value;
 }
-
-// todo: unused
-function hasProperty(obj: PlainObject, name: string) {
-    const props = name.split('.');
-    for (let prop of props.slice(0, props.length - 1)) {
-        obj = obj[prop];
-        if (typeof obj !== 'object' || !obj) {
-            return;
-        }
-    }
-    return Object.prototype.hasOwnProperty.call(obj, props.pop());
-}

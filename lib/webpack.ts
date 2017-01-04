@@ -107,6 +107,7 @@ exportPlugins(webpack, '.', [
     'NamedModulesPlugin',
     'NewWatchingPlugin',
     'NoErrorsPlugin',
+    'NoEmitOnErrorsPlugin',
     'NormalModuleReplacementPlugin',
     'PrefetchPlugin',
     'ProgressPlugin',

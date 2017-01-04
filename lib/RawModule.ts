@@ -5,7 +5,6 @@
 import { OriginalSource, RawSource } from 'webpack-sources'
 import { ErrCallback } from '../typings/webpack-types'
 import Module = require('./Module');
-import crypto = require('crypto')
 import RequestShortener = require('./RequestShortener')
 
 class RawModule extends Module {
@@ -51,21 +50,7 @@ class RawModule extends Module {
         return this.sourceStr.length;
     }
 
-    getSourceHash() {
-        const hash = crypto.createHash('md5');
-        hash.update(this.sourceStr);
-        return hash.digest('hex');
-    }
-
-    createTemplate() {
-        return new RawModule(this.sourceStr, `template of ${this.id}`);
-    }
-
     needRebuild() { return false }
-
-    getAllModuleDependencies(): any[] { return [] }
-
-    getTemplateArguments(): any[] { return [] }
 }
 
 export = RawModule;

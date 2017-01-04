@@ -7,7 +7,6 @@ import { Hash } from 'crypto'
 import { WebpackOutputOptions } from '../typings/webpack-types'
 import Dependency = require('./Dependency')
 import RequestShortener = require('./RequestShortener')
-import ArrayMap = require('./ArrayMap')
 
 class DependenciesBlockVariable {
     constructor(public name: string, public expression: string, public dependencies: Dependency[] = []) {
@@ -22,7 +21,7 @@ class DependenciesBlockVariable {
     }
 
     expressionSource(
-        dependencyTemplates: ArrayMap, outputOptions: WebpackOutputOptions,
+        dependencyTemplates: Map<Function, any>, outputOptions: WebpackOutputOptions,
         requestShortener: RequestShortener
     ) {
         const source = new ReplaceSource(new RawSource(this.expression), undefined);

@@ -7,7 +7,6 @@ import { WebpackOutputOptions, ErrCallback } from '../typings/webpack-types'
 import { Hash } from 'crypto'
 import Module = require('./Module');
 import ModuleDependency = require('./dependencies/ModuleDependency')
-import ArrayMap = require('./ArrayMap')
 
 class MultiModule extends Module {
     cacheable: boolean
@@ -36,7 +35,7 @@ class MultiModule extends Module {
         return callback();
     }
 
-    source(dependencyTemplates: ArrayMap, outputOptions: WebpackOutputOptions) {
+    source(dependencyTemplates: Map<Function, any>, outputOptions: WebpackOutputOptions) {
         const str: string[] = [];
         this.dependencies.forEach(function (dep, idx) {
             if (dep.module) {

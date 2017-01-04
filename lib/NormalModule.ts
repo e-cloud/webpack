@@ -25,15 +25,12 @@ import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
 import crypto = require('crypto')
 import path = require('path');
 import ModuleParseError = require('./ModuleParseError');
-import TemplateArgumentDependency = require('./dependencies/TemplateArgumentDependency');
-import AsyncDependenciesBlock = require('./AsyncDependenciesBlock');
 import ModuleBuildError = require('./ModuleBuildError');
 import ModuleError = require('./ModuleError');
 import ModuleWarning = require('./ModuleWarning');
 import Module = require('./Module');
 import RequestShortener = require('./RequestShortener')
 import Compilation = require('./Compilation')
-import ArrayMap = require('./ArrayMap')
 import Dependency = require('./Dependency')
 import DependenciesBlockVariable = require('./DependenciesBlockVariable')
 import DependenciesBlock = require('./DependenciesBlock')
@@ -276,7 +273,7 @@ class NormalModule extends Module {
         }
     }
 
-    source(dependencyTemplates: ArrayMap, outputOptions: WebpackOutputOptions, requestShortener: RequestShortener) {
+    source(dependencyTemplates: Map<Function, any>, outputOptions: WebpackOutputOptions, requestShortener: RequestShortener) {
         const hash = crypto.createHash('md5');
         this.updateHash(hash);
         const hashStr = hash.digest('hex');
@@ -420,121 +417,6 @@ class NormalModule extends Module {
         hash.update('meta');
         hash.update(JSON.stringify(this.meta));
         super.updateHash(hash);
-    }
-
-    getSourceHash() {
-        if (!this._source) {
-            return '';
-        }
-        const hash = crypto.createHash('md5');
-        hash.update(this._source.source());
-        return hash.digest('hex');
-    }
-
-    getAllModuleDependencies() {
-        const list: Module[] = [];
-
-        function doDep(dep: Dependency) {
-            if (dep.module && !list.includes(dep.module)) {
-                list.push(dep.module);
-            }
-        }
-
-        function doVariable(variable: DependenciesBlockVariable) {
-            variable.dependencies.forEach(doDep);
-        }
-
-        function doBlock(block: NormalModule) {
-            block.variables.forEach(doVariable);
-            block.dependencies.forEach(doDep);
-            block.blocks.forEach(doBlock);
-        }
-
-        doBlock(this);
-        return list;
-    }
-
-    createTemplate(keepModules: Module[], roots: Module[]) {
-        roots.sort((a, b) => {
-            const ia = a.identifier();
-            const ib = b.identifier();
-            if (ia < ib) {
-                return -1;
-            }
-            if (ib < ia) {
-                return 1;
-            }
-            return 0;
-        });
-        const template = new NormalModule('', '', '', [], '', null);
-        template._source = this._source;
-        template.built = this.built;
-        template.templateModules = keepModules;
-        template._templateOrigin = this;
-        template.readableIdentifier = function () {
-            return `template of ${this._templateOrigin.id} referencing ${keepModules.map(
-                m => m.id).join(', ')}`;
-        };
-        template.identifier = () => {
-            const array = roots.map(m => m.identifier());
-            array.sort();
-            return array.join('|');
-        };
-        const args: string[] = template.arguments = [];
-
-        function doDeps(deps: Dependency[]) {
-            return deps.map(dep => {
-                if (dep.module && !keepModules.includes(dep.module)) {
-                    const argName = `__webpack_module_template_argument_${args.length}__`;
-                    args.push(argName);
-                    return new TemplateArgumentDependency(argName, dep);
-                }
-                else {
-                    return dep;
-                }
-            });
-        }
-
-        function doBlock(block: DependenciesBlock, newBlock: DependenciesBlock) {
-            block.variables.forEach(variable => {
-                const newDependencies = doDeps(variable.dependencies);
-                newBlock.addVariable(variable.name, variable.expression, newDependencies);
-            });
-            newBlock.dependencies = doDeps(block.dependencies);
-            block.blocks.forEach((childBlock: AsyncDependenciesBlock) => {
-                // todo: only AsyncDependenciesBlock has loc, so childBlock is assumed as AsyncDependenciesBlock
-                // but none of AsyncDependenciesBlock has name property, may be chunkName?
-                const newChildBlock = new AsyncDependenciesBlock(childBlock.name, childBlock.module, childBlock.loc);
-                newBlock.addBlock(newChildBlock);
-                doBlock(childBlock, newChildBlock);
-            });
-        }
-
-        doBlock(this, template);
-        return template;
-    }
-
-    getTemplateArguments(keepModules: Module[]) {
-        const list: Module[] = [];
-
-        function doDep(dep: Dependency) {
-            if (dep.module && !keepModules.includes(dep.module)) {
-                list.push(dep.module);
-            }
-        }
-
-        function doVariable(variable: DependenciesBlockVariable) {
-            variable.dependencies.forEach(doDep);
-        }
-
-        function doBlock(block: NormalModule) {
-            block.variables.forEach(doVariable);
-            block.dependencies.forEach(doDep);
-            block.blocks.forEach(doBlock);
-        }
-
-        doBlock(this);
-        return list;
     }
 }
 

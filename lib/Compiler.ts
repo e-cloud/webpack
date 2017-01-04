@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import path = require('path');
-import assign = require('object-assign');
 import Resolver = require('enhanced-resolve/lib/Resolver');
 import Tapable = require('tapable');
 import Compilation = require('./Compilation');
@@ -48,7 +47,7 @@ class Watching {
             } as any;
         }
         else if (watchOptions && typeof watchOptions === 'object') {
-            this.watchOptions = assign({}, watchOptions);
+            this.watchOptions = Object.assign({}, watchOptions);
         }
         else {
             this.watchOptions = {} as WatchOptions;
@@ -426,7 +425,7 @@ class Compiler extends Tapable {
                     }
                     let content: string | Buffer = source.source();
                     if (!Buffer.isBuffer(content)) {
-                        content = new Buffer(content as string, 'utf-8');
+                        content = Buffer.from(content as string, 'utf8');
                     }
                     source.existsAt = targetPath;
                     source.emitted = true;

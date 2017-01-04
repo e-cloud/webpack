@@ -8,7 +8,6 @@ import { ReplaceSource } from 'webpack-sources'
 import { WebpackOutputOptions } from '../../typings/webpack-types'
 import { Hash } from 'crypto'
 import RequestShortener = require('../RequestShortener')
-import ArrayMap = require('../ArrayMap')
 
 class Template {
     apply(
@@ -16,7 +15,7 @@ class Template {
         source: ReplaceSource,
         outputOptions: WebpackOutputOptions,
         requestShortener: RequestShortener,
-        dependencyTemplates: ArrayMap
+        dependencyTemplates: Map<Function, any>
     ) {
         const d = dep.dep;
         const template = dependencyTemplates.get(d.constructor);
