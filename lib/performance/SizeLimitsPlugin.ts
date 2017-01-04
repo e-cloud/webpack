@@ -39,7 +39,9 @@ class SizeLimitsPlugin {
                 const files = entrypoint.getFiles();
 
                 return files.filter(assetFilter)
-                    .map(file => compilation.assets[file].size())
+                    .map(file => compilation.assets[file])
+                    .filter(Boolean)
+                    .map(asset => asset.size())
                     .reduce((currentSize, nextSize) => currentSize + nextSize, 0);
             };
 

@@ -222,6 +222,7 @@ class NormalModule extends Module {
         self.error = null;
         self.errors.length = 0;
         self.warnings.length = 0;
+        self.meta = {} as any;
         return this.doBuild(options, compilation, resolver, fs, function (err) {
             self.dependencies.length = 0;
             self.variables.length = 0;

@@ -93,12 +93,14 @@ class JsonpMainTemplatePlugin {
                 '// start chunk loading',
                 'var head = document.getElementsByTagName(\'head\')[0];',
                 this.applyPluginsWaterfall('jsonp-script', '', chunk, hash),
-                'head.appendChild(script);',
                 '',
                 'var promise = new Promise(function(resolve, reject) {',
                 this.indent(['installedChunks[chunkId] = [resolve, reject];']),
                 '});',
-                'return installedChunks[chunkId][2] = promise;'
+                'installedChunks[chunkId][2] = promise;',
+                '',
+                'head.appendChild(script);',
+                'return promise;'
             ]);
         });
         mainTemplate.plugin('require-extensions', function (source: string, chunk: Chunk) {

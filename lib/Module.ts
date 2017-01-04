@@ -23,6 +23,7 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
     debugId: number;
     dependenciesErrors: Error[];
     dependenciesWarnings: string[];
+    depth: number;
     error: Error
     errors: Error[];
     hotUpdate: boolean
@@ -58,6 +59,7 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
         this.portableId = null;
         this.index = null;
         this.index2 = null;
+        this.depth = null;
         this.used = null;
         this.usedExports = null;
         this.providedExports = null;
@@ -92,6 +94,7 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
         this.id = null;
         this.index = null;
         this.index2 = null;
+        this.depth = null;
         this.used = null;
         this.usedExports = null;
         this.providedExports = null;
@@ -104,6 +107,7 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
         this.id = null;
         this.index = null;
         this.index2 = null;
+        this.depth = null;
         this.chunks.length = 0;
         super.unseal();
     }

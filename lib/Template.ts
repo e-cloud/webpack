@@ -10,12 +10,9 @@ import Chunk = require('./Chunk')
 import ModuleTemplate = require('./ModuleTemplate')
 import ArrayMap = require('./ArrayMap')
 
-const A_CODE = 'a'.charCodeAt(0);
-const Z_CODE = 'z'.charCodeAt(0);
-const AZ_COUNT = Z_CODE - A_CODE + 1;
-const A2_CODE = 'A'.charCodeAt(0);
-const Z2_CODE = 'Z'.charCodeAt(0);
-const AZ2_COUNT = Z2_CODE - A2_CODE + 1;
+const START_LOWERCASE_ALPHABET_CODE = 'a'.charCodeAt(0);
+const START_UPPERCASE_ALPHABET_CODE = 'A'.charCodeAt(0);
+const DELTA_A_TO_Z = 'z'.charCodeAt(0) - START_LOWERCASE_ALPHABET_CODE + 1;
 
 function moduleIdIsNumber(module: Module) {
     return typeof module.id === 'number';
@@ -37,15 +34,22 @@ class Template extends Tapable {
         return str.replace(/^[^a-zA-Z$_]/, '_').replace(/[^a-zA-Z0-9$_]/g, '_');
     }
 
-    // todo: to be renamed
+    // map number to a single character a-z, A-Z or <_ + number> if number is too big
     static numberToIdentifer(n: number) {
-        if (n < AZ_COUNT) {
-            return String.fromCharCode(A_CODE + n);
+        // lower case
+        if (n < DELTA_A_TO_Z) {
+            return String.fromCharCode(START_LOWERCASE_ALPHABET_CODE + n);
         }
-        if (n < AZ_COUNT + AZ2_COUNT) {
-            return String.fromCharCode(A2_CODE + n - AZ_COUNT);
+
+        // upper case
+        n -= DELTA_A_TO_Z;
+        if (n < DELTA_A_TO_Z) {
+            return String.fromCharCode(START_UPPERCASE_ALPHABET_CODE + n);
         }
-        return `_${n - AZ_COUNT - AZ2_COUNT}`;
+
+        // fall back to _ + number
+        n -= DELTA_A_TO_Z;
+        return `_${n}`;
     }
 
     indent(str: (string[] | string)[] | string): string {

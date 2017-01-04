@@ -147,8 +147,11 @@ interface NormalizedUseItemObject {
     options?: RuleQuery
     [other: string]: any
 }
+interface NormalizedUseFunc {
+    (data: RuleExecData): any
+}
 
-type NormalizedUseItem = ((data: RuleExecData) => any) | NormalizedUseItemObject
+type NormalizedUseItem = NormalizedUseFunc | NormalizedUseItemObject
 
 interface NormalizedRule {
     enforce?: string
@@ -248,7 +251,8 @@ class RuleSet {
         }
 
         if (rule.loader && rule.loaders) {
-            throw new Error('Provided loader and loaders for rule');
+            throw new Error(RuleSet.buildErrorMessage(rule, new Error('Provided loader and loaders for rule (use only one of them)')));
+
         }
 
         const loader = rule.loaders || rule.loader;
@@ -265,11 +269,14 @@ class RuleSet {
             });
         }
         else if (loader && (rule.options || rule.query)) {
-            throw new Error('options/query cannot be used with loaders');
+            throw new Error(RuleSet.buildErrorMessage(rule, new Error('options/query cannot be used with loaders (use options for each array item)')));
         }
         else if (loader) {
             checkUseSource('loaders');
             newRule.use = RuleSet.normalizeUse(loader);
+        }
+        else if (rule.options || rule.query) {
+            throw new Error(RuleSet.buildErrorMessage(rule, new Error('options/query provided without loader (use loader + options)')));
         }
 
         if (rule.use) {
@@ -299,14 +306,14 @@ class RuleSet {
 
         function checkUseSource(newSource: string) {
             if (useSource && useSource !== newSource) {
-                throw new Error(`Rule can only have one result source (provided ${newSource} and ${useSource})`);
+                throw new Error(RuleSet.buildErrorMessage(rule, new Error(`Rule can only have one result source (provided ${newSource} and ${useSource})`)));
             }
             useSource = newSource;
         }
 
         function checkResourceSource(newSource: string) {
             if (resourceSource && resourceSource !== newSource) {
-                throw new Error(`Rule can only have one resource source (provided ${newSource} and ${resourceSource})`);
+                throw new Error(RuleSet.buildErrorMessage(rule, new Error(`Rule can only have one resource source (provided ${newSource} and ${resourceSource})`)));
             }
             resourceSource = newSource;
         }
@@ -329,22 +336,34 @@ class RuleSet {
         return [RuleSet.normalizeUseItem(use)];
     }
 
+    static normalizeUseItemFunction(use: NormalizedUseFunc, data: RuleExecData) {
+        const result = use(data);
+        if (typeof result === 'string') {
+            return RuleSet.normalizeUseItem(result);
+        }
+        return result;
+    }
+
+    static normalizeUseItemString(useItemString: string) {
+        const idx = useItemString.indexOf('?');
+        if (idx >= 0) {
+            return {
+                loader: useItemString.substr(0, idx),
+                options: useItemString.substr(idx + 1)
+            };
+        }
+        return {
+            loader: useItemString
+        };
+    }
+
     static normalizeUseItem(item: UseItem): NormalizedUseItem {
         if (typeof item === 'function') {
             return item;
         }
 
         if (typeof item === 'string') {
-            const idx = item.indexOf('?');
-            if (idx >= 0) {
-                return {
-                    loader: item.substr(0, idx),
-                    options: item.substr(idx + 1)
-                };
-            }
-            return {
-                loader: item
-            };
+            return RuleSet.normalizeUseItemString(item);
         }
 
         const newItem = {} as NormalizedUseItemObject;
@@ -426,7 +445,7 @@ class RuleSet {
         return andMatcher(matchers);
     }
 
-    static buildErrorMessage(condition: Condition, error: Error) {
+    static buildErrorMessage(condition: Rule | Condition, error: Error) {
         const conditionAsText = JSON.stringify(
             condition,
             (key, value) => value === undefined ? 'undefined' : value,
@@ -479,7 +498,7 @@ class RuleSet {
             rule.use.forEach(use => {
                 result.push({
                     type: 'use',
-                    value: typeof use === 'function' ? use(data) : use,
+                    value: typeof use === 'function' ? RuleSet.normalizeUseItemFunction(use, data) : use,
                     enforce: rule.enforce
                 });
             });

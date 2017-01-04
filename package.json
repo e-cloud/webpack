@@ -107,7 +107,7 @@
     "pretest": "npm run lint-files",
     "lint-files": "npm run lint && npm run beautify-lint",
     "lint": "eslint lib bin hot",
-    "tslint": "tslint --project tsconfig.json -t stylish",
+    "tslint": "tslint --project tsconfig.json",
     "beautify-lint": "beautify-lint 'lib/**/*.js' 'hot/**/*.js' 'bin/**/*.js' 'benchmark/*.js' 'test/*.js'",
     "nsp": "nsp check --output summary",
     "cover": "istanbul cover -x '**/*.runtime.js' node_modules/mocha/bin/_mocha",

@@ -32,10 +32,14 @@ function webpack(options: any, callback?: WatchCallback<AbstractStats>) {
         new WebpackOptionsDefaulter().process(options);
 
         compiler = new Compiler();
+        compiler.context = options.context;
+        compiler.options = options;
         new NodeEnvironmentPlugin().apply(compiler);
+        if (options.plugins && Array.isArray(options.plugins)) {
+            compiler.apply.apply(compiler, options.plugins);
+        }
         compiler.applyPlugins('environment');
         compiler.applyPlugins('after-environment');
-        compiler.options = options;
         compiler.options = new WebpackOptionsApply().process(options, compiler);
     }
     else {

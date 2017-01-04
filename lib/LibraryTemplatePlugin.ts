@@ -3,7 +3,6 @@
  Author Tobias Koppers @sokra
  */
 import SetVarMainTemplatePlugin = require('./SetVarMainTemplatePlugin');
-import CommonJsHarmonyMainTemplatePlugin = require('./CommonJsHarmonyMainTemplatePlugin');
 import AmdMainTemplatePlugin = require('./AmdMainTemplatePlugin')
 import UmdMainTemplatePlugin = require('./UmdMainTemplatePlugin');
 import JsonpExportMainTemplatePlugin = require('./JsonpExportMainTemplatePlugin');
@@ -68,10 +67,8 @@ class LibraryTemplatePlugin {
                     }
                     break;
                 case 'commonjs2':
-                    compilation.apply(new SetVarMainTemplatePlugin('module.exports'));
-                    break;
                 case 'commonjs-module':
-                    compilation.apply(new CommonJsHarmonyMainTemplatePlugin());
+                    compilation.apply(new SetVarMainTemplatePlugin('module.exports'));
                     break;
                 case 'amd':
                     compilation.apply(new AmdMainTemplatePlugin(this.name));

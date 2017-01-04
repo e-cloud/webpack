@@ -163,6 +163,7 @@ declare interface StatsOptions {
     colors?: boolean;
     // Context directory for request shortening
     context?: string;
+    depth?: boolean;
     entrypoints?: boolean;
     // Add errors
     errors?: boolean;
@@ -171,6 +172,7 @@ declare interface StatsOptions {
     exclude?: string[];
     // Add the hash of the compilation
     hash: boolean;
+    maxModules?: number;
     // Add built modules information
     modules?: boolean;
     // Sort the modules by a field

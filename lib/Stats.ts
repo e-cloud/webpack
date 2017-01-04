@@ -44,6 +44,7 @@ interface StatsModule {
     built: boolean
     cacheable: boolean
     chunks: number[]
+    depth?: number
     errors: number
     failed: boolean
     id: number
@@ -161,6 +162,7 @@ class Stats {
         const showChunkModules = d(options.chunkModules, !!forToString);
         const showChunkOrigins = d(options.chunkOrigins, !forToString);
         const showModules = d(options.modules, !forToString);
+        const showDepth = d(options.depth, !forToString);
         const showCachedModules = d(options.cached, true);
         const showCachedAssets = d(options.cachedAssets, true);
         const showReasons = d(options.reasons, !forToString);
@@ -178,19 +180,26 @@ class Stats {
             }
             return new RegExp(`[\\\\/]${str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&')}([\\\\/]|$|!|\\?)`);
         });
+        const maxModules = d(options.maxModules, forToString ? 15 : Infinity);
         const sortModules = d(options.modulesSort, 'id');
         const sortChunks = d(options.chunksSort, 'id');
         const sortAssets = d(options.assetsSort, '');
 
-        function moduleFilter(module: Module) {
-            if (!showCachedModules && !module.built) {
-                return false;
-            }
-            if (excludeModules.length === 0) {
-                return true;
-            }
-            const ident = module.resource;
-            return !excludeModules.some(regExp => regExp.test(ident));
+        function createModuleFilter() {
+            let i = 0;
+            return function (module: Module) {
+                if (!showCachedModules && !module.built) {
+                    return false;
+                }
+                if (excludeModules.length > 0) {
+                    const ident = requestShortener.shorten(module.resource);
+                    const excluded = excludeModules.some(regExp => regExp.test(ident));
+                    if (excluded) {
+                        return false;
+                    }
+                }
+                return i++ < maxModules;
+            };
         }
 
         function sortByField(field: string) {
@@ -200,6 +209,15 @@ class Stats {
             if (field[0] === '!') {
                 field = field.substr(1);
                 return (a: PlainObject, b: PlainObject) => {
+                    if (a[field] === null && b[field] === null) {
+                        return 0;
+                    }
+                    if (a[field] === null) {
+                        return 1;
+                    }
+                    if (b[field] === null) {
+                        return -1;
+                    }
                     if (a[field] === b[field]) {
                         return 0;
                     }
@@ -207,6 +225,15 @@ class Stats {
                 };
             }
             return (a: PlainObject, b: PlainObject) => {
+                if (a[field] === null && b[field] === null) {
+                    return 0;
+                }
+                if (a[field] === null) {
+                    return 1;
+                }
+                if (b[field] === null) {
+                    return -1;
+                }
                 if (a[field] === b[field]) {
                     return 0;
                 }
@@ -413,6 +440,9 @@ class Stats {
             if (showProvidedExports) {
                 obj.providedExports = Array.isArray(module.providedExports) ? module.providedExports : null;
             }
+            if (showDepth) {
+                obj.depth = module.depth;
+            }
             if (showSource && module._source) {
                 obj.source = module._source.source();
             }
@@ -435,7 +465,11 @@ class Stats {
                     parents: chunk.parents.map(c => c.id)
                 };
                 if (showChunkModules) {
-                    obj.modules = chunk.modules.filter(moduleFilter).map(fnModule);
+                    obj.modules = chunk.modules
+                        .slice()
+                        .sort(sortByField('depth'))
+                        .filter(createModuleFilter())
+                        .map(fnModule);
                     obj.filteredModules = chunk.modules.length - obj.modules.length;
                     obj.modules.sort(sortByField(sortModules));
                 }
@@ -460,7 +494,11 @@ class Stats {
             obj.chunks.sort(sortByField(sortChunks));
         }
         if (showModules) {
-            obj.modules = compilation.modules.filter(moduleFilter).map(fnModule);
+            obj.modules = compilation.modules
+                .slice()
+                .sort(sortByField('depth'))
+                .filter(createModuleFilter())
+                .map(fnModule);
             obj.filteredModules = compilation.modules.length - obj.modules.length;
             obj.modules.sort(sortByField(sortModules));
         }
@@ -570,14 +608,11 @@ class Stats {
             const colSizes = new Array(cols);
             let value;
             for (col = 0; col < cols; col++) {
-                colSizes[col] = 3;
+                colSizes[col] = 0;
             }
             for (row = 0; row < rows; row++) {
                 for (col = 0; col < cols; col++) {
                     value = `${getText(array, row, col)}`;
-                    if (value.length === 0) {
-                        colSizes[col] = 0;
-                    }
                     if (value.length > colSizes[col]) {
                         colSizes[col] = value.length;
                     }
@@ -733,6 +768,9 @@ class Stats {
                     colors.yellow(chunk);
                     colors.normal('}');
                 });
+            }
+            if (typeof module.depth === 'number') {
+                colors.normal(` [depth ${module.depth}]`);
             }
             if (!module.cacheable) {
                 colors.red(' [not cacheable]');
@@ -996,39 +1034,42 @@ class Stats {
         const pn = typeof name === 'string' && name.toLowerCase() || name;
         if (pn === 'none' || !pn) {
             return {
-                hash: false,
-                version: false,
-                timings: false,
                 assets: false,
-                entrypoints: false,
-                chunks: false,
-                modules: false,
-                reasons: false,
-                usedExports: false,
-                providedExports: false,
                 children: false,
-                source: false,
-                errors: false,
+                chunkModules: false,
+                chunks: false,
+                depth: false,
+                entrypoints: false,
                 errorDetails: false,
-                warnings: false,
-                publicPath: false
+                errors: false,
+                hash: false,
+                modules: false,
+                providedExports: false,
+                publicPath: false,
+                reasons: false,
+                source: false,
+                timings: false,
+                usedExports: false,
+                version: false,
+                warnings: false
             };
         }
         else {
             return {
-                hash: pn !== 'errors-only' && pn !== 'minimal',
-                version: pn === 'verbose',
-                timings: pn !== 'errors-only' && pn !== 'minimal',
                 assets: pn === 'verbose',
-                entrypoints: pn === 'verbose',
-                chunks: pn !== 'errors-only',
                 chunkModules: pn === 'verbose',
-                // warnings: pn !== "errors-only",
+                chunks: pn !== 'errors-only',
+                colors: true,
+                depth: pn === 'verbose',
+                entrypoints: pn === 'verbose',
                 errorDetails: pn !== 'errors-only' && pn !== 'minimal',
-                reasons: pn === 'verbose',
-                usedExports: pn === 'verbose',
+                hash: pn !== 'errors-only' && pn !== 'minimal',
                 providedExports: pn === 'verbose',
-                colors: true
+                reasons: pn === 'verbose',
+                timings: pn !== 'errors-only' && pn !== 'minimal',
+                usedExports: pn === 'verbose',
+                version: pn === 'verbose'
+                // warnings: pn !== "errors-only",
             };
         }
     }

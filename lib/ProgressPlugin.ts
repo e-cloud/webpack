@@ -153,7 +153,7 @@ class ProgressPlugin {
             });
         }
 
-        let chars = 0;
+        let lineCaretPosition = 0;
         let lastState: string;
         let lastStateTime: number;
 
@@ -190,7 +190,7 @@ class ProgressPlugin {
                         const stateMsg = `${now - lastStateTime}ms ${lastState}`;
                         goToLineStart(stateMsg);
                         process.stderr.write(`${stateMsg}\n`);
-                        chars = 0;
+                        lineCaretPosition = 0;
                     }
                     lastState = state;
                     lastStateTime = now;
@@ -202,13 +202,13 @@ class ProgressPlugin {
 
         function goToLineStart(nextMessage: string) {
             let str = '';
-            for (; chars > nextMessage.length; chars--) {
+            for (; lineCaretPosition > nextMessage.length; lineCaretPosition--) {
                 str += '\b \b';
             }
-            chars = nextMessage.length;
-            for (let i = 0; i < chars; i++) {
+            for (let i = 0; i < lineCaretPosition; i++) {
                 str += '\b';
             }
+            lineCaretPosition = nextMessage.length;
             if (str) {
                 process.stderr.write(str);
             }

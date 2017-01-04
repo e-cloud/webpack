@@ -42,7 +42,6 @@ class ProvidePlugin {
                                 return false;
                             }
                             if (scopedName) {
-                                nameIdentifier = `__webpack_provided_${name.replace(/\./g, '_dot_')}`;
                                 const dep = new ConstDependency(nameIdentifier, expr.range);
                                 dep.loc = expr.loc;
                                 this.state.current.addDependency(dep);

@@ -75,7 +75,6 @@ class WebpackOptionsDefaulter extends OptionsDefaulter {
 
         this.set('performance.maxAssetSize', 250000);
         this.set('performance.maxEntrypointSize', 250000);
-        this.set('performance.errorOnHint', false);
         this.set('performance.hints', 'make', function (options: WebpackOptions) {
             if (options.target === 'web' || options.target === 'webworker') {
                 return 'warning';

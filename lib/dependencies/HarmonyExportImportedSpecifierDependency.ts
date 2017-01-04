@@ -18,14 +18,15 @@ class Template {
         let content;
         let activeExports: string[];
         let items;
-        const importIsHarmony = importedModule && (!importedModule.meta || importedModule.meta.harmonyModule);
+        const importsExportsUnknown = !importedModule || !Array.isArray(importedModule.providedExports);
 
         function getReexportStatement(key: string, valueKey: string) {
-            return `${importIsHarmony || !valueKey
+            const conditional = !importsExportsUnknown || !valueKey
                 ? ''
-                : 'if(__webpack_require__.o(' + name + ', ' + valueKey + ')) '}__webpack_require__.d(exports, ${key}, function() { return ${name}${valueKey === null
+                : `if(__webpack_require__.o(${name}, ${valueKey})) `;
+            return `${conditional}__webpack_require__.d(exports, ${key}, function() { return ${name}${valueKey === null
                 ? '_default.a'
-                : valueKey && '[' + valueKey + ']'}; });\n`;
+                : valueKey && `[${valueKey}]`}; });\n`;
         }
 
         if (!used) {

@@ -636,6 +636,7 @@ class Compilation extends Tapable {
             module.addChunk(chunk);
             chunk.entryModule = module;
             this.assignIndex(module);
+            this.assignDepth(module);
             this.processDependenciesBlockForChunk(module, chunk);
         }, this);
         this.sortModules(this.modules);
@@ -848,6 +849,58 @@ class Compilation extends Tapable {
         const queue = [
             function () {
                 assignIndexToModule(module);
+            }
+        ];
+        while (queue.length) {
+            queue.pop()();
+        }
+    }
+
+    assignDepth(module: Module) {
+        function assignDepthToModule(module: Module, depth: number) {
+            // enter module
+            if (typeof module.depth === "number" && module.depth <= depth) {
+                return;
+            }
+            module.depth = depth;
+
+            // enter it as block
+            assignDepthToDependencyBlock(module, depth + 1);
+        }
+
+        function assignDepthToDependency(dependency: Dependency, depth: number) {
+            if (dependency.module) {
+                queue.push(function () {
+                    assignDepthToModule(dependency.module, depth);
+                });
+            }
+        }
+
+        function assignDepthToDependencyBlock(block: DependenciesBlock, depth: number) {
+            function iteratorDependency(d: Dependency) {
+                assignDepthToDependency(d, depth);
+            }
+
+            function iteratorBlock(b: DependenciesBlock) {
+                assignDepthToDependencyBlock(b, depth);
+            }
+
+            if (block.variables) {
+                block.variables.forEach(function (v) {
+                    v.dependencies.forEach(iteratorDependency);
+                });
+            }
+            if (block.dependencies) {
+                block.dependencies.forEach(iteratorDependency);
+            }
+            if (block.blocks) {
+                block.blocks.forEach(iteratorBlock);
+            }
+        }
+
+        const queue = [
+            function () {
+                assignDepthToModule(module, 0);
             }
         ];
         while (queue.length) {

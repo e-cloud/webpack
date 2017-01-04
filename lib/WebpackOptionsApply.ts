@@ -45,11 +45,6 @@ import Compiler = require('./Compiler')
 class WebpackOptionsApply extends OptionsApply {
     process(options: WebpackOptions, compiler: Compiler) {
         let ExternalsPlugin;
-        compiler.context = options.context;
-
-        if (options.plugins && Array.isArray(options.plugins)) {
-            compiler.apply(...options.plugins);
-        }
 
         compiler.outputPath = options.output.path;
         compiler.recordsInputPath = options.recordsInputPath || options.recordsPath;

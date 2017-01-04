@@ -4,7 +4,7 @@
  */
 import AsyncDependenciesBlock = require('../AsyncDependenciesBlock');
 import RequireEnsureDependency = require('./RequireEnsureDependency');
-import { FunctionExpression, SourceLocation, CallExpression } from 'estree'
+import { FunctionExpression, SourceLocation, CallExpression, ArrowFunctionExpression } from 'estree'
 import { SourceRange } from '../../typings/webpack-types'
 import Module = require('../Module')
 
@@ -13,7 +13,7 @@ class RequireEnsureDependenciesBlock extends AsyncDependenciesBlock {
 
     constructor(
         public expr: CallExpression,
-        fnExpression: FunctionExpression,
+        fnExpression: FunctionExpression | ArrowFunctionExpression,
         chunkName: string,
         public chunkNameRange: SourceRange,
         module: Module,

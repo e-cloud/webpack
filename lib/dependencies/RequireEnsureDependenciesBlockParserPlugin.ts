@@ -32,9 +32,13 @@ export = AbstractPlugin.create({
                     this.walkExpressions(fnExpression.expressions);
                 }
 
-                const dep = new RequireEnsureDependenciesBlock(expr, fnExpression
-                    ? fnExpression.fn
-                    : fnExpressionArg, chunkName, chunkNameRange, this.state.module, expr.loc);
+                const dep = new RequireEnsureDependenciesBlock(
+                    expr,
+                    fnExpression ? fnExpression.fn : fnExpressionArg,
+                    chunkName,
+                    chunkNameRange,
+                    this.state.module, expr.loc
+                );
                 const old = this.state.current;
                 this.state.current = dep;
                 try {

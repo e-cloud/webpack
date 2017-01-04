@@ -16,7 +16,7 @@ const ajv = new Ajv({
     verbose: true
 });
 
-defineKeywords(ajv);
+defineKeywords(ajv, ['instanceof']);
 
 function validateSchema(schema: any, options: Options): ErrorObject[] {
     const validate = ajv.compile(schema);
