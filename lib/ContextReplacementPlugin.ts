@@ -6,12 +6,7 @@ import path = require('path');
 import ContextElementDependency = require('./dependencies/ContextElementDependency');
 import Compiler = require('./Compiler')
 import ContextModuleFactory = require('./ContextModuleFactory')
-import {
-    CMFAfterResolveResult,
-    CMFBeforeResolveResult,
-    ErrCallback
-} from '../typings/webpack-types'
-import * as Resolve from 'enhanced-resolve'
+import { CMFAfterResolveResult, CMFBeforeResolveResult, ErrCallback } from '../typings/webpack-types'
 import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
 
 interface CreateContextMap {

@@ -41,7 +41,7 @@ class IgnoringWatchFileSystem {
         const ignoredFiles = files.filter(ignored);
         const ignoredDirs = dirs.filter(ignored);
 
-        this.wfs.watch(
+        return this.wfs.watch(
             files.filter(notIgnored),
             dirs.filter(notIgnored),
             missing,

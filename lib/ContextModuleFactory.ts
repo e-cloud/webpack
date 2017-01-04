@@ -8,14 +8,10 @@ import Tapable = require('tapable');
 import ContextModule = require('./ContextModule');
 import ContextElementDependency = require('./dependencies/ContextElementDependency');
 import ContextDependency = require('./dependencies/ContextDependency')
-import {
-    CMFBeforeResolveResult,
-    ErrCallback,
-    AlternativeModule
-} from '../typings/webpack-types'
+import { CMFBeforeResolveResult, ErrCallback, AlternativeModule } from '../typings/webpack-types'
 import { Stats } from 'fs'
-import Compiler = require('./Compiler')
 import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
+import Compiler = require('./Compiler')
 
 class ContextModuleFactory extends Tapable {
     constructor(public resolvers: Compiler.Resolvers) {

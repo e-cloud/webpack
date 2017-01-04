@@ -6,12 +6,12 @@ import path = require('path');
 import { OriginalSource, RawSource } from 'webpack-sources'
 import { WebpackOptions, TimeStampMap, ErrCallback } from '../typings/webpack-types'
 import { SourceLocation } from 'estree'
+import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
 import Module = require('./Module');
 import AsyncDependenciesBlock = require('./AsyncDependenciesBlock');
 import ModuleDependency = require('./dependencies/ModuleDependency');
 import RequestShortener = require('./RequestShortener')
 import Compilation = require('./Compilation')
-import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
 
 class ContextModule extends Module {
     async: boolean

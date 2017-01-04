@@ -21,6 +21,7 @@ import {
     SourceRange,
     ErrCallback
 } from '../typings/webpack-types'
+import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
 import crypto = require('crypto')
 import path = require('path');
 import ModuleParseError = require('./ModuleParseError');
@@ -38,7 +39,6 @@ import DependenciesBlockVariable = require('./DependenciesBlockVariable')
 import DependenciesBlock = require('./DependenciesBlock')
 import Parser = require('./Parser')
 import Resolver = require('enhanced-resolve/lib/Resolver')
-import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
 
 function asString(buf: string | Buffer): string {
     if (Buffer.isBuffer(buf)) {

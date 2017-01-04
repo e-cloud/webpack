@@ -73,7 +73,8 @@ class SourceMapDevToolPlugin {
                     chunk.files.filter(ModuleFilenameHelpers.matchObject.bind(undefined, options))
                         .map((file) => {
                             const asset = this.assets[file];
-                            // todo: there is no assignment for compilation.assets[xxx].__SourceMapDevToolData before, only after
+                            // todo: there is no assignment for compilation.assets[xxx].__SourceMapDevToolData before,
+                            // only after
                             if (asset.__SourceMapDevToolData) {
                                 const data = asset.__SourceMapDevToolData;
                                 for (const cachedFile in data) {

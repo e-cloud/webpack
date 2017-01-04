@@ -16,12 +16,11 @@ import {
     NMFAfterResolveResult,
     ParserOptions
 } from '../typings/webpack-types'
-import { ResolveError } from 'enhanced-resolve/lib/common-types'
+import { ResolveError, ResolveContext } from 'enhanced-resolve/lib/common-types'
 import Dependency = require('./Dependency')
 import Module = require('./Module')
 import Resolver = require('enhanced-resolve/lib/Resolver')
 import Compiler = require('./Compiler')
-import { ResolveContext } from 'enhanced-resolve/lib/common-types'
 
 function loaderToIdent(data: Loader) {
     if (!data.options) {

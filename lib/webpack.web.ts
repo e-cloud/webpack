@@ -7,8 +7,9 @@ import WebEnvironmentPlugin = require('./web/WebEnvironmentPlugin');
 import WebpackOptionsApply = require('./WebpackOptionsApply');
 import WebpackOptionsDefaulter = require('./WebpackOptionsDefaulter');
 import { WebpackOptions, WatchCallback } from '../typings/webpack-types'
+import Stats = require('./Stats')
 
-function webpack(options: WebpackOptions, callback: WatchCallback) {
+function webpack(options: WebpackOptions, callback: WatchCallback<Stats>) {
     new WebpackOptionsDefaulter().process(options);
 
     const compiler = new Compiler();
