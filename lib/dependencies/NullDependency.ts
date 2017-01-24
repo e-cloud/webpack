@@ -5,11 +5,19 @@
 import Dependency = require('../Dependency');
 
 class NullDependency extends Dependency {
+    static Template = class {
+        apply(...args: any[]) {}
+    }
+
+    get type() {
+        return 'null';
+    }
+
     isEqualResource() {
         return false;
     }
-}
 
-NullDependency.prototype.type = 'null';
+    updateHash(hash: any) {}
+}
 
 export = NullDependency;

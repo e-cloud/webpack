@@ -8,6 +8,7 @@ import { StatsOptions, PlainObject, WebpackError } from '../typings/webpack-type
 import { formatSize } from './SizeFormatHelpers'
 import Module = require('./Module')
 import NormalModule = require('./NormalModule')
+import formatLocation = require('./formatLocation');
 
 interface Colors {
     bold(str: string | number): void
@@ -119,6 +120,10 @@ interface StatsJson {
     warnings: string[]
 }
 
+function d(v: any, def: any) {
+    return v === undefined ? def : v;
+}
+
 class Stats {
     compilation: Compilation
     endTime: number
@@ -144,10 +149,6 @@ class Stats {
         }
         else if (!options) {
             options = {} as StatsOptions;
-        }
-
-        function d(v: any, def: any) {
-            return v === undefined ? def : v;
         }
 
         const compilation = this.compilation;
@@ -275,15 +276,11 @@ class Stats {
                     if (typeof dep.loc === 'string') {
                         return;
                     }
-                    if (!dep.loc.start) {
+                    const locInfo = formatLocation(dep.loc);
+                    if (!locInfo) {
                         return;
                     }
-                    if (!dep.loc.end) {
-                        return;
-                    }
-                    text += ` ${dep.loc.start.line}:${dep.loc.start.column}-${dep.loc.start.line !== dep.loc.end.line
-                        ? dep.loc.end.line + ':'
-                        : ''}${dep.loc.end.column}`;
+                    text += ` ${locInfo}`
                 });
                 let current = err.origin;
                 while (current.issuer) {
@@ -405,8 +402,8 @@ class Stats {
                 issuerName: module.issuer && module.issuer.readableIdentifier(requestShortener),
                 profile: module.profile,
                 failed: !!module.error,
-                errors: module.errors && module.dependenciesErrors && module.errors.length + module.dependenciesErrors.length,
-                warnings: module.errors && module.dependenciesErrors && module.warnings.length + module.dependenciesWarnings.length
+                errors: module.errors && module.dependenciesErrors && (module.errors.length + module.dependenciesErrors.length),
+                warnings: module.errors && module.dependenciesErrors && (module.warnings.length + module.dependenciesWarnings.length)
             };
             if (showReasons) {
                 obj.reasons = module.reasons
@@ -425,10 +422,9 @@ class Stats {
                         if (dep.templateModules) {
                             obj.templateModules = dep.templateModules.map(module => module.id);
                         }
-                        if (typeof dep.loc === 'object') {
-                            obj.loc = `${dep.loc.start.line}:${dep.loc.start.column}-${dep.loc.start.line !== dep.loc.end.line
-                                ? dep.loc.end.line + ':'
-                                : ''}${dep.loc.end.column}`;
+                        const locInfo = formatLocation(dep.loc);
+                        if (locInfo) {
+                            obj.loc = locInfo;
                         }
                         return obj;
                     })
@@ -479,12 +475,7 @@ class Stats {
                         module: origin.module ? origin.module.identifier() : '',
                         moduleIdentifier: origin.module ? origin.module.identifier() : '',
                         moduleName: origin.module ? origin.module.readableIdentifier(requestShortener) : '',
-                        loc: typeof origin.loc === 'object'
-                            ? (
-                                obj.loc = `${origin.loc.start.line}:${origin.loc.start.column}-${origin.loc.start.line !== origin.loc.end.line
-                                    ? origin.loc.end.line + ':'
-                                    : ''}${origin.loc.end.column}`)
-                            : '',
+                        loc: formatLocation(origin.loc),
                         name: origin.name,
                         reasons: origin.reasons || []
                     }));
@@ -503,8 +494,9 @@ class Stats {
             obj.modules.sort(sortByField(sortModules));
         }
         if (showChildren) {
-            obj.children = compilation.children.map(child => {
-                const obj = new Stats(child).toJson(options, forToString);
+            obj.children = compilation.children.map((child, idx) => {
+                const childOptions = Stats.getChildOptions(options, idx);
+                const obj = new Stats(child).toJson(childOptions, forToString);
                 delete obj.hash;
                 delete obj.version;
                 obj.name = child.name;
@@ -520,10 +512,6 @@ class Stats {
         }
         else if (!options) {
             options = {} as StatsOptions;
-        }
-
-        function d(v: any, def: any) {
-            return v === undefined ? def : v;
         }
 
         const useColors = d(options.colors, false);
@@ -549,7 +537,7 @@ class Stats {
             .reduce((obj, color) => {
                 obj[color] = function (str: string) {
                     if (useColors) {
-                        buffer.push(useColors === true || useColors[color] === undefined
+                        buffer.push((useColors === true || useColors[color] === undefined)
                             ? defaultColors[color]
                             : useColors[color]);
                     }
@@ -1003,18 +991,21 @@ class Stats {
         }
         if (obj.children) {
             obj.children.forEach(child => {
-                if (child.name) {
-                    colors.normal('Child ');
-                    colors.bold(child.name);
-                    colors.normal(':');
+                let childString = Stats.jsonToString(child, useColors);
+                if (childString) {
+                    if (child.name) {
+                        colors.normal('Child ');
+                        colors.bold(child.name);
+                        colors.normal(':');
+                    }
+                    else {
+                        colors.normal('Child');
+                    }
+                    newline();
+                    buffer.push('    ');
+                    buffer.push(childString.replace(/\n/g, '\n    '));
+                    newline();
                 }
-                else {
-                    colors.normal('Child');
-                }
-                newline();
-                buffer.push('    ');
-                buffer.push(Stats.jsonToString(child, useColors).replace(/\n/g, '\n    '));
-                newline();
             });
         }
         if (obj.needAdditionalPass) {
@@ -1044,6 +1035,7 @@ class Stats {
                 errors: false,
                 hash: false,
                 modules: false,
+                performance: false,
                 providedExports: false,
                 publicPath: false,
                 reasons: false,
@@ -1064,6 +1056,7 @@ class Stats {
                 entrypoints: pn === 'verbose',
                 errorDetails: pn !== 'errors-only' && pn !== 'minimal',
                 hash: pn !== 'errors-only' && pn !== 'minimal',
+                performance: true,
                 providedExports: pn === 'verbose',
                 reasons: pn === 'verbose',
                 timings: pn !== 'errors-only' && pn !== 'minimal',
@@ -1072,6 +1065,28 @@ class Stats {
                 // warnings: pn !== "errors-only",
             };
         }
+    }
+
+    static getChildOptions(options: StatsOptions, idx: number) {
+        let innerOptions;
+        if (Array.isArray(options.children)) {
+            if (idx < options.children.length) {
+                innerOptions = options.children[idx];
+            }
+        }
+        else if (typeof options.children === 'object' && options.children) {
+            innerOptions = options.children;
+        }
+        if (typeof innerOptions === 'boolean' || typeof innerOptions === 'string') {
+            innerOptions = Stats.presetToOptions(innerOptions);
+        }
+        if (!innerOptions) {
+            return options;
+        }
+        let childOptions = Object.assign({}, options);
+        delete childOptions.children; // do not inherit children
+        childOptions = Object.assign(childOptions, innerOptions);
+        return childOptions;
     }
 }
 

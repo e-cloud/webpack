@@ -55,7 +55,7 @@ class LibManifestPlugin {
                         return obj;
                     }, {})
                 };
-                const content = Buffer.from(JSON.stringify(manifest, null, 2), 'utf8');
+                const content = new Buffer(JSON.stringify(manifest, null, 2), 'utf8');
                 compiler.outputFileSystem.mkdirp(path.dirname(targetPath), err => {
                     if (err) {
                         return callback(err);

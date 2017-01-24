@@ -3,15 +3,18 @@
  Author Tobias Koppers @sokra
  */
 import ModuleDependency = require('./ModuleDependency');
+import NullDependency = require('./NullDependency')
 
 class RequireEnsureItemDependency extends ModuleDependency {
     constructor(request: string) {
         super(request);
     }
 
-    static Template = require('./NullDependencyTemplate')
-}
+    get type() {
+        return 'require.ensure item';
+    }
 
-RequireEnsureItemDependency.prototype.type = 'require.ensure item';
+    static Template = NullDependency.Template
+}
 
 export = RequireEnsureItemDependency;

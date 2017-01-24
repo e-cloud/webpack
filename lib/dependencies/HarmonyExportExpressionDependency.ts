@@ -9,34 +9,35 @@ import RequestShortener = require('../RequestShortener')
 import Module = require('../Module')
 
 class Template {
-    apply(
-        dep: HarmonyExportExpressionDependency,
-        source: ReplaceSource,
-        outputOptions: WebpackOutputOptions,
-        requestShortener: RequestShortener
-    ) {
+    apply(dep: HarmonyExportExpressionDependency, source: ReplaceSource) {
         const used = dep.originModule.isUsed('default');
-        let content;
-        if (used) {
-            content = `/* harmony default export */ exports[${JSON.stringify(used)}] = `;
-        }
-        else {
-            content = '/* unused harmony default export */ var _unused_webpack_default_export = ';
-        }
+        const content = this.getContent(dep.originModule, used);
 
-        if (dep.range) {
+        if(dep.range) {
             source.replace(dep.rangeStatement[0], dep.range[0] - 1, content);
             source.replace(dep.range[1], dep.rangeStatement[1] - 1, ';');
+            return;
         }
-        else {
-            source.replace(dep.rangeStatement[0], dep.rangeStatement[1] - 1, content);
+
+        source.replace(dep.rangeStatement[0], dep.rangeStatement[1] - 1, content);
+    }
+
+    getContent(module: Module, used: boolean) {
+        const exportsName = module.exportsArgument || 'exports';
+        if(used) {
+            return `/* harmony default export */ ${exportsName}[${JSON.stringify(used)}] = `;
         }
+        return '/* unused harmony default export */ var _unused_webpack_default_export = ';
     }
 }
 
 class HarmonyExportExpressionDependency extends NullDependency {
     constructor(public originModule: Module, public range: SourceRange, public rangeStatement: SourceRange) {
         super();
+    }
+
+    get type() {
+        return 'harmony export expression';
     }
 
     getExports() {
@@ -54,7 +55,5 @@ class HarmonyExportExpressionDependency extends NullDependency {
 
     static Template = Template
 }
-
-HarmonyExportExpressionDependency.prototype.type = 'harmony export expression';
 
 export = HarmonyExportExpressionDependency;

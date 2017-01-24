@@ -14,9 +14,9 @@ class Template {
         outputOptions: WebpackOutputOptions,
         requestShortener: RequestShortener
     ) {
-        let content;
-        content = '';
-        source.replace(dep.rangeStatement[0], dep.range ? dep.range[0] - 1 : dep.rangeStatement[1] - 1, content);
+        const content = '';
+        const replaceUntil = dep.range ? dep.range[0] - 1 : dep.rangeStatement[1] - 1;
+        source.replace(dep.rangeStatement[0], replaceUntil, content);
     }
 }
 
@@ -25,9 +25,11 @@ class HarmonyExportHeaderDependency extends NullDependency {
         super();
     }
 
+    get type() {
+        return 'harmony export header';
+    }
+
     static Template = Template
 }
-
-HarmonyExportHeaderDependency.prototype.type = 'harmony export header';
 
 export = HarmonyExportHeaderDependency;

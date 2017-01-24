@@ -19,19 +19,32 @@ class Template {
     ) {
         const depBlock = dep.block;
         const promise = DepBlockHelpers.getDepBlockPromise(depBlock, outputOptions, requestShortener, 'import()');
-        let comment = '';
-        if (outputOptions.pathinfo) {
-            comment = `/*! ${requestShortener.shorten(dep.request)} */ `;
+        const comment = this.getOptionalComment(outputOptions.pathinfo, requestShortener.shorten(dep.request));
+
+        const content = this.getContent(promise, dep, comment);
+        source.replace(depBlock.range[0], depBlock.range[1] - 1, content);
+    }
+
+    getOptionalComment(pathinfo: boolean, shortenedRequest: string) {
+        if (!pathinfo) {
+            return '';
         }
+
+        return `/*! ${shortenedRequest} */ `;
+    }
+
+    getContent(promise: string, dep: ImportDependency, comment: string) {
         if (promise && dep.module) {
-            source.replace(depBlock.range[0], depBlock.range[1] - 1, `${promise}.then(__webpack_require__.bind(null, ${comment}${JSON.stringify(dep.module.id)}))`);
+            const stringifiedId = JSON.stringify(dep.module.id);
+            return `${promise}.then(__webpack_require__.bind(null, ${comment}${stringifiedId}))`;
         }
-        else if (dep.module) {
-            source.replace(depBlock.range[0], depBlock.range[1] - 1, `Promise.resolve(__webpack_require__(${comment}${JSON.stringify(dep.module.id)}))`);
+
+        if (dep.module) {
+            const stringifiedId = JSON.stringify(dep.module.id);
+            return `Promise.resolve(__webpack_require__(${comment}${stringifiedId}))`;
         }
-        else {
-            source.replace(depBlock.range[0], depBlock.range[1] - 1, WebpackMissingModule.promise(dep.request));
-        }
+
+        return WebpackMissingModule.promise(dep.request);
     }
 }
 
@@ -40,9 +53,11 @@ class ImportDependency extends ModuleDependency {
         super(request);
     }
 
+    get type() {
+        return 'import()';
+    }
+
     static Template = Template
 }
-
-ImportDependency.prototype.type = 'import()';
 
 export = ImportDependency;

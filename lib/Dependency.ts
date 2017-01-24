@@ -49,6 +49,10 @@ abstract class Dependency {
         return null;
     }
 
+    getErrors(): Error[] {
+        return null;
+    }
+
     updateHash(hash: Hash) {
         hash.update(`${this.module && this.module.id}`);
     }

@@ -9,25 +9,31 @@ import Module = require('../Module')
 
 class Template {
     apply(dep: HarmonyExportSpecifierDependency, source: ReplaceSource) {
+        const content = this.getPrefix(dep) + this.getContent(dep);
+        source.insert(dep.position, content);
+    }
+
+    getPrefix(dep: HarmonyExportSpecifierDependency) {
+        return dep.position > 0 ? '\n' : '';
+    }
+
+    getContent(dep: HarmonyExportSpecifierDependency) {
         const used = dep.originModule.isUsed(dep.name);
         const active = HarmonyModulesHelpers.isActive(dep.originModule, dep);
-        let content;
         if (!used) {
-            content = `/* unused harmony export ${dep.name || 'namespace'} */\n`;
+            return `/* unused harmony export ${(dep.name || 'namespace')} */\n`;
         }
-        else if (!active) {
-            content = `/* inactive harmony export ${dep.name || 'namespace'} */\n`;
+
+        if (!active) {
+            return `/* inactive harmony export ${(dep.name || 'namespace')} */\n`;
         }
-        else if (dep.immutable) {
-            content = `/* harmony export (immutable) */ exports[${JSON.stringify(used)}] = ${dep.id};\n`;
+
+        const exportsName = dep.originModule.exportsArgument || 'exports';
+        if (dep.immutable) {
+            return `/* harmony export (immutable) */ ${exportsName}[${JSON.stringify(used)}] = ${dep.id};\n`;
         }
-        else {
-            content = `/* harmony export (binding) */ __webpack_require__.d(exports, ${JSON.stringify(used)}, function() { return ${dep.id}; });\n`;
-        }
-        if (dep.position > 0) {
-            content = `\n${content}`;
-        }
-        source.insert(dep.position, content);
+
+        return `/* harmony export (binding) */ __webpack_require__.d(${exportsName}, ${JSON.stringify(used)}, function() { return ${dep.id}; });\n`;
     }
 }
 
@@ -40,6 +46,10 @@ class HarmonyExportSpecifierDependency extends NullDependency {
         public immutable: boolean
     ) {
         super();
+    }
+
+    get type() {
+        return 'harmony export specifier';
     }
 
     getExports() {
@@ -57,7 +67,5 @@ class HarmonyExportSpecifierDependency extends NullDependency {
 
     static Template = Template
 }
-
-HarmonyExportSpecifierDependency.prototype.type = 'harmony export specifier';
 
 export = HarmonyExportSpecifierDependency;

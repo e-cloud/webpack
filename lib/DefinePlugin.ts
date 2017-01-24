@@ -9,6 +9,7 @@ import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Parser = require('./Parser')
 import { CompilationParams, PlainObject } from '../typings/webpack-types'
+import ParserHelpers = require("./ParserHelpers");
 
 class DefinePlugin {
     constructor(public definitions: PlainObject) {
@@ -125,8 +126,7 @@ class DefinePlugin {
                     parser.plugin(`can-rename ${key}`, () => true);
                     parser.plugin(`evaluate Identifier ${key}`,
                         expr => new BasicEvaluatedExpression().setRange(expr.range));
-                    parser.plugin(`evaluate typeof ${key}`,
-                        expr => new BasicEvaluatedExpression().setString('object').setRange(expr.range));
+                    parser.plugin(`evaluate typeof ${key}`, ParserHelpers.evaluateToString("object"));
                     parser.plugin(`expression ${key}`, function (expr) {
                         const dep = new ConstDependency(code, expr.range);
                         dep.loc = expr.loc;

@@ -5,7 +5,9 @@
 class NoAsyncChunksWarning extends Error {
     constructor() {
         super();
-        Error.captureStackTrace(this, NoAsyncChunksWarning);
+        if (Error.hasOwnProperty('captureStackTrace')) {
+            Error.captureStackTrace(this, this.constructor);
+        }
         this.name = 'NoAsyncChunksWarning';
 
         this.message = `webpack performance recommendations: 

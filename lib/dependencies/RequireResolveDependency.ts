@@ -12,9 +12,11 @@ class RequireResolveDependency extends ModuleDependency {
         super(request);
     }
 
+    get type() {
+        return 'require.resolve';
+    }
+
     static Template = require('./ModuleDependencyTemplateAsId')
 }
-
-RequireResolveDependency.prototype.type = 'require.resolve';
 
 export = RequireResolveDependency;

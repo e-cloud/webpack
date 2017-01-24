@@ -10,7 +10,9 @@ class UnsupportedFeatureWarning extends Error {
 
     constructor(public module: Module, public message: string) {
         super();
-        Error.captureStackTrace(this, UnsupportedFeatureWarning);
+        if (Error.hasOwnProperty('captureStackTrace')) {
+            Error.captureStackTrace(this, this.constructor);
+        }
         this.origin = module;
     }
 }

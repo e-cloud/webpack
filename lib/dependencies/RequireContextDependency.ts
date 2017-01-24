@@ -12,9 +12,11 @@ class RequireContextDependency extends ContextDependency {
         super(request, recursive, regExp);
     }
 
+    get type() {
+        return 'require.context';
+    }
+
     static Template = require('./ModuleDependencyTemplateAsRequireId')
 }
-
-RequireContextDependency.prototype.type = 'require.context';
 
 export = RequireContextDependency;

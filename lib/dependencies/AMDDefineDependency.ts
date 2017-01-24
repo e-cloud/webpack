@@ -8,97 +8,126 @@ import { ReplaceSource } from 'webpack-sources'
 import { SourceRange } from '../../typings/webpack-types'
 
 class Template {
-    apply(dep: AMDDefineDependency, source: ReplaceSource) {
-        const localModuleVar = dep.localModule && dep.localModule.used && dep.localModule.variableName();
-
-        function replace(def: string, text: string) {
-            if (localModuleVar) {
-                text = text.replace(/XXX/g, localModuleVar.replace(/\$/g, '$$$$'));
-            }
-            if (localModuleVar) {
-                def = def.replace(/XXX/g, localModuleVar.replace(/\$/g, '$$$$'));
-            }
-            const texts = text.split('#');
-            if (def) {
-                source.insert(0, def);
-            }
-            let current = dep.range[0];
-            if (dep.arrayRange) {
-                source.replace(current, dep.arrayRange[0] - 1, texts.shift());
-                current = dep.arrayRange[1];
-            }
-            if (dep.objectRange) {
-                source.replace(current, dep.objectRange[0] - 1, texts.shift());
-                current = dep.objectRange[1];
-            }
-            else if (dep.functionRange) {
-                source.replace(current, dep.functionRange[0] - 1, texts.shift());
-                current = dep.functionRange[1];
-            }
-            source.replace(current, dep.range[1] - 1, texts.shift());
-            if (texts.length > 0) {
-                throw new Error('Implementation error');
-            }
-        }
-
-        const branch: string = (localModuleVar ? 'l' : '')
-            + (dep.arrayRange ? 'a' : '')
-            + (dep.objectRange ? 'o' : '')
-            + (dep.functionRange ? 'f' : '');
-
-        const defs: Dictionary<[string, string]> = {
+    get definitions() {
+        return {
             f: [
                 'var __WEBPACK_AMD_DEFINE_RESULT__;',
-                '!(__WEBPACK_AMD_DEFINE_RESULT__ = #.call(exports, __webpack_require__, exports, module), ' +
-                '__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__))'
+                `!(__WEBPACK_AMD_DEFINE_RESULT__ = #.call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__))`
             ],
-            o: ['', '!(module.exports = #)'],
+            o: [
+                '',
+                '!(module.exports = #)'
+            ],
             of: [
                 'var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;',
-                '!(__WEBPACK_AMD_DEFINE_FACTORY__ = (#), ' +
-                '__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === \'function\' ? ' +
-                '(__WEBPACK_AMD_DEFINE_FACTORY__.call(exports, __webpack_require__, exports, module)) : ' +
-                '__WEBPACK_AMD_DEFINE_FACTORY__), ' + '__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__))'
+                `!(__WEBPACK_AMD_DEFINE_FACTORY__ = (#),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.call(exports, __webpack_require__, exports, module)) :
+				__WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__))`
             ],
             af: [
                 'var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;',
-                '!(__WEBPACK_AMD_DEFINE_ARRAY__ = #, __WEBPACK_AMD_DEFINE_RESULT__ = #.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), ' +
-                '__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__))'
+                `!(__WEBPACK_AMD_DEFINE_ARRAY__ = #, __WEBPACK_AMD_DEFINE_RESULT__ = #.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__))`
             ],
-            ao: ['', '!(#, module.exports = #)'],
+            ao: [
+                '',
+                '!(#, module.exports = #)'
+            ],
             aof: [
                 'var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;',
-                '!(__WEBPACK_AMD_DEFINE_ARRAY__ = #, __WEBPACK_AMD_DEFINE_FACTORY__ = (#), ' +
-                '__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === \'function\' ? ' +
-                '(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__), ' +
-                '__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__))'
+                `!(__WEBPACK_AMD_DEFINE_ARRAY__ = #, __WEBPACK_AMD_DEFINE_FACTORY__ = (#),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__))`
             ],
-            lf: ['var XXX;', '!(XXX = #.call(exports, __webpack_require__, exports, module))'],
-            lo: ['var XXX;', '!(XXX = #)'],
+            lf: [
+                'var XXX;',
+                '!(XXX = #.call(exports, __webpack_require__, exports, module))'
+            ],
+            lo: [
+                'var XXX;',
+                '!(XXX = #)'
+            ],
             lof: [
                 'var __WEBPACK_AMD_DEFINE_FACTORY__, XXX;',
-                '!(__WEBPACK_AMD_DEFINE_FACTORY__ = (#), XXX = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === \'function\' ? ' +
-                '(__WEBPACK_AMD_DEFINE_FACTORY__.call(exports, __webpack_require__, exports, module)) : __WEBPACK_AMD_DEFINE_FACTORY__))'
+                `!(__WEBPACK_AMD_DEFINE_FACTORY__ = (#), XXX = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.call(exports, __webpack_require__, exports, module)) : __WEBPACK_AMD_DEFINE_FACTORY__))`
             ],
             laf: [
                 'var __WEBPACK_AMD_DEFINE_ARRAY__, XXX;',
                 '!(__WEBPACK_AMD_DEFINE_ARRAY__ = #, XXX = (#.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)))'
             ],
-            lao: ['var XXX;', '!(#, XXX = #)'],
+            lao: [
+                'var XXX;',
+                '!(#, XXX = #)'
+            ],
             laof: [
                 'var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_FACTORY__, XXX;',
-                '!(__WEBPACK_AMD_DEFINE_ARRAY__ = #, __WEBPACK_AMD_DEFINE_FACTORY__ = (#), ' +
-                'XXX = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === \'function\' ? ' +
-                '(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__))'
+                `!(__WEBPACK_AMD_DEFINE_ARRAY__ = #, __WEBPACK_AMD_DEFINE_FACTORY__ = (#),
+				XXX = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__))`
             ]
         };
+    }
 
-        replace.apply(null, defs[branch]);
+    apply(dependency: AMDDefineDependency, source: ReplaceSource) {
+        const branch = this.branch(dependency);
+        const defAndText = this.definitions[branch];
+        const definitions = defAndText[0];
+        const text = defAndText[1];
+        this.replace(dependency, source, definitions, text);
+    }
+
+    localModuleVar(dependency: AMDDefineDependency) {
+        return dependency.localModule && dependency.localModule.used && dependency.localModule.variableName();
+    }
+
+    branch(dependency: AMDDefineDependency) {
+        const localModuleVar = this.localModuleVar(dependency) ? 'l' : '';
+        const arrayRange = dependency.arrayRange ? 'a' : '';
+        const objectRange = dependency.objectRange ? 'o' : '';
+        const functionRange = dependency.functionRange ? 'f' : '';
+        return localModuleVar + arrayRange + objectRange + functionRange;
+    }
+
+    replace(dependency: AMDDefineDependency, source: ReplaceSource, definition: string, text: string) {
+        const localModuleVar = this.localModuleVar(dependency);
+        if (localModuleVar) {
+            text = text.replace(/XXX/g, localModuleVar.replace(/\$/g, '$$$$'));
+            definition = definition.replace(/XXX/g, localModuleVar.replace(/\$/g, '$$$$'));
+        }
+
+        const texts = text.split('#');
+
+        if (definition) {
+            source.insert(0, definition);
+        }
+
+        let current = dependency.range[0];
+        if (dependency.arrayRange) {
+            source.replace(current, dependency.arrayRange[0] - 1, texts.shift());
+            current = dependency.arrayRange[1];
+        }
+
+        if (dependency.objectRange) {
+            source.replace(current, dependency.objectRange[0] - 1, texts.shift());
+            current = dependency.objectRange[1];
+        }
+        else if (dependency.functionRange) {
+            source.replace(current, dependency.functionRange[0] - 1, texts.shift());
+            current = dependency.functionRange[1];
+        }
+        source.replace(current, dependency.range[1] - 1, texts.shift());
+        if (texts.length > 0) {
+            throw new Error('Implementation error');
+        }
     }
 }
 
 class AMDDefineDependency extends NullDependency {
-    type: string
     localModule: LocalModule
 
     constructor(
@@ -110,9 +139,11 @@ class AMDDefineDependency extends NullDependency {
         super();
     }
 
+    get type() {
+        return 'amd define';
+    }
+
     static Template = Template
 }
-
-AMDDefineDependency.prototype.type = 'amd define';
 
 export = AMDDefineDependency;

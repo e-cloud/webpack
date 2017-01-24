@@ -16,24 +16,38 @@ class Template {
         outputOptions: WebpackOutputOptions,
         requestShortener: RequestShortener
     ) {
-        const content = `[${dep.depsArray.map(dep => {
-            if (typeof dep === 'string') {
-                return dep;
-            }
-            else {
-                let comment = '';
-                if (outputOptions.pathinfo) {
-                    comment = '/*! ' + requestShortener.shorten(dep.request) + ' */ ';
-                }
-                if (dep.module) {
-                    return '__webpack_require__(' + comment + JSON.stringify(dep.module.id) + ')';
-                }
-                else {
-                    return WebpackMissingModule.module(dep.request);
-                }
-            }
-        }).join(', ')}]`;
+        const content = this.getContent(dep, outputOptions, requestShortener);
         source.replace(dep.range[0], dep.range[1] - 1, content);
+    }
+
+    getContent(
+        dep: AMDRequireArrayDependency, outputOptions: WebpackOutputOptions,
+        requestShortener: RequestShortener
+    ) {
+        const requires = dep.depsArray.map((dependency) => {
+            if (typeof dependency === 'string') {
+                return dependency;
+            }
+            const optionalComment = this.optionalComment(outputOptions.pathinfo, requestShortener.shorten(dependency.request));
+            return this.contentForDependency(dependency, optionalComment);
+        });
+        return `[${requires.join(', ')}]`;
+    }
+
+    optionalComment(pathInfo: boolean, shortenedRequest: string) {
+        if (!pathInfo) {
+            return '';
+        }
+        return `/*! ${shortenedRequest} */ `;
+    }
+
+    contentForDependency(dep: ModuleDependency, comment: string) {
+        if (dep.module) {
+            const stringifiedId = JSON.stringify(dep.module.id);
+            return `__webpack_require__(${comment}${stringifiedId})`;
+        }
+
+        return WebpackMissingModule.module(dep.request);
     }
 }
 
@@ -44,9 +58,11 @@ class AMDRequireArrayDependency extends Dependency {
         super();
     }
 
+    get type() {
+        return 'amd require array';
+    }
+
     static Template = Template
 }
-
-AMDRequireArrayDependency.prototype.type = 'amd require array';
 
 export = AMDRequireArrayDependency;

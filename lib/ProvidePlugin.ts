@@ -2,7 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import ModuleParserHelpers = require('./ModuleParserHelpers');
+import ParserHelpers = require("./ParserHelpers");
 import ConstDependency = require('./dependencies/ConstDependency');
 import NullFactory = require('./NullFactory');
 import Compiler = require('./Compiler')
@@ -44,7 +44,7 @@ class ProvidePlugin {
                                     return `[${JSON.stringify(r)}]`;
                                 }).join('');
                             }
-                            if (!ModuleParserHelpers.addParsedVariable(this, nameIdentifier, expression)) {
+                            if (!ParserHelpers.addParsedVariableToModule(this, nameIdentifier, expression)) {
                                 return false;
                             }
                             if (scopedName) {

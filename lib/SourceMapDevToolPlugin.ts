@@ -200,7 +200,7 @@ class SourceMapDevToolPlugin {
                     else {
                         asset.__SourceMapDevToolData[file] = this.assets[file] = new ConcatSource(new RawSource(source), (currentSourceMappingURLComment as string)
                             .replace(/\[map\]/g, () => JSON.stringify(sourceMap))
-                            .replace(/\[url\]/g, () => `data:application/json;charset=utf-8;base64,${Buffer.from(JSON.stringify(sourceMap)).toString('base64')}`));
+                            .replace(/\[url\]/g, () => `data:application/json;charset=utf-8;base64,${new Buffer(JSON.stringify(sourceMap), 'utf8').toString('base64')}`));
                     }
                 }, this);
             });

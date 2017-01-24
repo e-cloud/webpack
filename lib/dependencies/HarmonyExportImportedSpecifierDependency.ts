@@ -11,53 +11,56 @@ import Dependency = require('../Dependency')
 
 class Template {
     apply(dep: HarmonyExportImportedSpecifierDependency, source: ReplaceSource) {
+        const content = this.getContent(dep);
+        source.insert(-1, content);
+    }
+
+    getContent(dep: HarmonyExportImportedSpecifierDependency) {
         const name = dep.importedVar;
         const used = dep.originModule.isUsed(dep.name);
         const importedModule = dep.importDependency.module;
         const active = HarmonyModulesHelpers.isActive(dep.originModule, dep);
-        let content;
-        let activeExports: string[];
-        let items;
         const importsExportsUnknown = !importedModule || !Array.isArray(importedModule.providedExports);
 
-        function getReexportStatement(key: string, valueKey: string) {
-            const conditional = !importsExportsUnknown || !valueKey
-                ? ''
-                : `if(__webpack_require__.o(${name}, ${valueKey})) `;
-            return `${conditional}__webpack_require__.d(exports, ${key}, function() { return ${name}${valueKey === null
-                ? '_default.a'
-                : valueKey && `[${valueKey}]`}; });\n`;
+        const getReexportStatement = this.reexportStatementCreator(dep.originModule, importsExportsUnknown, name);
+
+        // we want to rexport something, but the export isn't used
+        if (!used) {
+            return `/* unused harmony reexport ${dep.name} */
+`;
         }
 
-        if (!used) {
-            // we want to rexport something, but the export isn't used
-            content = `/* unused harmony reexport ${dep.name} */\n`;
+        // we want to reexport something but another exports overrides this one
+        if (!active) {
+            return `/* inactive harmony reexport ${dep.name || 'namespace'} */
+`;
         }
-        else if (!active) {
-            // we want to reexport something but another exports overrides this one
-            content = `/* inactive harmony reexport ${dep.name || 'namespace'} */\n`;
+
+        // we want to reexport the default export from a non-hamory module
+        const isNotAHarmonyModule = !(importedModule && (!importedModule.meta || importedModule.meta.harmonyModule));
+        if (dep.name && dep.id === 'default' && isNotAHarmonyModule) {
+            return `/* harmony reexport (default from non-hamory) */ ${getReexportStatement(JSON.stringify(used), null)}`;
         }
-        else if (dep.name && dep.id === 'default' && !(importedModule && (!importedModule.meta || importedModule.meta.harmonyModule))) {
-            // we want to reexport the default export from a non-hamory module
-            content = `/* harmony reexport (default from non-hamory) */ ${getReexportStatement(JSON.stringify(used), null)}`;
-        }
-        else if (dep.name && dep.id) {
-            // we want to reexport a key as new key
+
+        // we want to reexport a key as new key
+        if (dep.name && dep.id) {
             const idUsed = importedModule && importedModule.isUsed(dep.id);
-            content = `/* harmony reexport (binding) */ ${getReexportStatement(JSON.stringify(used), JSON.stringify(idUsed))}`;
+            return `/* harmony reexport (binding) */ ${getReexportStatement(JSON.stringify(used), JSON.stringify(idUsed))}`;
         }
-        else if (dep.name) {
-            // we want to reexport the module object as named export
-            content = `/* harmony reexport (module object) */ ${getReexportStatement(JSON.stringify(used), '')}`;
+
+        // we want to reexport the module object as named export
+        if (dep.name) {
+            return `/* harmony reexport (module object) */ ${getReexportStatement(JSON.stringify(used), "")}`;
         }
-        else if (Array.isArray(dep.originModule.usedExports)) {
-            // we know which exports are used
-            activeExports = HarmonyModulesHelpers.getActiveExports(dep.originModule, dep);
-            items = dep.originModule.usedExports.map(id => {
+
+        // we know which exports are used
+        if (Array.isArray(dep.originModule.usedExports)) {
+            const activeExports = HarmonyModulesHelpers.getActiveExports(dep.originModule, dep);
+            const items = dep.originModule.usedExports.map(function (id) {
                 if (id === 'default') {
                     return;
                 }
-                if (activeExports.includes(id)) {
+                if (activeExports.indexOf(id) >= 0) {
                     return;
                 }
                 if (importedModule.isProvided(id) === false) {
@@ -67,43 +70,44 @@ class Template {
                 const idUsed = importedModule && importedModule.isUsed(id);
                 return [exportUsed, idUsed];
             }).filter(Boolean);
-            if (items.length > 0) {
-                content = items.map(
-                    item => `/* harmony namespace reexport (by used) */ ${getReexportStatement(JSON.stringify(item[0]), JSON.stringify(item[1]))}`)
-                    .join('');
+
+            if (items.length === 0) {
+                return '/* unused harmony namespace reexport */\n';
             }
-            else {
-                content = '/* unused harmony namespace reexport */\n';
-            }
+
+            return items.map(function (item) {
+                return `/* harmony namespace reexport (by used) */ ${getReexportStatement(JSON.stringify(item[0]), JSON.stringify(item[1]))}`;
+            }).join("");
         }
-        else if (dep.originModule.usedExports && importedModule && Array.isArray(importedModule.providedExports)) {
-            // not sure which exports are used, but we know which are provided
-            activeExports = HarmonyModulesHelpers.getActiveExports(dep.originModule, dep);
-            items = importedModule.providedExports.map(id => {
+
+        // not sure which exports are used, but we know which are provided
+        if (dep.originModule.usedExports && importedModule && Array.isArray(importedModule.providedExports)) {
+            const activeExports = HarmonyModulesHelpers.getActiveExports(dep.originModule, dep);
+            const items = importedModule.providedExports.map(function (id) {
                 if (id === 'default') {
                     return;
                 }
-                if (activeExports.includes(id)) {
+                if (activeExports.indexOf(id) >= 0) {
                     return;
                 }
                 const exportUsed = dep.originModule.isUsed(id);
                 const idUsed = importedModule && importedModule.isUsed(id);
                 return [exportUsed, idUsed];
             }).filter(Boolean);
-            if (items.length > 0) {
-                content = items.map(item =>
-                        `/* harmony namespace reexport (by provided) */ ${getReexportStatement(JSON.stringify(item[0]), JSON.stringify(item[1]))}`
-                    )
-                    .join('');
+
+            if (items.length === 0) {
+                return '/* empty harmony namespace reexport */\n';
             }
-            else {
-                content = '/* empty harmony namespace reexport */\n';
-            }
+
+            return items.map(function (item) {
+                return `/* harmony namespace reexport (by provided) */ ${getReexportStatement(JSON.stringify(item[0]), JSON.stringify(item[1]))}`;
+            }).join("");
         }
-        else if (dep.originModule.usedExports) {
-            // not sure which exports are used and provided
-            activeExports = HarmonyModulesHelpers.getActiveExports(dep.originModule, dep);
-            content = `/* harmony namespace reexport (unknown) */ for(var __WEBPACK_IMPORT_KEY__ in ${name}) `;
+
+        // not sure which exports are used and provided
+        if (dep.originModule.usedExports) {
+            const activeExports = HarmonyModulesHelpers.getActiveExports(dep.originModule, dep);
+            let content = `/* harmony namespace reexport (unknown) */ for(var __WEBPACK_IMPORT_KEY__ in ${name}) `;
 
             // Filter out exports which are defined by other exports
             // and filter out default export because it cannot be reexported with *
@@ -111,14 +115,39 @@ class Template {
                 content += `if(${JSON.stringify(activeExports.concat('default'))}.indexOf(__WEBPACK_IMPORT_KEY__) < 0) `;
             }
             else {
-                content += 'if(__WEBPACK_IMPORT_KEY__ !== \'default\') ';
+                content += 'if(__WEBPACK_IMPORT_KEY__ !== "default") ';
             }
-            content += `(function(key) { __webpack_require__.d(exports, key, function() { return ${name}[key]; }) }(__WEBPACK_IMPORT_KEY__));\n`;
+            const exportsName = dep.originModule.exportsArgument || 'exports';
+            return content + `(function(key) { __webpack_require__.d(${exportsName}, key, function() { return ${name}[key]; }) }(__WEBPACK_IMPORT_KEY__));\n`;
         }
-        else {
-            content = '/* unused harmony reexport namespace */\n';
+
+        return '/* unused harmony reexport namespace */\n';
+    }
+
+    reexportStatementCreator(module: Module, importsExportsUnknown: boolean, name: string) {
+        const exportsName = module.exportsArgument || 'exports';
+        const getReexportStatement = (key: string, valueKey: string| null) => {
+            const conditional = this.getConditional(importsExportsUnknown, valueKey, name);
+            const returnValue = this.getReturnValue(valueKey);
+            return `${conditional}__webpack_require__.d(${exportsName}, ${key}, function() { return ${name}${returnValue}; });\n`;
+        };
+        return getReexportStatement;
+    }
+
+    getConditional(importsExportsUnknown: boolean, valueKey: string | null, name: string) {
+        if (!importsExportsUnknown || !valueKey) {
+            return "";
         }
-        source.insert(-1, content);
+
+        return `if(__webpack_require__.o(${name}, ${valueKey})) `;
+    }
+
+    getReturnValue(valueKey: string | null) {
+        if (valueKey === null) {
+            return '_default.a';
+        }
+
+        return valueKey && `[${valueKey}]`;
     }
 }
 
@@ -133,74 +162,81 @@ class HarmonyExportImportedSpecifierDependency extends NullDependency {
         super();
     }
 
+    get type() {
+        return 'harmony export imported specifier';
+    }
+
     getReference() {
-        const used = this.originModule.isUsed(this.name);
+        const name = this.name;
+        const used = this.originModule.isUsed(name);
         const active = HarmonyModulesHelpers.isActive(this.originModule, this);
-        if (!this.importDependency.module || !used || !active) {
+        const importedModule = this.importDependency.module;
+
+        if (!importedModule || !used || !active) {
             return null;
         }
         if (!this.originModule.usedExports) {
             return null;
         }
-        const m = this.importDependency.module;
-        if (!this.name) {
-            // export *
-            const providedExports = m.providedExports
-            if (Array.isArray(this.originModule.usedExports)) {
-                // reexport * with known used exports
-                const activeExports = HarmonyModulesHelpers.getActiveExports(this.originModule, this);
-                if (Array.isArray(providedExports)) {
-                    return {
-                        module: m,
-                        importedNames: this.originModule.usedExports.filter(id =>
-                            !activeExports.includes(id) && providedExports.includes(id) && id !== 'default',
-                            // todo: binding this is useless
-                            this
-                        )
-                    };
-                }
-                else {
-                    return {
-                        module: m,
-                        importedNames: this.originModule.usedExports.filter(
-                            id => !activeExports.includes(id) && id !== 'default',
-                            this
-                        )
-                    };
-                }
-            }
-            else if (Array.isArray(providedExports)) {
-                return {
-                    module: m,
-                    importedNames: providedExports.filter(id => id !== 'default')
-                };
-            }
-            else {
-                return {
-                    module: m,
-                    importedNames: true
-                };
-            }
-        }
-        else {
-            if (Array.isArray(this.originModule.usedExports) && !this.originModule.usedExports.includes(this.name)) {
+
+        if (name) {
+            const nameIsNotInUsedExports = Array.isArray(this.originModule.usedExports) && !this.originModule.usedExports.includes(name);
+            if (nameIsNotInUsedExports) {
                 return null;
             }
+
+            // export { name as name }
             if (this.id) {
-                // export { name as name }
                 return {
-                    module: m,
+                    module: importedModule,
                     importedNames: [this.id]
                 };
             }
-            else {
-                // export { * as name }
+
+            // export { * as name }
+            return {
+                module: importedModule,
+                importedNames: true
+            };
+        }
+
+        // export *
+        if (Array.isArray(this.originModule.usedExports)) {
+            // reexport * with known used exports
+            const activeExports = HarmonyModulesHelpers.getActiveExports(this.originModule, this);
+            if (Array.isArray(importedModule.providedExports)) {
                 return {
-                    module: m,
-                    importedNames: true
+                    module: importedModule,
+                    importedNames: this.originModule.usedExports.filter((id) => {
+                        const notInActiveExports = activeExports.indexOf(id) < 0;
+                        const notDefault = id !== 'default';
+                        const inProvidedExports = importedModule.providedExports.includes(id);
+                        return notInActiveExports && notDefault && inProvidedExports;
+                    }),
                 };
             }
+
+            return {
+                module: importedModule,
+                importedNames: this.originModule.usedExports.filter(id => {
+                    const notInActiveExports = activeExports.indexOf(id) < 0;
+                    const notDefault = id !== 'default';
+                    return notInActiveExports && notDefault;
+                }),
+            };
         }
+
+        if (Array.isArray(importedModule.providedExports)) {
+            return {
+                module: importedModule,
+                importedNames: importedModule.providedExports.filter(id => id !== 'default'),
+            };
+        }
+
+        return {
+            module: importedModule,
+            importedNames: true,
+        };
     }
 
     getExports() {
@@ -209,25 +245,32 @@ class HarmonyExportImportedSpecifierDependency extends NullDependency {
                 exports: [this.name]
             };
         }
-        if (this.importDependency.module && Array.isArray(this.importDependency.module.providedExports)) {
+
+        const importedModule = this.importDependency.module;
+
+        if (!importedModule) {
+            // no imported module available
             return {
-                exports: this.importDependency.module.providedExports.filter(id => id !== 'default'),
-                dependencies: [this.importDependency.module]
+                exports: null
             };
         }
-        if (this.importDependency.module && this.importDependency.module.providedExports) {
+
+        if (Array.isArray(importedModule.providedExports)) {
+            return {
+                exports: importedModule.providedExports.filter(id => id !== 'default'),
+                dependencies: [importedModule]
+            };
+        }
+
+        if (importedModule.providedExports) {
             return {
                 exports: true
             };
         }
-        if (this.importDependency.module) {
-            return {
-                exports: null,
-                dependencies: [this.importDependency.module]
-            };
-        }
+
         return {
-            exports: null
+            exports: null,
+            dependencies: [importedModule]
         };
     }
 
@@ -248,13 +291,21 @@ class HarmonyExportImportedSpecifierDependency extends NullDependency {
 
     updateHash(hash: Hash) {
         super.updateHash(hash);
-        const importedModule = this.importDependency.module;
-        hash.update(`${importedModule && importedModule.used + JSON.stringify(importedModule.usedExports) + JSON.stringify(importedModule.providedExports)}`);
+        const hashValue = this.getHashValue(this.importDependency.module);
+        hash.update(hashValue);
+    }
+
+    getHashValue(importedModule: Module): string {
+        if (!importedModule) {
+            return importedModule;
+        }
+
+        const stringifiedUsedExport = JSON.stringify(importedModule.usedExports);
+        const stringifiedProvidedExport = JSON.stringify(importedModule.providedExports);
+        return importedModule.used + stringifiedUsedExport + stringifiedProvidedExport;
     }
 
     static Template = Template
 }
-
-HarmonyExportImportedSpecifierDependency.prototype.type = 'harmony export imported specifier';
 
 export = HarmonyExportImportedSpecifierDependency;

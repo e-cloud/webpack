@@ -12,9 +12,11 @@ class AMDRequireItemDependency extends ModuleDependency {
         super(request);
     }
 
+    get type() {
+        return 'amd require';
+    }
+
     static Template = require('./ModuleDependencyTemplateAsRequireId')
 }
-
-AMDRequireItemDependency.prototype.type = 'amd require';
 
 export = AMDRequireItemDependency;

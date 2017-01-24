@@ -273,7 +273,10 @@ class NormalModule extends Module {
         }
     }
 
-    source(dependencyTemplates: Map<Function, any>, outputOptions: WebpackOutputOptions, requestShortener: RequestShortener) {
+    source(
+        dependencyTemplates: Map<Function, any>, outputOptions: WebpackOutputOptions,
+        requestShortener: RequestShortener
+    ) {
         const hash = crypto.createHash('md5');
         this.updateHash(hash);
         const hashStr = hash.digest('hex');
@@ -344,10 +347,9 @@ class NormalModule extends Module {
 
                     varStartCode += `/* WEBPACK VAR INJECTION */(function(${varNames.join(', ')}) {`;
                     // exports === this in the topLevelBlock, but exports do compress better...
-                    varEndCode = `${
-                    (topLevelBlock === block ? '}.call(exports, ' : '}.call(this, ') +
-                    varExpressions.map(e => e.source()).join(', ')
-                        }))${varEndCode}`;
+                    varEndCode = `${(topLevelBlock === block
+                        ? `}.call(${topLevelBlock.exportsArgument || 'exports'}, `
+                        : '}.call(this, ') + varExpressions.map(e => e.source()).join(', ')}))${varEndCode}`;
 
                     varNames.length = 0;
                     varExpressions.length = 0;

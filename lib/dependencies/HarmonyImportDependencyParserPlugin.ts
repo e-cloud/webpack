@@ -2,7 +2,6 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import HarmonyCompatiblilityDependency = require('./HarmonyCompatiblilityDependency');
 import HarmonyImportDependency = require('./HarmonyImportDependency');
 import HarmonyImportSpecifierDependency = require('./HarmonyImportSpecifierDependency');
 import HarmonyAcceptImportDependency = require('./HarmonyAcceptImportDependency');
@@ -15,31 +14,17 @@ import {
     MemberExpression,
     CallExpression,
     SimpleLiteral,
-    FunctionExpression,
-    SourceLocation
+    FunctionExpression
 } from 'estree'
-import Module = require('../Module')
-
-function makeHarmonyModule(module: Module, loc: SourceLocation) {
-    if (!module.meta.harmonyModule) {
-        const dep = new HarmonyCompatiblilityDependency(module);
-        dep.loc = loc;
-        module.addDependency(dep);
-        module.meta.harmonyModule = true;
-        module.strict = true;
-    }
-}
 
 class HarmonyImportDependencyParserPlugin {
     apply(parser: Parser) {
         parser.plugin('import', function (this: Parser, statement: ImportDeclaration, source: string) {
 
-            makeHarmonyModule(this.state.module, statement.loc);
             const dep = new HarmonyImportDependency(source, HarmonyModulesHelpers.getNewModuleVar(this.state, source), statement.range);
             dep.loc = statement.loc;
             this.state.current.addDependency(dep);
             this.state.lastHarmonyImport = dep;
-            this.state.module.strict = true;
             return true;
         })
         parser.plugin('import specifier', function (

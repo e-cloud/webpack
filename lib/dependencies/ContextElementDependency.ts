@@ -14,8 +14,10 @@ class ContextElementDependency extends ModuleDependency {
             this.userRequest = userRequest
         }
     }
-}
 
-ContextElementDependency.prototype.type = 'context element';
+    get type() {
+        return 'context element';
+    }
+}
 
 export = ContextElementDependency;

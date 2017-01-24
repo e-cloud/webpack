@@ -141,11 +141,11 @@ class AMDRequireDependenciesBlockParserPlugin {
                 let dep;
                 let localModule;
                 if (param.string === 'require') {
-                    // todo: type unmatched
-                    dep = new ConstDependency('__webpack_require__', param.string);
-                }
-                else if (['exports', 'module'].includes(param.string)) {
-                    dep = new ConstDependency(param.string, param.range);
+                    dep = new ConstDependency('__webpack_require__', param.range);
+                } else if(param.string === 'module') {
+                    dep = new ConstDependency(this.state.module.moduleArgument || 'module', param.range);
+                } else if(param.string === 'exports') {
+                    dep = new ConstDependency(this.state.module.exportsArgument || 'exports', param.range);
                 }
                 else if (localModule = LocalModulesHelpers.getLocalModule(this.state, param.string)) {
                     // eslint-disable-line no-cond-assign

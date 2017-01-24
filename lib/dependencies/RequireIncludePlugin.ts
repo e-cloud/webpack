@@ -5,12 +5,12 @@
 import RequireIncludeDependency = require('./RequireIncludeDependency');
 import RequireIncludeDependencyParserPlugin = require('./RequireIncludeDependencyParserPlugin');
 import ConstDependency = require('./ConstDependency');
-import BasicEvaluatedExpression = require('../BasicEvaluatedExpression');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
 import { CompilationParams, ParserOptions } from '../../typings/webpack-types'
 import { UnaryExpression } from 'estree'
+import ParserHelpers = require("../ParserHelpers");
 
 class RequireIncludePlugin {
     apply(compiler: Compiler) {
@@ -27,9 +27,7 @@ class RequireIncludePlugin {
                 }
 
                 parser.apply(new RequireIncludeDependencyParserPlugin());
-                parser.plugin('evaluate typeof require.include', function (expr: UnaryExpression) {
-                    return new BasicEvaluatedExpression().setString('function').setRange(expr.range);
-                });
+                parser.plugin('evaluate typeof require.include', ParserHelpers.evaluateToString('function'));
                 parser.plugin('typeof require.include', function (expr: UnaryExpression) {
                     const dep = new ConstDependency('\'function\'', expr.range);
                     dep.loc = expr.loc;

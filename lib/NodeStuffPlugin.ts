@@ -3,10 +3,8 @@
  Author Tobias Koppers @sokra
  */
 import path = require('path');
-import ModuleParserHelpers = require('./ModuleParserHelpers');
 import ConstDependency = require('./dependencies/ConstDependency');
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
-import UnsupportedFeatureWarning = require('./UnsupportedFeatureWarning');
 import NullFactory = require('./NullFactory');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
@@ -14,6 +12,7 @@ import Parser = require('./Parser')
 import { CompilationParams, NodeOption, ParserOptions } from '../typings/webpack-types'
 import { Identifier, Expression } from 'estree'
 import Module = require('./Module')
+import ParserHelpers = require('./ParserHelpers');
 
 class NodeStuffPlugin {
     constructor(public options: NodeOption) {
@@ -34,10 +33,6 @@ class NodeStuffPlugin {
                 let localOptions = options;
                 if (parserOptions.node) {
                     localOptions = Object.assign({}, localOptions, parserOptions.node);
-                }
-
-                function ignore() {
-                    return true;
                 }
 
                 function setConstant(expressionName: string, value: string) {
@@ -93,16 +88,7 @@ class NodeStuffPlugin {
                     this.state.current.addDependency(dep);
                     return true;
                 });
-                parser.plugin('expression require.extensions', function (expr: Expression) {
-                    const dep = new ConstDependency('(void 0)', expr.range);
-                    dep.loc = expr.loc;
-                    this.state.current.addDependency(dep);
-                    if (!this.state.module) {
-                        return;
-                    }
-                    this.state.module.warnings.push(new UnsupportedFeatureWarning(this.state.module, 'require.extensions is not supported by webpack. Use a loader instead.'));
-                    return true;
-                });
+                parser.plugin('expression require.extensions', ParserHelpers.expressionIsUnsupported('require.extensions is not supported by webpack. Use a loader instead.'));
                 parser.plugin('expression module.loaded', function (expr: Expression) {
                     const dep = new ConstDependency('module.l', expr.range);
                     dep.loc = expr.loc;
@@ -115,20 +101,27 @@ class NodeStuffPlugin {
                     this.state.current.addDependency(dep);
                     return true;
                 });
-                parser.plugin('expression module.exports', ignore);
+                parser.plugin('expression module.exports', function() {
+                    const module = this.state.module;
+                    const isHarmony = module.meta && module.meta.harmonyModule;
+                    if(!isHarmony)
+                        return true;
+                });
                 parser.plugin('evaluate Identifier module.hot', function (expr: Identifier) {
                     return new BasicEvaluatedExpression().setBoolean(false)
                         .setRange(expr.range)
                 });
                 parser.plugin('expression module', function () {
-                    let moduleJsPath = path.join(__dirname, '..', 'buildin', 'module.js');
-                    if (this.state.module.context) {
+                    const module = this.state.module;
+                    const isHarmony = module.meta && module.meta.harmonyModule;
+                    let moduleJsPath = path.join(__dirname, '..', 'buildin', isHarmony ? 'harmony-module.js' : 'module.js');
+                    if(module.context) {
                         moduleJsPath = path.relative(this.state.module.context, moduleJsPath);
                         if (!/^[A-Z]:/i.test(moduleJsPath)) {
                             moduleJsPath = `./${moduleJsPath.replace(/\\/g, '/')}`;
                         }
                     }
-                    return ModuleParserHelpers.addParsedVariable(this, 'module', `require(${JSON.stringify(moduleJsPath)})(module)`);
+                    return ParserHelpers.addParsedVariableToModule(this, 'module', `require(${JSON.stringify(moduleJsPath)})(module)`);
                 });
             });
         });

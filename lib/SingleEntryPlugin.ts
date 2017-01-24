@@ -18,10 +18,15 @@ class SingleEntryPlugin {
             compilation.dependencyFactories.set(SingleEntryDependency, normalModuleFactory);
         });
         compiler.plugin('make', (compilation: Compilation, callback) => {
-            const dep = new SingleEntryDependency(this.entry);
-            dep.loc = this.name;
+            const dep = SingleEntryPlugin.createDependency(this.entry, this.name);
             compilation.addEntry(this.context, dep, this.name, callback);
         });
+    }
+
+    static createDependency(entry: string, name: string) {
+        const dep = new SingleEntryDependency(entry);
+        dep.loc = name;
+        return dep;
     }
 }
 

@@ -10,9 +10,11 @@ class CommonJsRequireDependency extends ModuleDependency {
         super(request);
     }
 
+    get type() {
+        return 'cjs require';
+    }
+
     static Template = require('./ModuleDependencyTemplateAsId')
 }
-
-CommonJsRequireDependency.prototype.type = 'cjs require';
 
 export = CommonJsRequireDependency;

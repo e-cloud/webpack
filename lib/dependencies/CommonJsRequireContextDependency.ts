@@ -20,6 +20,10 @@ class CommonJsRequireContextDependency extends ContextDependency {
         super(request, recursive, regExp);
     }
 
+    get type() {
+        return 'cjs require context';
+    }
+
     getWarnings() {
         if (this.critical) {
             return [new CriticalDependencyWarning(this.critical)];
@@ -28,7 +32,5 @@ class CommonJsRequireContextDependency extends ContextDependency {
 
     static Template = require('./ContextDependencyTemplateAsRequireCall')
 }
-
-CommonJsRequireContextDependency.prototype.type = 'cjs require context';
 
 export = CommonJsRequireContextDependency;

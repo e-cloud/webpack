@@ -46,7 +46,13 @@ declare interface CompilationParams {
     [name: string]: any
 }
 
-declare type Entry = string | string[] | Dictionary<string | string[]>
+declare interface EntryFunc {
+    (): StaticEntry
+}
+
+declare type StaticEntry = string | string[] | Dictionary<string | string[]>
+
+declare type Entry = StaticEntry | EntryFunc
 
 declare interface Rule {
     // TODO: Type this from RuleSet.ts
@@ -535,11 +541,15 @@ declare interface AbstractStats {
     toJson(options: StatsOptions, forToString: boolean): any
 }
 
-interface AbstractOutputFileSystem {
+declare interface AbstractOutputFileSystem {
     join(...paths: string[]): string;
     mkdir(path: string | Buffer, mode: string, callback?: (err?: NodeJS.ErrnoException) => void): void;
     mkdirp(dir: string, cb: (err: any, made: string) => void): void;
     rmdir(path: string | Buffer, callback?: (err?: NodeJS.ErrnoException) => void): void;
     unlink(path: string | Buffer, callback?: (err?: NodeJS.ErrnoException) => void): void;
     writeFile(filename: string, data: any, callback?: (err: NodeJS.ErrnoException) => void): void;
+}
+
+declare interface DependencyFilter {
+    (dep: Dependency): boolean
 }

@@ -8,8 +8,10 @@ class SingleEntryDependency extends ModuleDependency {
     constructor(request: string) {
         super(request)
     }
-}
 
-SingleEntryDependency.prototype.type = 'single entry';
+    get type() {
+        return 'single entry';
+    }
+}
 
 export = SingleEntryDependency;

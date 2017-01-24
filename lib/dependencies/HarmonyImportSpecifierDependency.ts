@@ -8,34 +8,52 @@ import { Expression } from 'estree'
 import { ReplaceSource } from 'webpack-sources'
 import { SourceRange } from '../../typings/webpack-types'
 import { Hash } from 'crypto'
+import Module = require('../Module')
 
 class Template {
     apply(dep: HarmonyImportSpecifierDependency, source: ReplaceSource) {
-        let content;
+        const content = this.getContent(dep);
+        source.replace(dep.range[0], dep.range[1] - 1, content);
+    }
+
+    getContent(dep: HarmonyImportSpecifierDependency) {
         const importedModule = dep.importDependency.module;
         const defaultImport = dep.directImport && dep.id === 'default' && !(importedModule && (!importedModule.meta || importedModule.meta.harmonyModule));
+        const shortHandPrefix = this.getShortHandPrefix(dep);
+        const importedVar = dep.importedVar;
+        const importedVarSuffix = this.getImportVarSuffix(dep, defaultImport, importedModule);
+
+        if (dep.call && defaultImport) {
+            return `${shortHandPrefix}${importedVar}_default()`;
+        }
+
+        if (dep.call && dep.id) {
+            return `${shortHandPrefix}__webpack_require__.i(${importedVar}${importedVarSuffix})`;
+        }
+
+        return `${shortHandPrefix}${importedVar}${importedVarSuffix}`;
+    }
+
+    getImportVarSuffix(dep: HarmonyImportSpecifierDependency, defaultImport: boolean, importedModule: Module) {
         if (defaultImport) {
-            content = `${dep.importedVar}_default.a`;
+            return '_default.a';
         }
-        else if (dep.id) {
+
+        if (dep.id) {
             const used = importedModule ? importedModule.isUsed(dep.id) : dep.id;
-            content = `${dep.importedVar}[${JSON.stringify(used)}${dep.id !== used ? ' /* ' + dep.id + ' */' : ''}]`;
+            const optionalComment = dep.id !== used ? ` /* ${dep.id} */` : '';
+            return `[${JSON.stringify(used)}${optionalComment}]`;
         }
-        else {
-            content = dep.importedVar;
+
+        return '';
+    }
+
+    getShortHandPrefix(dep: HarmonyImportSpecifierDependency) {
+        if (!dep.shorthand) {
+            return '';
         }
-        if (dep.call) {
-            if (defaultImport) {
-                content = `${dep.importedVar}_default()`;
-            }
-            else if (dep.id) {
-                content = `__webpack_require__.i(${content})`;
-            }
-        }
-        if (dep.shorthand) {
-            content = `${dep.name}: ${content}`;
-        }
-        source.replace(dep.range[0], dep.range[1] - 1, content);
+
+        return `${dep.name}: `;
     }
 }
 
@@ -55,6 +73,10 @@ class HarmonyImportSpecifierDependency extends NullDependency {
         super();
     }
 
+    get type() {
+        return 'harmony import specifier';
+    }
+
     getReference() {
         if (!this.importDependency.module) {
             return null;
@@ -67,15 +89,23 @@ class HarmonyImportSpecifierDependency extends NullDependency {
 
     getWarnings() {
         const importedModule = this.importDependency.module;
-        if (importedModule && importedModule.meta && importedModule.meta.harmonyModule) {
-            if (this.id && importedModule.isProvided(this.id) === false) {
-                const err: any = new Error(`export '${this.id}'${this.id !== this.name
-                    ? ' (imported as \'' + this.name + '\')'
-                    : ''} was not found in '${this.importDependency.userRequest}'`);
-                err.hideStack = true;
-                return [err];
-            }
+        if (!importedModule || !importedModule.meta || !importedModule.meta.harmonyModule) {
+            return;
         }
+
+        if (!this.id) {
+            return;
+        }
+
+        if (importedModule.isProvided(this.id) !== false) {
+            return;
+        }
+
+        const idIsNotNameMessage = this.id !== this.name ? ` (imported as '${this.name}')` : '';
+        const errorMessage = `"export '${this.id}'${idIsNotNameMessage} was not found in '${this.importDependency.userRequest}'`;
+        const err: any = new Error(errorMessage);
+        err.hideStack = true;
+        return [err];
     }
 
     updateHash(hash: Hash) {
@@ -91,7 +121,5 @@ class HarmonyImportSpecifierDependency extends NullDependency {
 
     static Template = Template
 }
-
-HarmonyImportSpecifierDependency.prototype.type = 'harmony import specifier';
 
 export = HarmonyImportSpecifierDependency;

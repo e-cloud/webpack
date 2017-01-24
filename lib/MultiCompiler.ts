@@ -7,31 +7,15 @@ import async = require('async');
 import Stats = require('./Stats');
 import Compiler = require('./Compiler')
 import { WatchCallback, ErrCallback, WatchOptions, AbstractStats } from '../typings/webpack-types'
-import MultiStats from './MultiStats'
+import MultiStats = require('./MultiStats')
 import Watching = Compiler.Watching
-
-class MultiWatching {
-    constructor(public watchings: Watching[]) {
-    }
-
-    invalidate() {
-        this.watchings.forEach(watching => {
-            watching.invalidate();
-        });
-    }
-
-    close(callback: ErrCallback) {
-        async.each(this.watchings, (watching: Watching, callback: ErrCallback) => {
-            watching.close(callback);
-        }, callback);
-    }
-}
+import MultiWatching = require('./MultiWatching')
 
 class MultiCompiler extends Tapable {
     constructor(public compilers: Compiler[]) {
         super();
         if (!Array.isArray(compilers)) {
-            compilers = Object.keys(compilers).map(name => {
+            this.compilers = Object.keys(compilers).map(name => {
                 compilers[name].name = name;
                 return compilers[name];
             });
@@ -97,7 +81,7 @@ class MultiCompiler extends Tapable {
     watch(watchOptions: WatchOptions, handler: WatchCallback<AbstractStats>) {
         const watchings: Watching[] = [];
         const allStats = this.compilers.map(() => null);
-        const compilerStatus = this.compilers.map(() => false);
+        const compilerStatus: any[] = this.compilers.map(() => false);
 
         runWithDependencies(this.compilers, (compiler, callback) => {
             const compilerIdx = this.compilers.indexOf(compiler);
@@ -108,9 +92,13 @@ class MultiCompiler extends Tapable {
                 }
                 if (stats) {
                     allStats[compilerIdx] = stats;
-                    compilerStatus[compilerIdx] = true;
+                    compilerStatus[compilerIdx] = 'new';
                     if (compilerStatus.every(Boolean)) {
-                        const multiStats = new MultiStats(allStats);
+                        const freshStats = allStats.filter(function(s, idx) {
+                            return compilerStatus[idx] === 'new';
+                        });
+                        compilerStatus.fill(true);
+                        const multiStats = new MultiStats(freshStats);
                         handler(null, multiStats);
                     }
                 }

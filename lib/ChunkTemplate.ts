@@ -8,14 +8,13 @@ import { WebpackOutputOptions } from '../typings/webpack-types'
 import Template = require('./Template');
 import Chunk = require('./Chunk')
 import ModuleTemplate = require('./ModuleTemplate')
-import ArrayMap = require('./ArrayMap')
 
 class ChunkTemplate extends Template {
     constructor(outputOptions: WebpackOutputOptions) {
         super(outputOptions);
     }
 
-    render(chunk: Chunk, moduleTemplate: ModuleTemplate, dependencyTemplates: ArrayMap) {
+    render(chunk: Chunk, moduleTemplate: ModuleTemplate, dependencyTemplates: Map<Function, any>) {
         // todo: modules should be rename, coz it isn't modules but ConcatSource
         const modules = this.renderChunkModules(chunk, moduleTemplate, dependencyTemplates);
         const core = this.applyPluginsWaterfall('modules', modules, chunk, moduleTemplate, dependencyTemplates);

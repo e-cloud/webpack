@@ -243,6 +243,9 @@ class WebpackOptionsApply extends OptionsApply {
 
         compiler.apply(
             new CompatibilityPlugin(),
+            new HarmonyModulesPlugin(),
+            new AMDPlugin(options.module, options.amd || {}),
+            new CommonJsPlugin(options.module),
             new LoaderPlugin(),
             new NodeStuffPlugin(options.node),
             new RequireJsStuffPlugin(),
@@ -252,9 +255,6 @@ class WebpackOptionsApply extends OptionsApply {
             new RequireIncludePlugin(),
             new RequireEnsurePlugin(),
             new RequireContextPlugin(options.resolve.modules, options.resolve.extensions),
-            new AMDPlugin(options.module, options.amd || {}),
-            new CommonJsPlugin(options.module),
-            new HarmonyModulesPlugin(),
             new ImportPlugin(options.module),
             new SystemPlugin(options.module)
         );

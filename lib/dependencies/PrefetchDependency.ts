@@ -8,8 +8,10 @@ class PrefetchDependency extends ModuleDependency {
     constructor(request: string) {
         super(request);
     }
-}
 
-PrefetchDependency.prototype.type = 'prefetch';
+    get type() {
+        return 'prefetch';
+    }
+}
 
 export = PrefetchDependency;

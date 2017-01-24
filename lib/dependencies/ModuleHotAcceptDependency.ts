@@ -19,9 +19,11 @@ class ModuleHotAcceptDependency extends ModuleDependency {
         this.weak = true;
     }
 
+    get type() {
+        return 'module.hot.accept';
+    }
+
     static Template = ModuleDependencyTemplateAsId
 }
-
-ModuleHotAcceptDependency.prototype.type = 'module.hot.accept';
 
 export = ModuleHotAcceptDependency;

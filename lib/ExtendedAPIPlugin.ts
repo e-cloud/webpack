@@ -3,15 +3,15 @@
  Author Tobias Koppers @sokra
  */
 import ConstDependency = require('./dependencies/ConstDependency');
-import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import NullFactory = require('./NullFactory');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Parser = require('./Parser')
 import { CompilationParams, ParserOptions } from '../typings/webpack-types'
 import { Hash } from 'crypto'
-import { Expression, UnaryExpression } from 'estree'
+import { Expression } from 'estree'
 import Chunk = require('./Chunk')
+import ParserHelpers = require("./ParserHelpers");
 
 const REPLACEMENTS = {
     __webpack_hash__: '__webpack_require__.h' // eslint-disable-line camelcase
@@ -42,11 +42,7 @@ class ExtendedAPIPlugin {
                         this.state.current.addDependency(dep);
                         return true;
                     });
-                    parser.plugin(`evaluate typeof ${key}`, function (expr: UnaryExpression) {
-                        return new BasicEvaluatedExpression()
-                            .setString(REPLACEMENT_TYPES[key])
-                            .setRange(expr.range)
-                    });
+                    parser.plugin(`evaluate typeof ${key}`, ParserHelpers.evaluateToString(REPLACEMENT_TYPES[key]));
                 });
             });
         });

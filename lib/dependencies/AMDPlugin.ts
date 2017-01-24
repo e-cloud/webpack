@@ -11,7 +11,6 @@ import AMDRequireContextDependency = require('./AMDRequireContextDependency');
 import AMDDefineDependency = require('./AMDDefineDependency');
 import UnsupportedDependency = require('./UnsupportedDependency');
 import LocalModuleDependency = require('./LocalModuleDependency');
-import ConstDependency = require('./ConstDependency');
 import NullFactory = require('../NullFactory');
 import AMDRequireDependenciesBlockParserPlugin = require('./AMDRequireDependenciesBlockParserPlugin');
 import AMDDefineDependencyParserPlugin = require('./AMDDefineDependencyParserPlugin');
@@ -20,8 +19,9 @@ import BasicEvaluatedExpression = require('../BasicEvaluatedExpression');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
-import { Expression, Identifier, UnaryExpression } from 'estree'
+import { Expression, Identifier } from 'estree'
 import { CompilationParams, ModuleOptions, ParserOptions } from '../../typings/webpack-types'
+import ParserHelpers = require("../ParserHelpers");
 
 class AMDPlugin {
     constructor(public options: ModuleOptions, public amdOptions: any) {
@@ -60,18 +60,6 @@ class AMDPlugin {
                     return;
                 }
 
-                function setTypeof(expr: string, value: string) {
-                    parser.plugin(`evaluate typeof ${expr}`, (expr: UnaryExpression) =>
-                        new BasicEvaluatedExpression().setString(value).setRange(expr.range)
-                    );
-                    parser.plugin(`typeof ${expr}`, function (expr: UnaryExpression) {
-                        const dep = new ConstDependency(JSON.stringify(value), expr.range);
-                        dep.loc = expr.loc;
-                        this.state.current.addDependency(dep);
-                        return true;
-                    });
-                }
-
                 function setExpressionToModule(expr: string, module: string) {
                     parser.plugin(`expression ${expr}`, function (expr: Expression) {
                         const dep = new AMDRequireItemDependency(module, expr.range);
@@ -90,19 +78,16 @@ class AMDPlugin {
                 parser.plugin('expression __webpack_amd_options__', function () {
                     return this.state.current.addVariable('__webpack_amd_options__', JSON.stringify(amdOptions));
                 });
-                parser.plugin('evaluate typeof define.amd', (expr: UnaryExpression) =>
-                    new BasicEvaluatedExpression().setString(typeof amdOptions).setRange(expr.range)
-                );
-                parser.plugin('evaluate typeof require.amd', (expr: UnaryExpression) =>
-                    new BasicEvaluatedExpression().setString(typeof amdOptions).setRange(expr.range)
-                );
+                parser.plugin('evaluate typeof define.amd', ParserHelpers.evaluateToString(typeof amdOptions));
+                parser.plugin('evaluate typeof require.amd', ParserHelpers.evaluateToString(typeof amdOptions));
                 parser.plugin('evaluate Identifier define.amd', (expr: Identifier) =>
                     new BasicEvaluatedExpression().setBoolean(true).setRange(expr.range)
                 );
                 parser.plugin('evaluate Identifier require.amd', (expr: Identifier) =>
                     new BasicEvaluatedExpression().setBoolean(true).setRange(expr.range)
                 );
-                setTypeof('define', 'function');
+                parser.plugin('typeof define', ParserHelpers.toConstantDependency('function'));
+                parser.plugin('evaluate typeof define', ParserHelpers.evaluateToString('function'));
                 parser.plugin('can-rename define', () => true);
                 parser.plugin('rename define', function (expr: Expression) {
                     const dep = new AMDRequireItemDependency('!!webpack amd define', expr.range);
@@ -111,7 +96,9 @@ class AMDPlugin {
                     this.state.current.addDependency(dep);
                     return false;
                 });
-                setTypeof('require', 'function');
+                parser.plugin("typeof require", ParserHelpers.toConstantDependency("function"));
+                parser.plugin("evaluate typeof require", ParserHelpers.evaluateToString("function"));
+
             });
         });
         compiler.plugin('after-resolvers', function () {

@@ -13,7 +13,9 @@ class WebpackOptionsValidationError extends Error {
         // see https://github.com/Microsoft/TypeScript/wiki/What's-new-in-TypeScript#typescript-21
         Object.setPrototypeOf(this, WebpackOptionsValidationError.prototype);
         this.name = 'WebpackOptionsValidationError';
-        Error.captureStackTrace(this, WebpackOptionsValidationError);
+        if (Error.hasOwnProperty('captureStackTrace')) {
+            Error.captureStackTrace(this, this.constructor);
+        }
         this.message = `Invalid configuration object. Webpack has been initialised using a configuration object that does not match the API schema.\n${validationErrors.map(
             err => ' - ' + indent(WebpackOptionsValidationError.formatValidationError(err), '   ', false)).join('\n')}`;
     }

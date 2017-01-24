@@ -21,6 +21,10 @@ class ImportContextDependency extends ContextDependency {
         this.async = true;
     }
 
+    get type() {
+        return 'System.import context';
+    }
+
     getWarnings() {
         if (this.critical) {
             return [new CriticalDependencyWarning(this.critical)];
@@ -29,7 +33,5 @@ class ImportContextDependency extends ContextDependency {
 
     static Template = require('./ContextDependencyTemplateAsRequireCall')
 }
-
-ImportContextDependency.prototype.type = 'System.import context';
 
 export = ImportContextDependency;

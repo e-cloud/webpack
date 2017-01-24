@@ -12,12 +12,11 @@ import RequireHeaderDependency = require('./RequireHeaderDependency');
 import NullFactory = require('../NullFactory');
 import RequireResolveDependencyParserPlugin = require('./RequireResolveDependencyParserPlugin');
 import CommonJsRequireDependencyParserPlugin = require('./CommonJsRequireDependencyParserPlugin');
-import BasicEvaluatedExpression = require('../BasicEvaluatedExpression');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
 import { ModuleOptions, CompilationParams, ParserOptions } from '../../typings/webpack-types'
-import { UnaryExpression } from 'estree'
+import ParserHelpers = require("../ParserHelpers");
 
 class CommonJsPlugin {
     constructor(public options: ModuleOptions) {
@@ -52,24 +51,13 @@ class CommonJsPlugin {
                     return;
                 }
 
-                function setTypeof(expr: string, value: string) {
-                    parser.plugin(`evaluate typeof ${expr}`, (expr: UnaryExpression) =>
-                        new BasicEvaluatedExpression().setString(value).setRange(expr.range)
-                    );
-                    parser.plugin(`typeof ${expr}`, function (expr: UnaryExpression) {
-                        const dep = new ConstDependency(JSON.stringify(value), expr.range);
-                        dep.loc = expr.loc;
-                        this.state.current.addDependency(dep);
-                        return true;
-                    });
+                const requireExpressions = ['require', 'require.resolve', 'require.resolveWeak'];
+                for (const expression of requireExpressions) {
+                    parser.plugin(`typeof ${expression}`, ParserHelpers.toConstantDependency('function'));
+                    parser.plugin(`evaluate typeof ${expression}`, ParserHelpers.evaluateToString('function'));
                 }
 
-                setTypeof('require', 'function');
-                setTypeof('require.resolve', 'function');
-                setTypeof('require.resolveWeak', 'function');
-                parser.plugin('evaluate typeof module', expr =>
-                    new BasicEvaluatedExpression().setString('object').setRange(expr.range)
-                );
+                parser.plugin('evaluate typeof module', ParserHelpers.evaluateToString('object'));
                 parser.plugin('assign require', function (expr) {
                     // to not leak to global "require", we need to define a local require here.
                     const dep = new ConstDependency('var require;', 0);
@@ -87,9 +75,7 @@ class CommonJsPlugin {
                     return false;
                 });
                 parser.plugin('typeof module', () => true);
-                parser.plugin('evaluate typeof exports', expr =>
-                    new BasicEvaluatedExpression().setString('object').setRange(expr.range)
-                );
+                parser.plugin('evaluate typeof exports', ParserHelpers.evaluateToString('object'));
                 parser.apply(new CommonJsRequireDependencyParserPlugin(options), new RequireResolveDependencyParserPlugin(options));
             });
         });

@@ -5,11 +5,11 @@
 import path = require('path')
 import nodeLibsBrowser = require('node-libs-browser');
 import AliasPlugin = require('enhanced-resolve/lib/AliasPlugin');
-import ModuleParserHelpers = require('../ModuleParserHelpers');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
 import { CompilationParams, NodeOption, ParserOptions } from '../../typings/webpack-types'
+import ParserHelpers = require("../ParserHelpers");
 
 class NodeSourcePlugin {
     constructor(public options: NodeOption) {
@@ -49,7 +49,7 @@ class NodeSourcePlugin {
                 if (this.state.module && this.state.module.resource === getPathToModule(module, type)) {
                     return;
                 }
-                return ModuleParserHelpers.addParsedVariable(this, name, buildExpression(this.state.module.context, getPathToModule(module, type)) + suffix);
+                return ParserHelpers.addParsedVariableToModule(this, name, buildExpression(this.state.module.context, getPathToModule(module, type)) + suffix);
             });
         }
 
@@ -66,7 +66,7 @@ class NodeSourcePlugin {
 
                 if (localOptions.global) {
                     parser.plugin('expression global', function () {
-                        return ModuleParserHelpers.addParsedVariable(this, 'global', buildExpression(this.state.module.context, require.resolve('../../buildin/global.js')));
+                        return ParserHelpers.addParsedVariableToModule(this, 'global', buildExpression(this.state.module.context, require.resolve('../../buildin/global.js')));
                     });
                 }
 

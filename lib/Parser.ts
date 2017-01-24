@@ -594,6 +594,8 @@ class Parser extends Tapable {
     isHoistedStatement(statement: ESTree.ModuleDeclaration) {
         switch (statement.type) {
             case 'ImportDeclaration':
+            case 'ExportAllDeclaration':
+            case 'ExportNamedDeclaration':
                 return true;
         }
         return false;
@@ -763,22 +765,22 @@ class Parser extends Tapable {
                     const pos = this.scope.definitions.length;
                     this.walkStatement(statement.declaration);
                     const newDefs = this.scope.definitions.slice(pos);
-                    newDefs.reverse().forEach(function (def) {
-                        this.applyPluginsBailResult('export specifier', statement, def, def);
+                    newDefs.reverse().forEach(function (def, idx) {
+                        this.applyPluginsBailResult('export specifier', statement, def, def, idx);
                     }, this);
                 }
             }
         }
         if (statement.specifiers) {
-            statement.specifiers.forEach(function (specifier) {
+            statement.specifiers.forEach(function (specifier, idx) {
                 switch (specifier.type) {
                     case 'ExportSpecifier':
                         const name = specifier.exported.name;
                         if (source) {
-                            this.applyPluginsBailResult('export import specifier', statement, source, specifier.local.name, name);
+                            this.applyPluginsBailResult('export import specifier', statement, source, specifier.local.name, name, idx);
                         }
                         else {
-                            this.applyPluginsBailResult('export specifier', statement, specifier.local.name, name);
+                            this.applyPluginsBailResult('export specifier', statement, specifier.local.name, name, idx);
                         }
                         break;
                 }
@@ -809,7 +811,7 @@ class Parser extends Tapable {
     walkExportAllDeclaration(statement: ESTree.ExportAllDeclaration) {
         const source = statement.source.value;
         this.applyPluginsBailResult('export import', statement, source);
-        this.applyPluginsBailResult('export import specifier', statement, source, null, null);
+        this.applyPluginsBailResult('export import specifier', statement, source, null, null, 0);
     }
 
     walkVariableDeclaration(statement: ESTree.VariableDeclaration) {

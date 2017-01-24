@@ -20,6 +20,10 @@ class RequireResolveContextDependency extends ContextDependency {
         super(request, recursive, regExp);
     }
 
+    get type() {
+        return 'amd require context';
+    }
+
     getWarnings() {
         if (this.critical) {
             return [new CriticalDependencyWarning(this.critical)];
@@ -28,7 +32,5 @@ class RequireResolveContextDependency extends ContextDependency {
 
     static Template = require('./ContextDependencyTemplateAsId')
 }
-
-RequireResolveContextDependency.prototype.type = 'amd require context';
 
 export = RequireResolveContextDependency;

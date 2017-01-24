@@ -11,7 +11,9 @@ class ChunkRenderError extends Error {
 
     constructor(public chunk: Chunk, public file: string, public error: Error) {
         super();
-        Error.captureStackTrace(this, ChunkRenderError);
+        if (Error.hasOwnProperty('captureStackTrace')) {
+            Error.captureStackTrace(this, this.constructor);
+        }
         this.message = error.message;
         this.details = error.stack;
     }

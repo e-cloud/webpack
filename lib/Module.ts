@@ -26,6 +26,7 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
     depth: number;
     error: Error
     errors: Error[];
+    exportsArgument: string;
     hotUpdate: boolean
     id: number;
     index2: number;
@@ -173,7 +174,7 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
             return exportName;
         }
         if (!exportName) {
-            return this.used ? true : false;
+            return !!this.used;
         }
         if (!this.used) {
             return false;

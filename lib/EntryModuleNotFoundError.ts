@@ -9,7 +9,9 @@ class EntryModuleNotFoundError extends Error {
 
     constructor(public error: ModuleNotFoundError) {
         super();
-        Error.captureStackTrace(this, EntryModuleNotFoundError);
+        if (Error.hasOwnProperty('captureStackTrace')) {
+            Error.captureStackTrace(this, this.constructor);
+        }
         this.name = 'EntryModuleNotFoundError';
         this.message = `Entry module not found: ${error}`;
         this.details = error.details;

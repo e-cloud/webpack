@@ -12,9 +12,9 @@ class FunctionModuleTemplatePlugin {
     apply(moduleTemplate: ModuleTemplate) {
         moduleTemplate.plugin('render', function (moduleSource: Source, module: NormalModule) {
             const source = new ConcatSource();
-            const defaultArguments = ['module', 'exports'];
+            const defaultArguments = [module.moduleArgument || 'module', module.exportsArgument || 'exports'];
 
-            if (module.arguments && module.arguments.length !== 0 || module.hasDependencies()) {
+            if((module.arguments && module.arguments.length !== 0) || module.hasDependencies(d => d.requireWebpackRequire !== false)) {
                 defaultArguments.push('__webpack_require__');
             }
             source.add(`/***/ (function(${defaultArguments.concat(module.arguments || []).join(', ')}) {\n\n`);

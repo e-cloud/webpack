@@ -11,13 +11,14 @@ import HarmonyExportImportedSpecifierDependency = require('./HarmonyExportImport
 import HarmonyAcceptDependency = require('./HarmonyAcceptDependency');
 import HarmonyAcceptImportDependency = require('./HarmonyAcceptImportDependency');
 import NullFactory = require('../NullFactory');
+import HarmonyDetectionParserPlugin = require('./HarmonyDetectionParserPlugin');
 import HarmonyImportDependencyParserPlugin = require('./HarmonyImportDependencyParserPlugin');
 import HarmonyExportDependencyParserPlugin = require('./HarmonyExportDependencyParserPlugin');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
 import { CompilationParams, ParserOptions } from '../../typings/webpack-types'
-import HarmonyCompatiblilityDependency = require('./HarmonyCompatiblilityDependency')
+import HarmonyCompatibilityDependency = require('./HarmonyCompatibilityDependency')
 
 class HarmonyModulesPlugin {
     apply(compiler: Compiler) {
@@ -30,8 +31,8 @@ class HarmonyModulesPlugin {
             compilation.dependencyFactories.set(HarmonyImportSpecifierDependency, new NullFactory());
             compilation.dependencyTemplates.set(HarmonyImportSpecifierDependency, new HarmonyImportSpecifierDependency.Template());
 
-            compilation.dependencyFactories.set(HarmonyCompatiblilityDependency, new NullFactory());
-            compilation.dependencyTemplates.set(HarmonyCompatiblilityDependency, new HarmonyCompatiblilityDependency.Template());
+            compilation.dependencyFactories.set(HarmonyCompatibilityDependency, new NullFactory());
+            compilation.dependencyTemplates.set(HarmonyCompatibilityDependency, new HarmonyCompatibilityDependency.Template());
 
             compilation.dependencyFactories.set(HarmonyExportHeaderDependency, new NullFactory());
             compilation.dependencyTemplates.set(HarmonyExportHeaderDependency, new HarmonyExportHeaderDependency.Template());
@@ -57,7 +58,11 @@ class HarmonyModulesPlugin {
                     return;
                 }
 
-                parser.apply(new HarmonyImportDependencyParserPlugin(), new HarmonyExportDependencyParserPlugin());
+                parser.apply(
+                    new HarmonyDetectionParserPlugin(),
+                    new HarmonyImportDependencyParserPlugin(),
+                    new HarmonyExportDependencyParserPlugin()
+                );
             });
         });
     }

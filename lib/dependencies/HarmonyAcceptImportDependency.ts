@@ -10,9 +10,12 @@ class Template {
 }
 
 class HarmonyAcceptImportDependency extends HarmonyImportDependency {
+
+    get type() {
+        return 'harmony accept';
+    }
+
     static Template = Template
 }
-
-HarmonyAcceptImportDependency.prototype.type = 'harmony accept';
 
 export = HarmonyAcceptImportDependency;

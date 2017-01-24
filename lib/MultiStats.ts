@@ -21,26 +21,48 @@ class MultiStats {
     }
 
     toJson(options: StatsOptions, forToString: boolean) {
-        const jsons = this.stats.map(stat => {
-            const obj = stat.toJson(options, forToString);
+        if (typeof options === 'boolean' || typeof options === 'string') {
+            options = Stats.presetToOptions(options);
+        }
+        else if (!options) {
+            options = {} as any;
+        }
+        const jsons = this.stats.map((stat, idx) => {
+            const childOptions = Stats.getChildOptions(options, idx);
+            const obj = stat.toJson(childOptions, forToString);
             obj.name = stat.compilation && stat.compilation.name;
             return obj;
         });
+        const showVersion = typeof options.version === 'undefined'
+            ? jsons.every(j => !!j.version)
+            : options.version !== false;
+        const showHash = typeof options.hash === 'undefined'
+            ? jsons.every(j => !!j.hash)
+            : options.hash !== false;
+        jsons.forEach(j => {
+            if (showVersion) {
+                delete j.version;
+            }
+        });
         const obj: any = {
-            errors: jsons.reduce((arr, j) =>
-                    arr.concat(j.errors.map((msg: string) => `(${j.name}) ${msg}`))
-                , []),
-            warnings: jsons.reduce((arr, j) =>
-                    arr.concat(j.warnings.map((msg: string) => `(${j.name}) ${msg}`))
-                , [])
+            errors: jsons.reduce(function (arr, j) {
+                return arr.concat(j.errors.map(function (msg) {
+                    return `(${j.name}) ${msg}`;
+                }));
+            }, []),
+            warnings: jsons.reduce(function (arr, j) {
+                return arr.concat(j.warnings.map(function (msg) {
+                    return `(${j.name}) ${msg}`;
+                }));
+            }, [])
         };
-        if (!options || options.version !== false) {
+        if (showVersion) {
             obj.version = require('../package.json').version;
         }
-        if (!options || options.hash !== false) {
+        if (showHash) {
             obj.hash = this.hash;
         }
-        if (!options || options.children !== false) {
+        if (options.children !== false) {
             obj.children = jsons;
         }
         return obj;
@@ -49,4 +71,4 @@ class MultiStats {
 
 MultiStats.prototype.toString = Stats.prototype.toString;
 
-export default MultiStats
+export = MultiStats

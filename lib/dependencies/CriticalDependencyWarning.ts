@@ -5,7 +5,9 @@
 class CriticalDependencyWarning extends Error {
     constructor(message: string) {
         super();
-        Error.captureStackTrace(this, CriticalDependencyWarning);
+        if (Error.hasOwnProperty('captureStackTrace')) {
+            Error.captureStackTrace(this, this.constructor);
+        }
         this.name = 'CriticalDependencyWarning';
         this.message = `Critical dependency: ${message}`;
     }

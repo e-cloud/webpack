@@ -10,7 +10,9 @@ class ModuleError extends Error {
 
     constructor(public module: Module, public  err: string) {
         super();
-        Error.captureStackTrace(this, ModuleError);
+        if (Error.hasOwnProperty('captureStackTrace')) {
+            Error.captureStackTrace(this, this.constructor);
+        }
         // todo: some other class use string properties in prototype, but here is not
         this.name = 'ModuleError';
         this.message = err;

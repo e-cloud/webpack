@@ -6,9 +6,10 @@ import DependenciesBlockVariable = require('./DependenciesBlockVariable')
 import Chunk = require('./Chunk')
 import Dependency = require('./Dependency')
 import { Hash } from 'crypto'
+import { DependencyFilter } from '../typings/webpack-types'
 
 interface IHasDependencies {
-    hasDependencies(): boolean
+    hasDependencies(filter: DependencyFilter): boolean
 }
 
 abstract class DependenciesBlock {
@@ -82,10 +83,16 @@ abstract class DependenciesBlock {
         this.blocks.forEach(unseal);
     }
 
-    hasDependencies(): boolean {
-        return this.dependencies.length > 0
-            || (<IHasDependencies[]>this.blocks).concat(<IHasDependencies[]>this.variables)
-                .some(item => item.hasDependencies());
+    hasDependencies(filter: DependencyFilter): boolean {
+        if(filter) {
+            if(this.dependencies.some(filter)) return true;
+        } else {
+            if(this.dependencies.length > 0) return true;
+        }
+
+        return this.blocks.concat(this.variables).some(function(item: IHasDependencies) {
+            return item.hasDependencies(filter);
+        });
     }
 
     sortItems() {

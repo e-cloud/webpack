@@ -16,7 +16,7 @@ class Template {
         requestShortener: RequestShortener
     ) {
         const content = dep.dependencies.map(d =>
-            HarmonyImportDependency.makeStatement(false, d, outputOptions, requestShortener)
+            HarmonyImportDependency.makeImportStatement(false, d, outputOptions, requestShortener)
         ).join('');
         if (dep.hasCallback) {
             source.insert(dep.range[0], `function(__WEBPACK_OUTDATED_DEPENDENCIES__) { ${content}(`);
@@ -36,9 +36,11 @@ class HarmonyAcceptDependency extends NullDependency {
         super();
     }
 
+    get type() {
+        return 'accepted harmony modules';
+    }
+
     static Template = Template
 }
-
-HarmonyAcceptDependency.prototype.type = 'accepted harmony modules';
 
 export = HarmonyAcceptDependency;

@@ -8,8 +8,10 @@ class MultiEntryDependency extends Dependency {
     constructor(public dependencies: Dependency[], public name: string) {
         super();
     }
-}
 
-MultiEntryDependency.prototype.type = 'multi entry';
+    get type() {
+        return 'multi entry';
+    }
+}
 
 export = MultiEntryDependency;

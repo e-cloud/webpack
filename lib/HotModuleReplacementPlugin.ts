@@ -3,14 +3,13 @@
  Author Tobias Koppers @sokra
  */
 import Template = require('./Template');
-
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import ModuleHotAcceptDependency = require('./dependencies/ModuleHotAcceptDependency');
 import ModuleHotDeclineDependency = require('./dependencies/ModuleHotDeclineDependency');
 import { RawSource } from 'webpack-sources'
 import { CompilationParams, Record, ParserOptions } from '../typings/webpack-types'
 import { Hash } from 'crypto'
-import { Identifier, UnaryExpression, CallExpression, Expression } from 'estree'
+import { Identifier, CallExpression, Expression } from 'estree'
 import ConstDependency = require('./dependencies/ConstDependency');
 import NullFactory = require('./NullFactory');
 import crypto = require('crypto')
@@ -18,6 +17,7 @@ import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Parser = require('./Parser')
 import Chunk = require('./Chunk')
+import ParserHelpers = require("./ParserHelpers");
 
 const hotInitCode = Template.getFunctionContent(require('./HotModuleReplacement.runtime.js'));
 
@@ -233,10 +233,7 @@ class HotModuleReplacementPlugin {
                     this.state.current.addDependency(dep);
                     return true;
                 });
-                parser.plugin('evaluate typeof __webpack_hash__', function (expr: UnaryExpression) {
-                    return new BasicEvaluatedExpression().setString('string')
-                        .setRange(expr.range)
-                });
+                parser.plugin('evaluate typeof __webpack_hash__', ParserHelpers.evaluateToString("string"));
                 parser.plugin('evaluate Identifier module.hot', function (expr: Identifier) {
                     return new BasicEvaluatedExpression().setBoolean(!!this.state.compilation.hotUpdateChunkTemplate)
                         .setRange(expr.range);

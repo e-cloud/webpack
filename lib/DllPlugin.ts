@@ -6,7 +6,7 @@ import DllEntryPlugin = require('./DllEntryPlugin');
 import LibManifestPlugin = require('./LibManifestPlugin');
 import FlagInitialModulesAsUsedPlugin = require('./FlagInitialModulesAsUsedPlugin');
 import Compiler = require('./Compiler')
-import { Entry } from '../typings/webpack-types'
+import { StaticEntry } from '../typings/webpack-types'
 
 class DllPlugin {
     constructor(
@@ -18,7 +18,7 @@ class DllPlugin {
     }
 
     apply(compiler: Compiler) {
-        compiler.plugin('entry-option', function (context: string, entry: Entry) {
+        compiler.plugin('entry-option', function (context: string, entry: StaticEntry) {
             function itemToPlugin(item: string | string[], name: string) {
                 if (Array.isArray(item)) {
                     return new DllEntryPlugin(context, item, name);

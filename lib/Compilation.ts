@@ -13,7 +13,8 @@ import {
     PlainObject,
     TimeStampMap,
     WebpackError,
-    PerformanceOptions
+    PerformanceOptions,
+    Dictionary
 } from '../typings/webpack-types'
 import { ResolveError, AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
 import async = require('async');
@@ -23,6 +24,7 @@ import Compiler = require('./Compiler')
 import EntryModuleNotFoundError = require('./EntryModuleNotFoundError');
 import ModuleNotFoundError = require('./ModuleNotFoundError');
 import ModuleDependencyWarning = require('./ModuleDependencyWarning');
+import ModuleDependencyError = require('./ModuleDependencyError');
 import Module = require('./Module');
 import Chunk = require('./Chunk');
 import Entrypoint = require('./Entrypoint');
@@ -605,9 +607,7 @@ class Compilation extends Tapable {
 
     finish() {
         this.applyPlugins1('finish-modules', this.modules);
-        this.modules.forEach(function (m) {
-            this.reportDependencyWarnings(m, [m]);
-        }, this);
+        this.modules.forEach(m => this.reportDependencyErrorsAndWarnings(m, [m]));
     }
 
     unseal() {
@@ -665,8 +665,6 @@ class Compilation extends Tapable {
             this.applyPlugins2('after-optimize-tree', this.chunks, this.modules);
 
             const shouldRecord = this.applyPluginsBailResult('should-record') !== false;
-
-            this.sortItemsBeforeIds();
 
             this.applyPlugins2('revive-modules', this.modules, this.records);
             this.applyPlugins1('optimize-module-order', this.modules);
@@ -752,18 +750,25 @@ class Compilation extends Tapable {
         });
     }
 
-    reportDependencyWarnings(module: Module, blocks: DependenciesBlock[]) {
+    reportDependencyErrorsAndWarnings(module: Module, blocks: DependenciesBlock[]) {
         blocks.forEach(block => {
             block.dependencies.forEach(d => {
                 const warnings = d.getWarnings();
                 if (warnings) {
                     warnings.forEach(w => {
-                        const warning = new ModuleDependencyWarning(module, w, d.loc as SourceLocation);
+                        const warning = new ModuleDependencyWarning(module, w, d.loc);
                         this.warnings.push(warning);
                     });
                 }
+                const errors = d.getErrors();
+                if (errors) {
+                    errors.forEach(w => {
+                        const warning = new ModuleDependencyError(module, w, d.loc);
+                        this.errors.push(warning);
+                    });
+                }
             });
-            this.reportDependencyWarnings(module, block.blocks);
+            this.reportDependencyErrorsAndWarnings(module, block.blocks);
         });
     }
 
@@ -1056,9 +1061,6 @@ class Compilation extends Tapable {
         }, this);
     }
 
-    sortItemsBeforeIds() {
-    }
-
     sortItemsWithModuleIds() {
         this.modules.sort(byId);
         this.modules.forEach(module => {
@@ -1137,9 +1139,17 @@ class Compilation extends Tapable {
         this.mainTemplate.updateHash(hash);
         this.chunkTemplate.updateHash(hash);
         this.moduleTemplate.updateHash(hash);
-        let i;
-        let chunk;
+        this.children.forEach(function (child) {
+            hash.update(child.hash);
+        });
+        let chunk: Chunk;
+        // clone needed as sort below is in-place mutation
         const chunks = this.chunks.slice();
+        /**
+         * sort here will bring all "falsy" values to the beginning
+         * this is needed as the "hasRuntime()" chunks are dependent on the
+         * hashes of the non-runtime chunks.
+         */
         chunks.sort((a, b) => {
             const aEntry = a.hasRuntime();
             const bEntry = b.hasRuntime();
@@ -1151,11 +1161,11 @@ class Compilation extends Tapable {
             }
             return 0;
         });
-        for (i = 0; i < chunks.length; i++) {
+        for (let i = 0; i < chunks.length; i++) {
             chunk = chunks[i];
             const chunkHash = crypto.createHash(hashFunction);
             if (outputOptions.hashSalt) {
-                hash.update(outputOptions.hashSalt);
+                chunkHash.update(outputOptions.hashSalt);
             }
             chunk.updateHash(chunkHash);
             if (chunk.hasRuntime()) {

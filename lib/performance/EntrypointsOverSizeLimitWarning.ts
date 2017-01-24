@@ -7,7 +7,9 @@ import SizeFormatHelpers = require('../SizeFormatHelpers');
 class EntrypointsOverSizeLimitWarning extends Error {
     constructor(public entrypoints: EntrypointsOverSizeLimitWarning.OverSizeLimit[], entrypointLimit: number) {
         super();
-        Error.captureStackTrace(this, EntrypointsOverSizeLimitWarning);
+        if (Error.hasOwnProperty('captureStackTrace')) {
+            Error.captureStackTrace(this, this.constructor);
+        }
         this.name = 'EntrypointsOverSizeLimitWarning';
 
         const entrypointList = this.entrypoints.map(entrypoint =>

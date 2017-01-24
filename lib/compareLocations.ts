@@ -40,22 +40,24 @@ export = function compareLocations(
             if (b.start) {
                 bp = b.start;
             }
+            if (ap && bp) {
+                if (ap.line < bp.line) {
+                    return -1;
+                }
+                if (ap.line > bp.line) {
+                    return 1;
+                }
+                if (ap.column < bp.column) {
+                    return -1;
+                }
+                if (ap.column > bp.column) {
+                    return 1;
+                }
+            }
             if (a.index < b.index) {
                 return -1;
             }
             if (a.index > b.index) {
-                return 1;
-            }
-            if (ap.line < bp.line) {
-                return -1;
-            }
-            if (ap.line > bp.line) {
-                return 1;
-            }
-            if (ap.column < bp.column) {
-                return -1;
-            }
-            if (ap.column > bp.column) {
                 return 1;
             }
             return 0;

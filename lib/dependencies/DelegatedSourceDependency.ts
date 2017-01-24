@@ -5,8 +5,10 @@
 import ModuleDependency = require('./ModuleDependency');
 
 class DelegatedSourceDependency extends ModuleDependency {
-}
 
-DelegatedSourceDependency.prototype.type = 'delegated source';
+    get type() {
+        return 'delegated source';
+    }
+}
 
 export = DelegatedSourceDependency;

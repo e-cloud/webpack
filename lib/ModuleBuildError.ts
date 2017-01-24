@@ -11,7 +11,9 @@ class ModuleBuildError extends Error {
 
     constructor(public module: Module, public err: Error & { hideStack?: boolean }) {
         super();
-        Error.captureStackTrace(this, ModuleBuildError);
+        if (Error.hasOwnProperty('captureStackTrace')) {
+            Error.captureStackTrace(this, this.constructor);
+        }
         this.name = 'ModuleBuildError';
         this.message = 'Module build failed: ';
         if (err !== null && typeof err === 'object') {

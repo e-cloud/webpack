@@ -7,11 +7,11 @@ import RequireEnsureDependency = require('./RequireEnsureDependency');
 import ConstDependency = require('./ConstDependency');
 import NullFactory = require('../NullFactory');
 import RequireEnsureDependenciesBlockParserPlugin = require('./RequireEnsureDependenciesBlockParserPlugin');
-import BasicEvaluatedExpression = require('../BasicEvaluatedExpression');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
 import { CompilationParams, ParserOptions } from '../../typings/webpack-types'
+import ParserHelpers = require("../ParserHelpers");
 
 class RequireEnsurePlugin {
     apply(compiler: Compiler) {
@@ -30,9 +30,7 @@ class RequireEnsurePlugin {
                 }
 
                 parser.apply(new RequireEnsureDependenciesBlockParserPlugin());
-                parser.plugin('evaluate typeof require.ensure', expr =>
-                    new BasicEvaluatedExpression().setString('function').setRange(expr.range)
-                );
+                parser.plugin('evaluate typeof require.ensure', ParserHelpers.evaluateToString('function'));
                 parser.plugin('typeof require.ensure', function (expr) {
                     const dep = new ConstDependency('\'function\'', expr.range);
                     dep.loc = expr.loc;

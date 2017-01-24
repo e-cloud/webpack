@@ -4,7 +4,7 @@
  */
 import { ReplaceSource, RawSource } from 'webpack-sources'
 import { Hash } from 'crypto'
-import { WebpackOutputOptions } from '../typings/webpack-types'
+import { WebpackOutputOptions, DependencyFilter } from '../typings/webpack-types'
 import Dependency = require('./Dependency')
 import RequestShortener = require('./RequestShortener')
 
@@ -41,8 +41,13 @@ class DependenciesBlockVariable {
         });
     }
 
-    hasDependencies() {
-        return this.dependencies.length > 0;
+    hasDependencies(filter: DependencyFilter) {
+        if(filter) {
+            if(this.dependencies.some(filter)) return true;
+        } else {
+            if(this.dependencies.length > 0) return true;
+        }
+        return false;
     }
 }
 

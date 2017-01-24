@@ -8,7 +8,6 @@ import { SourceLocation } from 'estree'
 import { SourceRange } from '../../typings/webpack-types'
 
 class ModuleHotDeclineDependency extends ModuleDependency {
-    type: string
     weak: boolean
     loc: SourceLocation & {
         index?: number
@@ -19,9 +18,11 @@ class ModuleHotDeclineDependency extends ModuleDependency {
         this.weak = true;
     }
 
+    get type() {
+        return 'module.hot.decline';
+    }
+
     static Template = ModuleDependencyTemplateAsId
 }
-
-ModuleHotDeclineDependency.prototype.type = 'module.hot.decline';
 
 export = ModuleHotDeclineDependency;

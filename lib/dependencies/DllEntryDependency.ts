@@ -6,11 +6,20 @@ import Dependency = require('../Dependency');
 import ModuleDependency = require('./ModuleDependency')
 
 class DllEntryDependency extends Dependency {
-    constructor(public dependencies: ModuleDependency[], public name: string, public type: string) {
+    constructor(public dependencies: ModuleDependency[], public name: string, type: string) {
         super();
+        this.type = type
+    }
+
+    get type() {
+        return 'dll entry';
+    }
+
+    set type(type: string) {
+        if (type) {
+            this.type = type
+        }
     }
 }
-
-DllEntryDependency.prototype.type = 'dll entry';
 
 export = DllEntryDependency;

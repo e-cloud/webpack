@@ -11,8 +11,10 @@ class LoaderDependency extends ModuleDependency {
     constructor(request: string) {
         super(request);
     }
-}
 
-LoaderDependency.prototype.type = 'loader';
+    get type() {
+        return 'loader';
+    }
+}
 
 export = LoaderDependency;

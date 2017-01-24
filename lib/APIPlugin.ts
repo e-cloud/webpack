@@ -3,7 +3,7 @@
  Author Tobias Koppers @sokra
  */
 import ConstDependency = require('./dependencies/ConstDependency');
-import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
+import ParserHelpers = require("./ParserHelpers");
 import NullFactory = require('./NullFactory');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
@@ -45,12 +45,7 @@ class APIPlugin {
                         this.state.current.addDependency(dep);
                         return true;
                     });
-                    parser.plugin(`evaluate typeof ${key}`, function (expr: Expression) {
-                            return new BasicEvaluatedExpression()
-                                .setString(REPLACEMENT_TYPES[key])
-                                .setRange(expr.range)
-                        }
-                    );
+                    parser.plugin(`evaluate typeof ${key}`, ParserHelpers.evaluateToString(REPLACEMENT_TYPES[key]));
                 });
                 IGNORES.forEach(key => {
                     parser.plugin(key, () => true);

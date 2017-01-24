@@ -425,7 +425,7 @@ class Compiler extends Tapable {
                     }
                     let content: string | Buffer = source.source();
                     if (!Buffer.isBuffer(content)) {
-                        content = Buffer.from(content as string, 'utf8');
+                        content = new Buffer(content as string, 'utf8');
                     }
                     source.existsAt = targetPath;
                     source.emitted = true;

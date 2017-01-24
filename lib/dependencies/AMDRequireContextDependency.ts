@@ -19,6 +19,10 @@ class AMDRequireContextDependency extends ContextDependency {
         super(request, recursive, regExp);
     }
 
+    get type() {
+        return 'amd require context';
+    }
+
     getWarnings() {
         if (this.critical) {
             return [new CriticalDependencyWarning(this.critical)];
@@ -27,7 +31,5 @@ class AMDRequireContextDependency extends ContextDependency {
 
     static Template = require('./ContextDependencyTemplateAsRequireCall')
 }
-
-AMDRequireContextDependency.prototype.type = 'amd require context';
 
 export = AMDRequireContextDependency;

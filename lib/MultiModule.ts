@@ -7,6 +7,7 @@ import { WebpackOutputOptions, ErrCallback } from '../typings/webpack-types'
 import { Hash } from 'crypto'
 import Module = require('./Module');
 import ModuleDependency = require('./dependencies/ModuleDependency')
+import RequestShortener = require('./RequestShortener')
 
 class MultiModule extends Module {
     cacheable: boolean
@@ -18,11 +19,13 @@ class MultiModule extends Module {
     }
 
     identifier() {
-        return `multi ${this.name}`;
+        return `multi ${this.dependencies.map((d) => d.request).join(' ')}`;
     }
 
-    readableIdentifier() {
-        return `multi ${this.name}`;
+    readableIdentifier(requestShortener: RequestShortener) {
+        return `multi ${this.dependencies.map((d) => {
+            return requestShortener.shorten(d.request);
+        }).join(' ')}`;
     }
 
     disconnect() {
