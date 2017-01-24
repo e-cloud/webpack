@@ -18,10 +18,11 @@
     "pretty": true,
     "sourceMap": true,
     "strictNullChecks": false,
-    "target": "es5",
+    "target": "es6",
     "suppressImplicitAnyIndexErrors": true
   },
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "lib/**/*.runtime.ts"
   ]
 }
