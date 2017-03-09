@@ -5,7 +5,7 @@
       true,
       "check-space"
     ],
-    "curly": true,
+    "curly": false,
     "eofline": true,
     "forin": true,
     "indent": [
@@ -65,6 +65,7 @@
       "check-module",
       "check-separator",
       "check-type"
-    ]
+    ],
+    "prefer-const": true
   }
 }

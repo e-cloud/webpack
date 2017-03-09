@@ -35,7 +35,6 @@ class ChunkModuleIdRangePlugin {
                 else {
                     chunkModules = modules.filter(m => m.chunks.includes(chunk));
                 }
-                console.log(chunkModules);
                 for (let i = 0; i < chunkModules.length; i++) {
                     const m = chunkModules[i];
                     if (m.id === null) {

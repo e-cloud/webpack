@@ -4,10 +4,10 @@
  */
 import NullDependency = require('./NullDependency');
 import ModuleDependency = require('./ModuleDependency')
+import { Hash } from 'crypto'
 import { Expression } from 'estree'
 import { ReplaceSource } from 'webpack-sources'
 import { SourceRange } from '../../typings/webpack-types'
-import { Hash } from 'crypto'
 import Module = require('../Module')
 
 class Template {
@@ -68,7 +68,8 @@ class HarmonyImportSpecifierDependency extends NullDependency {
         public importedVar: string,
         public id: string,
         public name: string,
-        public range: SourceRange
+        public range: SourceRange,
+        public strictExportPresence?: boolean
     ) {
         super();
     }
@@ -88,6 +89,20 @@ class HarmonyImportSpecifierDependency extends NullDependency {
     }
 
     getWarnings() {
+        if (this.strictExportPresence) {
+            return [];
+        }
+        return this._getErrors();
+    }
+
+    getErrors() {
+        if (this.strictExportPresence) {
+            return this._getErrors();
+        }
+        return [];
+    }
+
+    _getErrors() {
         const importedModule = this.importDependency.module;
         if (!importedModule || !importedModule.meta || !importedModule.meta.harmonyModule) {
             return;

@@ -6,7 +6,7 @@ import NullDependency = require('./NullDependency');
 import HarmonyImportDependency = require('./HarmonyImportDependency');
 import RequestShortener = require('../RequestShortener')
 import { ReplaceSource } from 'webpack-sources'
-import { WebpackOutputOptions, SourceRange } from '../../typings/webpack-types'
+import { SourceRange, WebpackOutputOptions } from '../../typings/webpack-types'
 
 class Template {
     apply(
@@ -15,8 +15,8 @@ class Template {
         outputOptions: WebpackOutputOptions,
         requestShortener: RequestShortener
     ) {
-        const content = dep.dependencies.map(d =>
-            HarmonyImportDependency.makeImportStatement(false, d, outputOptions, requestShortener)
+        const content = dep.dependencies.map(dep =>
+            HarmonyImportDependency.makeImportStatement(false, dep, outputOptions, requestShortener)
         ).join('');
         if (dep.hasCallback) {
             source.insert(dep.range[0], `function(__WEBPACK_OUTDATED_DEPENDENCIES__) { ${content}(`);
@@ -29,9 +29,8 @@ class Template {
 }
 
 class HarmonyAcceptDependency extends NullDependency {
-    constructor(
-        public range: SourceRange, public dependencies: HarmonyImportDependency[],
-        public hasCallback: boolean
+    constructor(public range: SourceRange, public dependencies: HarmonyImportDependency[],
+                public hasCallback: boolean
     ) {
         super();
     }

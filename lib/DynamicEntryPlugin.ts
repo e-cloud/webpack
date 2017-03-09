@@ -27,7 +27,7 @@ class DynamicEntryPlugin {
         });
 
         compiler.plugin('make', (compilation: Compilation, callback) => {
-            const addEntry = (entry: string| string[], name: string) => {
+            const addEntry = (entry: string | string[], name: string) => {
                 const dep = DynamicEntryPlugin.createDependency(entry, name);
                 return new Promise((resolve, reject) => {
                     compilation.addEntry(this.context, dep, name, err => {
@@ -55,7 +55,7 @@ class DynamicEntryPlugin {
         });
     }
 
-    static createDependency(entry: string| string[], name: string) {
+    static createDependency(entry: string | string[], name: string) {
         if (Array.isArray(entry)) {
             return MultiEntryPlugin.createDependency(entry, name);
         }

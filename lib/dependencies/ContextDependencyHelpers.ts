@@ -2,8 +2,8 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { ModuleOptions, SourceRange } from '../../typings/webpack-types'
 import { Expression } from 'estree'
+import { ModuleOptions, SourceRange } from '../../typings/webpack-types'
 import BasicEvaluatedExpression = require('../BasicEvaluatedExpression')
 import ContextDependency = require('./ContextDependency')
 

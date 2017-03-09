@@ -3,9 +3,9 @@
  Author Tobias Koppers @sokra
  */
 import NullDependency = require('./NullDependency');
+import { Hash } from 'crypto'
 import { ReplaceSource } from 'webpack-sources'
 import { SourceRange } from '../../typings/webpack-types'
-import { Hash } from 'crypto'
 
 class Template {
     apply(dep: ConstDependency, source: ReplaceSource) {

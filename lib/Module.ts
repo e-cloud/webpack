@@ -6,14 +6,13 @@ import DependenciesBlock = require('./DependenciesBlock');
 import ModuleReason = require('./ModuleReason');
 import Template = require('./Template');
 import Chunk = require('./Chunk')
-import removeAndDo = require('./removeAndDo');
 import Dependency = require('./Dependency')
 import { Hash } from 'crypto'
 import { Source } from 'webpack-sources'
 
 let debugId = 1000;
 
-abstract class Module extends DependenciesBlock implements IRemoveAndDo {
+abstract class Module extends DependenciesBlock {
     _source: Source
     building: Function[]
     built: boolean
@@ -73,10 +72,6 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
         this.meta = {} as any;
     }
 
-    _removeAndDo(collection: string, thing: any, action: string) {
-        return removeAndDo.call(this, collection, thing, action)
-    }
-
     get entry() {
         throw new Error('Module.entry was removed. Use Chunk.entryModule');
     }
@@ -121,7 +116,13 @@ abstract class Module extends DependenciesBlock implements IRemoveAndDo {
     }
 
     removeChunk(chunk: Chunk) {
-        return this._removeAndDo('chunks', chunk, 'removeModule');
+        const idx = this.chunks.indexOf(chunk);
+        if (idx >= 0) {
+            this.chunks.splice(idx, 1);
+            chunk.removeModule(this);
+            return true;
+        }
+        return false;
     }
 
     addReason(module: Module, dependency: Dependency) {

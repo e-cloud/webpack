@@ -3,8 +3,8 @@
  Author Tobias Koppers @sokra
  */
 import NullDependency = require('./NullDependency');
-import { SourceRange, WebpackOutputOptions } from '../../typings/webpack-types'
 import { ReplaceSource } from 'webpack-sources'
+import { SourceRange, WebpackOutputOptions } from '../../typings/webpack-types'
 import RequestShortener = require('../RequestShortener')
 
 class Template {

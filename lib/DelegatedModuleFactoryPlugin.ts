@@ -6,7 +6,7 @@ import DelegatedModule = require('./DelegatedModule');
 import NormalModuleFactory = require('./NormalModuleFactory')
 import NormalModule = require('./NormalModule')
 import DelegatedPlugin = require('./DelegatedPlugin')
-import { NMFBeforeResolveResult, ErrCallback } from '../typings/webpack-types'
+import { ErrCallback, NMFBeforeResolveResult } from '../typings/webpack-types'
 
 // options.source
 // options.type
@@ -28,10 +28,15 @@ class DelegatedModuleFactoryPlugin {
                     const request = dependency.request;
                     if (request && request.indexOf(`${scope}/`) === 0) {
                         const innerRequest = `.${request.substr(scope.length)}`;
+                        let resolved;
+                        if (innerRequest in this.options.content) {
+                            resolved = this.options.content[innerRequest];
+                            return callback(null, new DelegatedModule(this.options.source, resolved, this.options.type, innerRequest));
+                        }
                         for (let i = 0; i < this.options.extensions.length; i++) {
                             const requestPlusExt = innerRequest + this.options.extensions[i];
                             if (requestPlusExt in this.options.content) {
-                                const resolved = this.options.content[requestPlusExt];
+                                resolved = this.options.content[requestPlusExt];
                                 return callback(null, new DelegatedModule(this.options.source, resolved, this.options.type, requestPlusExt));
                             }
                         }

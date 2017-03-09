@@ -67,7 +67,10 @@ export function isActive(module: Module, depInQuestion: HarmonyExportDependency)
     return true;
 }
 
-type HarmonyExportDependency = HarmonyExportSpecifierDependency | HarmonyExportImportedSpecifierDependency | HarmonyExportExpressionDependency
+type HarmonyExportDependency =
+    HarmonyExportSpecifierDependency
+    | HarmonyExportImportedSpecifierDependency
+    | HarmonyExportExpressionDependency
 
 // get a list of named exports defined in a module
 // doesn't include * reexports.

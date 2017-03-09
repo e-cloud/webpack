@@ -15,6 +15,7 @@ class DllEntryDependency extends Dependency {
         return 'dll entry';
     }
 
+    // todo: here not same as upstream
     set type(type: string) {
         if (type) {
             this.type = type

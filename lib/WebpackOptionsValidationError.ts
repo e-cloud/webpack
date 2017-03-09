@@ -13,23 +13,20 @@ class WebpackOptionsValidationError extends Error {
         // see https://github.com/Microsoft/TypeScript/wiki/What's-new-in-TypeScript#typescript-21
         Object.setPrototypeOf(this, WebpackOptionsValidationError.prototype);
         this.name = 'WebpackOptionsValidationError';
-        if (Error.hasOwnProperty('captureStackTrace')) {
-            Error.captureStackTrace(this, this.constructor);
-        }
         this.message = `Invalid configuration object. Webpack has been initialised using a configuration object that does not match the API schema.\n${validationErrors.map(
             err => ' - ' + indent(WebpackOptionsValidationError.formatValidationError(err), '   ', false)).join('\n')}`;
+        Error.captureStackTrace(this, this.constructor);
     }
 
     static formatValidationError(err: AjvErrorObject): string {
         const dataPath = `configuration${err.dataPath}`;
-        switch (err.keyword) {
-            case 'additionalProperties':
-                const adpParams = err.params as ajv.AdditionalPropertiesParams
-                const baseMessage = `${dataPath} has an unknown property '${adpParams.additionalProperty}'. These properties are valid:\n${getSchemaPartText(err.parentSchema)}`;
-                if (!err.dataPath) {
-                    switch (adpParams.additionalProperty) {
-                        case 'debug':
-                            return `${baseMessage}
+        if (err.keyword === 'additionalProperties') {
+            const errParams = err.params as ajv.AdditionalPropertiesParams
+            const baseMessage = `${dataPath} has an unknown property '${errParams.additionalProperty}'. These properties are valid:\n${getSchemaPartText(err.parentSchema)}`;
+            if (!err.dataPath) {
+                switch (errParams.additionalProperty) {
+                    case 'debug':
+                        return `${baseMessage}
 The 'debug' property was removed in webpack 2.
 Loaders should be updated to allow passing this option via loader options in module.rules.
 Until loaders are updated one can use the LoaderOptionsPlugin to switch loaders into debug mode:
@@ -38,8 +35,8 @@ plugins: [
         debug: true
     })
 ]`;
-                    }
-                    return `${baseMessage}
+                }
+                return `${baseMessage}
 For typos: please correct them.
 For loader options: webpack 2 no longer allows custom properties in configuration.
   Loaders should be updated to allow passing options via loader options in module.rules.
@@ -48,63 +45,61 @@ For loader options: webpack 2 no longer allows custom properties in configuratio
     new webpack.LoaderOptionsPlugin({
       // test: /\\.xxx$/, // may apply this only for some modules
       options: {
-        ${adpParams.additionalProperty}: ...
+        ${errParams.additionalProperty}: ...
       }
     })
   ]`;
-                }
-                return baseMessage;
-            case 'oneOf':
-            case 'anyOf':
-                if (err.children && err.children.length > 0) {
-                    return `${dataPath} should be one of these:
-${`${getSchemaPartText(err.parentSchema)}
-Details:
-${err.children.map(function (err) {
-                        return ` * ${indent(WebpackOptionsValidationError.formatValidationError(err), '   ', false)}`;
-                    }).join('\n')}`}`
-                }
-                return `${dataPath} should be one of these:\n${getSchemaPartText(err.parentSchema)}`;
-            case 'enum':
-                if (err.parentSchema && err.parentSchema.enum && err.parentSchema.enum.length === 1) {
-                    return `${dataPath} should be ${getSchemaPartText(err.parentSchema)}`;
-                }
-                return `${dataPath} should be one of these:\n${getSchemaPartText(err.parentSchema)}`;
-            case 'allOf':
-                return `${dataPath} should be:\n${getSchemaPartText(err.parentSchema)}`;
-            case 'type':
-                const typeParams = err.params as ajv.TypeParams
-                switch (typeParams.type) {
-                    case 'object':
-                        return `${dataPath} should be an object.`;
-                    case 'string':
-                        return `${dataPath} should be a string.`;
-                    case 'boolean':
-                        return `${dataPath} should be a boolean.`;
-                    case 'number':
-                        return `${dataPath} should be a number.`;
-                    case 'array':
-                        return `${dataPath} should be an array:\n${getSchemaPartText(err.parentSchema)}`;
-                }
-                return `${dataPath} should be ${typeParams.type}:\n${getSchemaPartText(err.parentSchema)}`;
-            case 'instanceof':
-                return `${dataPath} should be an instance of ${getSchemaPartText(err.parentSchema)}.`;
-            case 'required':
-                const missingProperty = ( err.params as ajv.DependenciesParams).missingProperty.replace(/^\./, '');
-                return `${dataPath} misses the property '${missingProperty}'.\n${getSchemaPartText(err.parentSchema, [
-                    'properties',
-                    missingProperty
-                ])}`;
-            case 'minItems':
-            case 'minLength':
-                if ((err.params as ajv.LimitParams).limit === 1) {
-                    return `${dataPath} should not be empty.`;
-                }
-                else {
-                    return `${dataPath} ${err.message}`;
-                }
-            default:
-                return `${dataPath} ${err.message} (${JSON.stringify(err, null, 2)}).\n${getSchemaPartText(err.parentSchema)}`;
+            }
+            return baseMessage;
+        } else if (err.keyword === 'oneOf' || err.keyword === 'anyOf') {
+            if (err.children && err.children.length > 0) {
+                return `${dataPath} should be one of these:\n${getSchemaPartText(err.parentSchema)}\n` +
+                    `Details:\n${err.children.map(
+                        err => ' * ' + indent(WebpackOptionsValidationError.formatValidationError(err), '   ', false))
+                        .join('\n')}`;
+            }
+            return `${dataPath} should be one of these:\n${getSchemaPartText(err.parentSchema)}`;
+
+        } else if (err.keyword === 'enum') {
+            if (err.parentSchema && err.parentSchema.enum && err.parentSchema.enum.length === 1) {
+                return `${dataPath} should be ${getSchemaPartText(err.parentSchema)}`;
+            }
+            return `${dataPath} should be one of these:\n${getSchemaPartText(err.parentSchema)}`;
+        } else if (err.keyword === 'allOf') {
+            return `${dataPath} should be:\n${getSchemaPartText(err.parentSchema)}`;
+        } else if (err.keyword === 'type') {
+            const typeParams = err.params as ajv.TypeParams
+            switch (typeParams.type) {
+                case 'object':
+                    return `${dataPath} should be an object.`;
+                case 'string':
+                    return `${dataPath} should be a string.`;
+                case 'boolean':
+                    return `${dataPath} should be a boolean.`;
+                case 'number':
+                    return `${dataPath} should be a number.`;
+                case 'array':
+                    return `${dataPath} should be an array:\n${getSchemaPartText(err.parentSchema)}`;
+            }
+            return `${dataPath} should be ${typeParams.type}:\n${getSchemaPartText(err.parentSchema)}`;
+        } else if (err.keyword === 'instanceof') {
+            return `${dataPath} should be an instance of ${getSchemaPartText(err.parentSchema)}.`;
+        } else if (err.keyword === 'required') {
+            const missingProperty = (err.params as ajv.DependenciesParams).missingProperty.replace(/^\./, '');
+            return `${dataPath} misses the property '${missingProperty}'.\n${getSchemaPartText(err.parentSchema, [
+                'properties',
+                missingProperty
+            ])}`;
+        } else if (err.keyword === 'minLength' || err.keyword === 'minItems') {
+            if ((err.params as ajv.LimitParams).limit === 1) {
+                return `${dataPath} should not be empty.`;
+            } else {
+                return `${dataPath} ${err.message}`;
+            }
+        } else if (err.keyword === 'absolutePath') {
+            return `${dataPath}: ${err.message}`;
+        } else {
+            return `${dataPath} ${err.message} (${JSON.stringify(err, null, 2)}).\n${getSchemaPartText(err.parentSchema)}`;
         }
     }
 
@@ -177,10 +172,10 @@ ${err.children.map(function (err) {
 export = WebpackOptionsValidationError;
 
 function getSchemaPart(path: string, parents = 0, additionalPath?: string) {
-    let splitPath = path.split('/'), splitAddtionalPath;
+    let splitPath = path.split('/')
     splitPath = splitPath.slice(0, splitPath.length - parents);
     if (additionalPath) {
-        splitAddtionalPath = additionalPath.split('/');
+        const splitAddtionalPath = additionalPath.split('/');
         splitPath = splitPath.concat(splitAddtionalPath);
     }
     let schemaPart = <AjvJsonSchema>webpackOptionsSchema;
@@ -214,9 +209,8 @@ function getSchemaPartText(schemaPart: AjvJsonSchema, additionalPath?: string[])
 
 function indent(str: string, prefix: string, firstLine: boolean) {
     if (firstLine) {
-        return prefix + str.replace(/\n(?!$)/g, '\n' + prefix);
-    }
-    else {
+        return prefix + str.replace(/\n(?!$)/g, `\n${prefix}`);
+    } else {
         return str.replace(/\n(?!$)/g, `\n${prefix}`);
     }
 }

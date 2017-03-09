@@ -78,12 +78,14 @@ class WebWorkerMainTemplatePlugin {
                 hashWithLength: (length: number) => `" + ${this.renderCurrentHashCode(hash, length)} + "`
             });
 
-            return `${source}\nvar parentHotUpdateCallback = this[${JSON.stringify(hotUpdateFunction)}];\nthis[${JSON.stringify(hotUpdateFunction)}] = ${Template.getFunctionContent(require('./WebWorkerMainTemplate.runtime.js'))
-                .replace(/\/\/\$semicolon/g, ';')
-                .replace(/\$require\$/g, this.requireFn)
-                .replace(/\$hotMainFilename\$/g, currentHotUpdateMainFilename)
-                .replace(/\$hotChunkFilename\$/g, currentHotUpdateChunkFilename)
-                .replace(/\$hash\$/g, JSON.stringify(hash))}`;
+            return `${source}\nvar parentHotUpdateCallback = this[${JSON.stringify(hotUpdateFunction)}];\nthis[${JSON.stringify(hotUpdateFunction)}] = ${
+                Template.getFunctionContent(require('./WebWorkerMainTemplate.runtime.js'))
+                    .replace(/\/\/\$semicolon/g, ';')
+                    .replace(/\$require\$/g, this.requireFn)
+                    .replace(/\$hotMainFilename\$/g, currentHotUpdateMainFilename)
+                    .replace(/\$hotChunkFilename\$/g, currentHotUpdateChunkFilename)
+                    .replace(/\$hash\$/g, JSON.stringify(hash))
+                }`;
         });
         mainTemplate.plugin('hash', function (hash: Hash) {
             hash.update('webworker');

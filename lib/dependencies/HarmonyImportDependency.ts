@@ -3,9 +3,9 @@
  Author Tobias Koppers @sokra
  */
 import ModuleDependency = require('./ModuleDependency');
-import { SourceRange, WebpackOutputOptions } from '../../typings/webpack-types'
-import { ReplaceSource } from 'webpack-sources'
 import { Hash } from 'crypto'
+import { ReplaceSource } from 'webpack-sources'
+import { SourceRange, WebpackOutputOptions } from '../../typings/webpack-types'
 import RequestShortener = require('../RequestShortener')
 
 class Template {
@@ -57,9 +57,8 @@ function getOptionalComment(pathinfo: boolean, shortenedRequest: string) {
     return `/*! ${shortenedRequest} */ `;
 }
 
-function makeImportStatement(
-    declare: boolean, dep: HarmonyImportDependency, outputOptions: WebpackOutputOptions,
-    requestShortener: RequestShortener
+function makeImportStatement(declare: boolean, dep: HarmonyImportDependency, outputOptions: WebpackOutputOptions,
+                             requestShortener: RequestShortener
 ) {
     const comment = getOptionalComment(outputOptions.pathinfo, requestShortener.shorten(dep.request));
     const declaration = declare ? 'var ' : '';

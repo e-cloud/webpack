@@ -2,14 +2,11 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { SourceLocation, Position } from 'estree'
+import { SourceLocation } from 'estree'
 
 export = function compareLocations(
-    a: string | SourceLocation & {
-        index?: number
-    }, b: string | SourceLocation & {
-        index?: number
-    }
+    a: string | SourceLocation & { index?: number },
+    b: string | SourceLocation & { index?: number }
 ) {
     if (typeof a === 'string') {
         if (typeof b === 'string') {
@@ -33,33 +30,16 @@ export = function compareLocations(
             return -1;
         }
         else if (typeof b === 'object') {
-            let ap: Position, bp: Position
-            if (a.start) {
-                ap = a.start;
+            if (a.start && b.start) {
+                const ap = a.start;
+                const bp = b.start;
+                if (ap.line < bp.line) return -1;
+                if (ap.line > bp.line) return 1;
+                if (ap.column < bp.column) return -1;
+                if (ap.column > bp.column) return 1;
             }
-            if (b.start) {
-                bp = b.start;
-            }
-            if (ap && bp) {
-                if (ap.line < bp.line) {
-                    return -1;
-                }
-                if (ap.line > bp.line) {
-                    return 1;
-                }
-                if (ap.column < bp.column) {
-                    return -1;
-                }
-                if (ap.column > bp.column) {
-                    return 1;
-                }
-            }
-            if (a.index < b.index) {
-                return -1;
-            }
-            if (a.index > b.index) {
-                return 1;
-            }
+            if (a.index < b.index) return -1;
+            if (a.index > b.index) return 1;
             return 0;
         }
         else {

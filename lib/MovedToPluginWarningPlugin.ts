@@ -14,8 +14,9 @@ class MovedToPluginWarningPlugin {
         const pluginName = this.pluginName;
         compiler.plugin('compilation', function (compilation: Compilation) {
             compilation.warnings.push(new Error(`webpack options:
-DEPRECATED option '${optionName}' will be moved to the ${pluginName}. Use this instead.
-For more info about the usage of the ${pluginName} see https://webpack.github.io/docs/list-of-plugins.html`));
+DEPRECATED option '${optionName}' will be moved to the ${pluginName}.
+Use this instead.
+For more info about the usage of the ${pluginName} see https://webpack.js.org/plugins/`));
         });
     }
 }

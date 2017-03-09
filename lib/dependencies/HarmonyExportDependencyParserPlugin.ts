@@ -8,7 +8,7 @@ import HarmonyExportSpecifierDependency = require('./HarmonyExportSpecifierDepen
 import HarmonyExportImportedSpecifierDependency = require('./HarmonyExportImportedSpecifierDependency');
 import HarmonyImportDependency = require('./HarmonyImportDependency');
 import HarmonyModulesHelpers = require('./HarmonyModulesHelpers');
-import { Statement, ExportNamedDeclaration, ExportDefaultDeclaration, Expression, Node, SourceLocation } from 'estree'
+import { ExportDefaultDeclaration, ExportNamedDeclaration, Expression, Node, Statement } from 'estree'
 import Parser = require('../Parser')
 
 class HarmonyExportDependencyParserPlugin {
@@ -41,9 +41,10 @@ class HarmonyExportDependencyParserPlugin {
 
         parser.plugin('export declaration', statement => {})
 
-        parser.plugin('export specifier', function (
-            this: Parser, statement: ExportDefaultDeclaration | ExportNamedDeclaration, id: number,
-            name: string, idx: number
+        parser.plugin('export specifier', function (this: Parser,
+                                                    statement: ExportDefaultDeclaration | ExportNamedDeclaration,
+                                                    id: number,
+                                                    name: string, idx: number
         ) {
             const rename = this.scope.renames[`$${id}`];
             let dep;
@@ -64,9 +65,8 @@ class HarmonyExportDependencyParserPlugin {
             return true;
         })
 
-        parser.plugin('export import specifier', function (
-            this: Parser, statement: Statement, source: string,
-            id: string, name: string, idx: number
+        parser.plugin('export import specifier', function (this: Parser, statement: Statement, source: string,
+                                                           id: string, name: string, idx: number
         ) {
             // todo: here has typo
             const dep = new HarmonyExportImportedSpecifierDependency(this.state.module, this.state.lastHarmoryImport, HarmonyModulesHelpers.getModuleVar(this.state, source), id, name);

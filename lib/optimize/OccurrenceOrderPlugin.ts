@@ -10,7 +10,7 @@ import Chunk = require('../Chunk')
 class OccurrenceOrderPlugin {
     constructor(public preferEntry: boolean) {
         if (preferEntry !== undefined && typeof preferEntry !== 'boolean') {
-            throw new Error('Argument should be a boolean.\nFor more info on this plugin, see https://webpack.github.io/docs/list-of-plugins.html');
+            throw new Error('Argument should be a boolean.\nFor more info on this plugin, see https://webpack.js.org/plugins/');
         }
     }
 
@@ -50,8 +50,7 @@ class OccurrenceOrderPlugin {
                         }).reduce((a, b) => a + b, 0)
                         +
                         m.chunks.length + m.chunks.filter(c => {
-                            // todo: what? may need a return
-                            c.entryModule === m;
+                            return c.entryModule === m;
                         }).length;
                     return m.__OccurenceOrderPlugin_occurs = result;
                 }

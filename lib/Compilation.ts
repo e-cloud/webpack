@@ -1,22 +1,22 @@
+import { AbstractInputFileSystem, ResolveError } from 'enhanced-resolve/lib/common-types'
+import { SourceLocation } from 'estree'
 /*
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { CachedSource, Source, SourceMapSource, RawSource, ConcatSource } from 'webpack-sources'
-import { SourceLocation } from 'estree'
+import { CachedSource, ConcatSource, RawSource, Source, SourceMapSource } from 'webpack-sources'
 import {
-    WebpackOutputOptions,
-    Record,
-    WebpackOptions,
     AggressiveSplit,
+    Dictionary,
     ErrCallback,
+    PerformanceOptions,
     PlainObject,
+    Record,
     TimeStampMap,
     WebpackError,
-    PerformanceOptions,
-    Dictionary
+    WebpackOptions,
+    WebpackOutputOptions
 } from '../typings/webpack-types'
-import { ResolveError, AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
 import async = require('async');
 import crypto = require('crypto')
 import Tapable = require('tapable');
@@ -38,6 +38,7 @@ import ChunkRenderError = require('./ChunkRenderError');
 import NormalModule = require('./NormalModule')
 import DependenciesBlock = require('./DependenciesBlock')
 import AsyncDependenciesBlock = require('./AsyncDependenciesBlock')
+import DependenciesBlockVariable = require('./DependenciesBlockVariable')
 
 interface SlotChunk {
     name: string
@@ -138,8 +139,9 @@ class Compilation extends Tapable {
         if (this._modules[identifier]) {
             return false;
         }
-        if (this.cache && this.cache[cacheGroup + identifier]) {
-            const cacheModule: Module = this.cache[cacheGroup + identifier];
+        const cacheName = cacheGroup + identifier;
+        if (this.cache && this.cache[cacheName]) {
+            const cacheModule: Module = this.cache[cacheName];
 
             let rebuild = true;
             if (!cacheModule.error && cacheModule.cacheable && this.fileTimestamps && this.contextTimestamps) {
@@ -150,12 +152,8 @@ class Compilation extends Tapable {
                 cacheModule.disconnect();
                 this._modules[identifier] = cacheModule;
                 this.modules.push(cacheModule);
-                cacheModule.errors.forEach(function (err) {
-                    this.errors.push(err);
-                }, this);
-                cacheModule.warnings.forEach(function (err) {
-                    this.warnings.push(err);
-                }, this);
+                cacheModule.errors.forEach((err) => this.errors.push(err));
+                cacheModule.warnings.forEach((err) => this.warnings.push(err));
                 return cacheModule;
             }
             else {
@@ -165,7 +163,7 @@ class Compilation extends Tapable {
         module.unbuild();
         this._modules[identifier] = module;
         if (this.cache) {
-            this.cache[cacheGroup + identifier] = module;
+            this.cache[cacheName] = module;
         }
         this.modules.push(module);
         return true;
@@ -180,9 +178,8 @@ class Compilation extends Tapable {
         return this._modules[identifier];
     }
 
-    buildModule(
-        module: Module, optional: boolean, origin: Module, dependencies: Dependency[],
-        thisCallback: ErrCallback
+    buildModule(module: Module, optional: boolean, origin: Module, dependencies: Dependency[],
+                thisCallback: ErrCallback
     ) {
         this.applyPlugins1('build-module', module);
         if (module.building) {
@@ -202,8 +199,10 @@ class Compilation extends Tapable {
             this,
             this.resolvers.normal,
             this.inputFileSystem,
-            (err: Error) => {
-                module.errors.forEach((err: ModuleNotFoundError) => {
+            (error: Error) => {
+                const errors = module.errors;
+                for (let indexError = 0; indexError < errors.length; indexError++) {
+                    const err = errors[indexError];
                     err.origin = origin;
                     err.dependencies = dependencies;
                     if (optional) {
@@ -212,16 +211,19 @@ class Compilation extends Tapable {
                     else {
                         this.errors.push(err);
                     }
-                }, this);
-                module.warnings.forEach((err: ModuleNotFoundError) => {
-                    err.origin = origin;
-                    err.dependencies = dependencies;
-                    this.warnings.push(err);
-                }, this);
+                }
+
+                const warnings = module.warnings;
+                for (let indexWarning = 0; indexWarning < warnings.length; indexWarning++) {
+                    const war = warnings[indexWarning];
+                    war.origin = origin;
+                    war.dependencies = dependencies;
+                    this.warnings.push(war);
+                }
                 module.dependencies.sort(Dependency.compare);
-                if (err) {
-                    this.applyPlugins2('failed-module', module, err);
-                    return callback(err);
+                if (error) {
+                    this.applyPlugins2('failed-module', module, error);
+                    return callback(error);
                 }
                 this.applyPlugins1('succeed-module', module);
                 return callback(undefined)
@@ -243,15 +245,13 @@ class Compilation extends Tapable {
 
         function addDependenciesBlock(block: DependenciesBlock) {
             if (block.dependencies) {
-                block.dependencies.forEach(addDependency);
+                iterationOfArrayCallback(block.dependencies, addDependency);
             }
             if (block.blocks) {
-                block.blocks.forEach(addDependenciesBlock);
+                iterationOfArrayCallback(block.blocks, addDependenciesBlock);
             }
             if (block.variables) {
-                block.variables.forEach(v => {
-                    v.dependencies.forEach(addDependency);
-                });
+                iterationBlockVariable(block.variables, addDependency);
             }
         }
 
@@ -302,7 +302,8 @@ class Compilation extends Tapable {
                 const factory = item[0];
                 factory.create({
                     contextInfo: {
-                        issuer: module.nameForCondition && module.nameForCondition()
+                        issuer: module.nameForCondition && module.nameForCondition(),
+                        compiler: self.compiler.name
                     },
                     context: module.context,
                     dependencies
@@ -317,6 +318,14 @@ class Compilation extends Tapable {
                         }
                         else {
                             return errorAndCallback(err);
+                        }
+                    }
+
+                    function iterationDependencies(deps: Dependency[]) {
+                        for (let index = 0; index < deps.length; index++) {
+                            const dep = deps[index];
+                            dep.module = dependentModule;
+                            dependentModule.addReason(module, dep);
                         }
                     }
 
@@ -347,10 +356,7 @@ class Compilation extends Tapable {
                             dependentModule.optional = isOptional();
                         }
 
-                        dependencies.forEach(dep => {
-                            dep.module = dependentModule;
-                            dependentModule.addReason(module, dep);
-                        });
+                        iterationDependencies(dependencies);
 
                         if (self.profile) {
                             if (!module.profile) {
@@ -374,10 +380,7 @@ class Compilation extends Tapable {
                         newModule.issuer = dependentModule.issuer;
                         dependentModule = newModule;
 
-                        dependencies.forEach(dep => {
-                            dep.module = dependentModule;
-                            dependentModule.addReason(module, dep);
-                        });
+                        iterationDependencies(dependencies);
 
                         if (self.profile) {
                             const afterBuilding = +new Date();
@@ -394,10 +397,7 @@ class Compilation extends Tapable {
 
                     dependentModule.optional = isOptional();
 
-                    dependencies.forEach(dep => {
-                        dep.module = dependentModule;
-                        dependentModule.addReason(module, dep);
-                    });
+                    iterationDependencies(dependencies);
 
                     self.buildModule(dependentModule, isOptional(), module, dependencies, (err: ModuleNotFoundError) => {
                         if (err) {
@@ -443,12 +443,12 @@ class Compilation extends Tapable {
         const start = this.profile && +new Date();
 
         const errorAndCallback = this.bail ? function errorAndCallback(err: ModuleNotFoundError) {
-                callback(err);
-            } : function errorAndCallback(err: ModuleNotFoundError) {
-                err.dependencies = [dependency];
-                this.errors.push(err);
-                callback();
-            }.bind(this);
+            callback(err);
+        } : function errorAndCallback(err: ModuleNotFoundError) {
+            err.dependencies = [dependency];
+            this.errors.push(err);
+            callback();
+        }.bind(this);
 
         if (typeof dependency !== 'object' || dependency === null || !dependency.constructor) {
             throw new Error('Parameter \'dependency\' must be a Dependency');
@@ -460,6 +460,10 @@ class Compilation extends Tapable {
         }
 
         moduleFactory.create({
+            contextInfo: {
+                issuer: '',
+                compiler: this.compiler.name
+            },
             context,
             dependencies: [dependency]
         }, (err: ModuleNotFoundError, module: Module) => {
@@ -589,25 +593,30 @@ class Compilation extends Tapable {
                 if (err) {
                     return callback(err);
                 }
-                deps.forEach(function (d) {
-                    if (d.module && d.module.removeReason(module, d)) {
-                        module.chunks.forEach(function (chunk) {
-                            if (!d.module.hasReasonForChunk(chunk)) {
-                                if (d.module.removeChunk(chunk)) {
-                                    this.removeChunkFromDependencies(d.module, chunk);
+                deps.forEach((dep) => {
+                    if (dep.module && dep.module.removeReason(module, dep)) {
+                        module.chunks.forEach((chunk) => {
+                            if (!dep.module.hasReasonForChunk(chunk)) {
+                                if (dep.module.removeChunk(chunk)) {
+                                    this.removeChunkFromDependencies(dep.module, chunk);
                                 }
                             }
-                        }, this);
+                        });
                     }
-                }, this);
+                });
                 callback(undefined);
             });
         });
     }
 
     finish() {
-        this.applyPlugins1('finish-modules', this.modules);
-        this.modules.forEach(m => this.reportDependencyErrorsAndWarnings(m, [m]));
+        const modules = this.modules;
+        this.applyPlugins1('finish-modules', modules);
+
+        for (let index = 0; index < modules.length; index++) {
+            const module = modules[index];
+            this.reportDependencyErrorsAndWarnings(module, [module]);
+        }
     }
 
     unseal() {
@@ -637,7 +646,7 @@ class Compilation extends Tapable {
             this.assignIndex(module);
             this.assignDepth(module);
             this.processDependenciesBlockForChunk(module, chunk);
-        }, this);
+        });
         this.sortModules(this.modules);
         this.applyPlugins0('optimize');
 
@@ -751,39 +760,48 @@ class Compilation extends Tapable {
     }
 
     reportDependencyErrorsAndWarnings(module: Module, blocks: DependenciesBlock[]) {
-        blocks.forEach(block => {
-            block.dependencies.forEach(d => {
-                const warnings = d.getWarnings();
+        for (let indexBlock = 0; indexBlock < blocks.length; indexBlock++) {
+            const block = blocks[indexBlock];
+            const dependencies = block.dependencies;
+
+            for (let indexDep = 0; indexDep < dependencies.length; indexDep++) {
+                const dep = dependencies[indexDep];
+
+                const warnings = dep.getWarnings();
                 if (warnings) {
-                    warnings.forEach(w => {
-                        const warning = new ModuleDependencyWarning(module, w, d.loc);
+                    for (let indexWar = 0; indexWar < warnings.length; indexWar++) {
+                        const w = warnings[indexWar];
+
+                        const warning = new ModuleDependencyWarning(module, w, dep.loc);
                         this.warnings.push(warning);
-                    });
+                    }
                 }
-                const errors = d.getErrors();
+                const errors = dep.getErrors();
                 if (errors) {
-                    errors.forEach(w => {
-                        const warning = new ModuleDependencyError(module, w, d.loc);
-                        this.errors.push(warning);
-                    });
+                    for (let indexErr = 0; indexErr < errors.length; indexErr++) {
+                        const e = errors[indexErr];
+
+                        const error = new ModuleDependencyError(module, e, dep.loc as SourceLocation);
+                        this.errors.push(error);
+                    }
                 }
-            });
+            }
+
             this.reportDependencyErrorsAndWarnings(module, block.blocks);
-        });
+        }
     }
 
     addChunk(name?: string, module?: Module, loc?: SourceLocation) {
-        let chunk;
         if (name) {
             if (Object.prototype.hasOwnProperty.call(this.namedChunks, name)) {
-                chunk = this.namedChunks[name];
+                const chunk = this.namedChunks[name];
                 if (module) {
                     chunk.addOrigin(module, loc);
                 }
                 return chunk;
             }
         }
-        chunk = new Chunk(name, module, loc);
+        const chunk = new Chunk(name, module, loc);
         this.chunks.push(chunk);
         if (name) {
             this.namedChunks[name] = chunk;
@@ -793,6 +811,16 @@ class Compilation extends Tapable {
 
     assignIndex(module: Module) {
         const self = this;
+
+        const queue = [
+            () => {
+                assignIndexToModule(module);
+            }
+        ];
+
+        const iteratorAllDependencies = (dep: Dependency) => {
+            queue.push(() => assignIndexToDependency(dep));
+        };
 
         function assignIndexToModule(module: Module) {
             // enter module
@@ -831,30 +859,26 @@ class Compilation extends Tapable {
             }
 
             if (block.variables) {
-                block.variables.forEach(function (v) {
-                    v.dependencies.forEach(iteratorDependency);
-                });
+                iterationBlockVariable(block.variables, iteratorDependency);
             }
+
             if (block.dependencies) {
-                block.dependencies.forEach(iteratorDependency);
+                iterationOfArrayCallback(block.dependencies, iteratorDependency);
             }
             if (block.blocks) {
-                block.blocks.slice().reverse().forEach(iteratorBlock, this);
+                const blocks = block.blocks;
+                let indexBlock = blocks.length;
+                while (indexBlock--) {
+                    iteratorBlock(blocks[indexBlock]);
+                }
             }
 
-            allDependencies.reverse();
-            allDependencies.forEach(function (d) {
-                queue.push(function () {
-                    assignIndexToDependency(d);
-                });
-            });
+            let indexAll = allDependencies.length;
+            while (indexAll--) {
+                iteratorAllDependencies(allDependencies[indexAll]);
+            }
         }
 
-        const queue = [
-            function () {
-                assignIndexToModule(module);
-            }
-        ];
         while (queue.length) {
             queue.pop()();
         }
@@ -863,7 +887,7 @@ class Compilation extends Tapable {
     assignDepth(module: Module) {
         function assignDepthToModule(module: Module, depth: number) {
             // enter module
-            if (typeof module.depth === "number" && module.depth <= depth) {
+            if (typeof module.depth === 'number' && module.depth <= depth) {
                 return;
             }
             module.depth = depth;
@@ -890,15 +914,15 @@ class Compilation extends Tapable {
             }
 
             if (block.variables) {
-                block.variables.forEach(function (v) {
-                    v.dependencies.forEach(iteratorDependency);
-                });
+                iterationBlockVariable(block.variables, iteratorDependency);
             }
+
             if (block.dependencies) {
-                block.dependencies.forEach(iteratorDependency);
+                iterationOfArrayCallback(block.dependencies, iteratorDependency);
             }
+
             if (block.blocks) {
-                block.blocks.forEach(iteratorBlock);
+                iterationOfArrayCallback(block.blocks, iteratorBlock);
             }
         }
 
@@ -913,27 +937,7 @@ class Compilation extends Tapable {
     }
 
     processDependenciesBlockForChunk(block: DependenciesBlock, chunk: Chunk) {
-        const queue: [DependenciesBlock, Chunk][] = [
-            [block, chunk]
-        ];
-        while (queue.length) {
-            const queueItem: [DependenciesBlock, Chunk] = queue.pop();
-            block = queueItem[0];
-            chunk = queueItem[1];
-            if (block.variables) {
-                block.variables.forEach(function (v) {
-                    v.dependencies.forEach(iteratorDependency, this);
-                }, this);
-            }
-            if (block.dependencies) {
-                block.dependencies.forEach(iteratorDependency, this);
-            }
-            if (block.blocks) {
-                block.blocks.forEach(iteratorBlock, this);
-            }
-        }
-
-        function iteratorBlock(this: Compilation, b: AsyncDependenciesBlock) {
+        const iteratorBlock = (b: AsyncDependenciesBlock) => {
             let c;
             if (!b.chunks) {
                 c = this.addChunk(b.chunkName, b.module, b.loc);
@@ -948,7 +952,7 @@ class Compilation extends Tapable {
             queue.push([b, c]);
         }
 
-        function iteratorDependency(d: Dependency & { weak?: boolean }) {
+        const iteratorDependency = (d: Dependency & { weak?: boolean }) => {
             if (!d.module) {
                 return;
             }
@@ -960,93 +964,158 @@ class Compilation extends Tapable {
                 queue.push([d.module, chunk]);
             }
         }
+
+        const queue: [DependenciesBlock, Chunk][] = [
+            [block, chunk]
+        ];
+
+        while (queue.length) {
+            const queueItem = queue.pop();
+            block = queueItem[0];
+            chunk = queueItem[1];
+
+            if (block.variables) {
+                iterationBlockVariable(block.variables, iteratorDependency);
+            }
+
+            if (block.dependencies) {
+                iterationOfArrayCallback(block.dependencies, iteratorDependency);
+            }
+
+            if (block.blocks) {
+                iterationOfArrayCallback(block.blocks, iteratorBlock);
+            }
+        }
     }
 
     removeChunkFromDependencies(block: Module, chunk: Chunk) {
-        block.blocks.forEach(function (b) {
-            b.chunks.forEach(function (c) {
-                chunk.removeChunk(c);
-                c.removeParent(chunk);
-                this.removeChunkFromDependencies(b, c);
-            }, this);
-        }, this);
-
-        function iteratorDependency(d: Dependency) {
-            if (!d.module) {
+        const iteratorDependency = (dep: Dependency) => {
+            if (!dep.module) {
                 return;
             }
-            if (!d.module.hasReasonForChunk(chunk)) {
-                if (d.module.removeChunk(chunk)) {
-                    this.removeChunkFromDependencies(d.module, chunk);
+            if (!dep.module.hasReasonForChunk(chunk)) {
+                if (dep.module.removeChunk(chunk)) {
+                    this.removeChunkFromDependencies(dep.module, chunk);
                 }
+            }
+        };
+
+        const blocks = block.blocks;
+        for (let indexBlock = 0; indexBlock < blocks.length; indexBlock++) {
+            const chunks = blocks[indexBlock].chunks;
+            for (let indexChunk = 0; indexChunk < chunks.length; indexChunk++) {
+                const blockChunk = chunks[indexChunk];
+                chunk.removeChunk(blockChunk);
+                blockChunk.removeParent(chunk);
+                this.removeChunkFromDependencies(chunks, blockChunk);
             }
         }
 
-        block.dependencies.forEach(iteratorDependency, this);
-        block.variables.forEach(function (v) {
-            v.dependencies.forEach(iteratorDependency, this);
-        }, this);
+        if (block.dependencies) {
+            iterationOfArrayCallback(block.dependencies, iteratorDependency);
+        }
+
+        if (block.variables) {
+            iterationBlockVariable(block.variables, iteratorDependency);
+        }
     }
 
     applyModuleIds() {
         const unusedIds: number[] = [];
         let nextFreeModuleId = 0;
         const usedIds: number[] = [];
-        const usedIdMap = {};
+        // TODO consider Map when performance has improved
+        // https://gist.github.com/sokra/234c077e1299b7369461f1708519c392
+        const usedIdMap = Object.create(null);
         if (this.usedModuleIds) {
-            Object.keys(this.usedModuleIds).forEach(function (key) {
+            Object.keys(this.usedModuleIds).forEach(key => {
                 const id = this.usedModuleIds[key];
-                if (typeof usedIdMap[id] === 'undefined') {
+                if (!usedIdMap[id]) {
                     usedIds.push(id);
-                    usedIdMap[id] = id;
+                    usedIdMap[id] = true;
                 }
-            }, this);
+            });
         }
-        this.modules.forEach(module => {
-            if (module.id !== null && typeof usedIdMap[module.id] === 'undefined') {
-                usedIds.push(module.id);
-                usedIdMap[module.id] = module.id;
+
+        const modules1 = this.modules;
+        for (let indexModule1 = 0; indexModule1 < modules1.length; indexModule1++) {
+            const module1 = modules1[indexModule1];
+            if (module1.id && !usedIdMap[module1.id]) {
+                usedIds.push(module1.id);
+                usedIdMap[module1.id] = true;
             }
-        });
+        }
+
         if (usedIds.length > 0) {
-            const usedNumberIds = usedIds.filter(id => typeof id === 'number');
-            nextFreeModuleId = usedNumberIds.reduce((a, b) => Math.max(a, b), -1) + 1;
-            for (let i = 0; i < nextFreeModuleId; i++) {
-                if (usedIdMap[i] !== i) {
-                    unusedIds.push(i);
+            let usedIdMax = -1;
+            for (let index = 0; index < usedIds.length; index++) {
+                const usedIdKey = usedIds[index];
+
+                if (typeof usedIdKey !== 'number') {
+                    continue;
+                }
+
+                usedIdMax = Math.max(usedIdMax, usedIdKey);
+            }
+
+            let lengthFreeModules = nextFreeModuleId = usedIdMax + 1;
+
+            while (lengthFreeModules--) {
+                if (!usedIdMap[lengthFreeModules]) {
+                    unusedIds.push(lengthFreeModules);
                 }
             }
-            unusedIds.reverse();
         }
-        this.modules.forEach(module => {
-            if (module.id === null) {
+
+        const modules2 = this.modules;
+        for (let indexModule2 = 0; indexModule2 < modules2.length; indexModule2++) {
+            const module2 = modules2[indexModule2];
+            if (module2.id === null) {
                 if (unusedIds.length > 0) {
-                    module.id = unusedIds.pop();
+                    module2.id = unusedIds.pop();
                 }
                 else {
-                    module.id = nextFreeModuleId++;
+                    module2.id = nextFreeModuleId++;
                 }
             }
-        }, this);
+        }
     }
 
     applyChunkIds() {
         const unusedIds: number[] = [];
         let nextFreeChunkId = 0;
+
+        function getNextFreeChunkId(usedChunkIds: Dictionary<number>) {
+            const keyChunks = Object.keys(usedChunkIds);
+            let result = -1;
+
+            for (let index = 0; index < keyChunks.length; index++) {
+                const usedIdKey = keyChunks[index];
+                const usedIdValue = usedChunkIds[usedIdKey];
+
+                if (typeof usedIdValue !== 'number') {
+                    continue;
+                }
+
+                result = Math.max(result, usedIdValue);
+            }
+
+            return result;
+        }
+
         if (this.usedChunkIds) {
-            const usedIds = Object.keys(this.usedChunkIds).map(function (key) {
-                return this.usedChunkIds[key];
-            }, this).sort();
-            const usedNumberIds = usedIds.filter(id => typeof id === 'number');
-            nextFreeChunkId = usedNumberIds.reduce((a, b) => Math.max(a, b), -1) + 1;
-            for (let i = 0; i < nextFreeChunkId; i++) {
-                if (this.usedChunkIds[i] !== i) {
-                    unusedIds.push(i);
+            nextFreeChunkId = getNextFreeChunkId(this.usedChunkIds) + 1;
+            let index = nextFreeChunkId;
+            while (index--) {
+                if (this.usedChunkIds[index] !== index) {
+                    unusedIds.push(index);
                 }
             }
-            unusedIds.reverse();
         }
-        this.chunks.forEach(chunk => {
+
+        const chunks = this.chunks;
+        for (let indexChunk = 0; indexChunk < chunks.length; indexChunk++) {
+            const chunk = chunks[indexChunk];
             if (chunk.id === null) {
                 if (unusedIds.length > 0) {
                     chunk.id = unusedIds.pop();
@@ -1058,27 +1127,35 @@ class Compilation extends Tapable {
             if (!chunk.ids) {
                 chunk.ids = [chunk.id];
             }
-        }, this);
+        }
     }
 
     sortItemsWithModuleIds() {
         this.modules.sort(byId);
-        this.modules.forEach(module => {
-            module.sortItems();
-        });
-        this.chunks.forEach(chunk => {
-            chunk.sortItems();
-        });
+
+        const modules = this.modules;
+        for (let indexModule = 0; indexModule < modules.length; indexModule++) {
+            modules[indexModule].sortItems();
+        }
+
+        const chunks = this.chunks;
+        for (let indexChunk = 0; indexChunk < chunks.length; indexChunk++) {
+            chunks[indexChunk].sortItems();
+        }
     }
 
     sortItemsWithChunkIds() {
         this.chunks.sort(byId);
-        this.modules.forEach(module => {
-            module.sortItems();
-        });
-        this.chunks.forEach(function (chunk) {
-            chunk.sortItems();
-        });
+
+        const modules = this.modules;
+        for (let indexModule = 0; indexModule < modules.length; indexModule++) {
+            modules[indexModule].sortItems();
+        }
+
+        const chunks = this.chunks;
+        for (let indexChunk = 0; indexChunk < chunks.length; indexChunk++) {
+            chunks[indexChunk].sortItems();
+        }
     }
 
     summarizeDependencies() {
@@ -1095,30 +1172,39 @@ class Compilation extends Tapable {
         this.fileDependencies = (this.compilationDependencies || []).slice();
         this.contextDependencies = [];
         this.missingDependencies = [];
-        this.children.forEach(child => {
+        const children = this.children;
+        for (let indexChildren = 0; indexChildren < children.length; indexChildren++) {
+            const child = children[indexChildren];
+
             this.fileDependencies = this.fileDependencies.concat(child.fileDependencies);
             this.contextDependencies = this.contextDependencies.concat(child.contextDependencies);
             this.missingDependencies = this.missingDependencies.concat(child.missingDependencies);
-        });
-        this.modules.forEach(function (module: NormalModule) {
+        }
+
+        const modules = this.modules as NormalModule[];
+        for (let indexModule = 0; indexModule < modules.length; indexModule++) {
+            const module = modules[indexModule];
+
             if (module.fileDependencies) {
-                module.fileDependencies.forEach(function (item) {
-                    this.fileDependencies.push(item);
-                }, this);
+                const fileDependencies = module.fileDependencies;
+                for (let indexFileDep = 0; indexFileDep < fileDependencies.length; indexFileDep++) {
+                    this.fileDependencies.push(fileDependencies[indexFileDep]);
+                }
             }
             if (module.contextDependencies) {
-                module.contextDependencies.forEach(function (item) {
-                    this.contextDependencies.push(item);
-                }, this);
+                const contextDependencies = module.contextDependencies;
+                for (let indexContextDep = 0; indexContextDep < contextDependencies.length; indexContextDep++) {
+                    this.contextDependencies.push(contextDependencies[indexContextDep]);
+                }
             }
-        }, this);
-        this.errors.forEach(function (error) {
+        }
+        this.errors.forEach((error) => {
             if (Array.isArray(error.missing)) {
-                error.missing.forEach(function (item) {
+                error.missing.forEach((item) => {
                     this.missingDependencies.push(item);
-                }, this);
+                });
             }
-        }, this);
+        });
         this.fileDependencies.sort();
         this.fileDependencies = filterDups(this.fileDependencies);
         this.contextDependencies.sort();
@@ -1142,7 +1228,6 @@ class Compilation extends Tapable {
         this.children.forEach(function (child) {
             hash.update(child.hash);
         });
-        let chunk: Chunk;
         // clone needed as sort below is in-place mutation
         const chunks = this.chunks.slice();
         /**
@@ -1162,7 +1247,7 @@ class Compilation extends Tapable {
             return 0;
         });
         for (let i = 0; i < chunks.length; i++) {
-            chunk = chunks[i];
+            const chunk = chunks[i];
             const chunkHash = crypto.createHash(hashFunction);
             if (outputOptions.hashSalt) {
                 chunkHash.update(outputOptions.hashSalt);
@@ -1172,7 +1257,7 @@ class Compilation extends Tapable {
                 this.mainTemplate.updateHashForChunk(chunkHash, chunk);
             }
             else {
-                this.chunkTemplate.updateHashForChunk(chunkHash);
+                this.chunkTemplate.updateHashForChunk(chunkHash, chunk);
             }
             this.applyPlugins2('chunk-hash', chunk, chunkHash);
             chunk.hash = chunkHash.digest(hashDigest);
@@ -1201,9 +1286,9 @@ class Compilation extends Tapable {
             if (module.assets) {
                 Object.keys(module.assets)
                     .forEach(name => {
-                        const file = this.getPath(name);
-                        this.assets[file] = module.assets[name];
-                        this.applyPlugins2('module-asset', module, file);
+                        const fileName = this.getPath(name);
+                        this.assets[fileName] = module.assets[name];
+                        this.applyPlugins2('module-asset', module, fileName);
                     });
             }
         }
@@ -1225,8 +1310,9 @@ class Compilation extends Tapable {
             try {
                 const useChunkHash = !chunk.hasRuntime() || this.mainTemplate.useChunkHash && this.mainTemplate.useChunkHash(chunk);
                 const usedHash = useChunkHash ? chunkHash : this.fullHash;
-                if (this.cache && this.cache[`c${chunk.id}`] && this.cache[`c${chunk.id}`].hash === usedHash) {
-                    source = this.cache[`c${chunk.id}`].source;
+                const cacheName = `c${chunk.id}`;
+                if (this.cache && this.cache[cacheName] && this.cache[cacheName].hash === usedHash) {
+                    source = this.cache[cacheName].source;
                 }
                 else {
                     if (chunk.hasRuntime()) {
@@ -1235,10 +1321,11 @@ class Compilation extends Tapable {
                     else {
                         source = this.chunkTemplate.render(chunk, this.moduleTemplate, this.dependencyTemplates);
                     }
+
                     if (this.cache) {
-                        this.cache[`c${chunk.id}`] = {
+                        this.cache[cacheName] = {
                             hash: usedHash,
-                            source: source = source instanceof CachedSource ? source : new CachedSource(source)
+                            source: source = (source instanceof CachedSource ? source : new CachedSource(source))
                         };
                     }
                 }
@@ -1273,17 +1360,25 @@ class Compilation extends Tapable {
 
     checkConstraints() {
         const usedIds = {};
-        this.modules.forEach(module => {
-            if (usedIds[module.id]) {
-                throw new Error(`checkConstraints: duplicate module id ${module.id}`);
+
+        const modules = this.modules;
+        for (let indexModule = 0; indexModule < modules.length; indexModule++) {
+            const moduleId = modules[indexModule].id;
+
+            if (usedIds[moduleId]) {
+                throw new Error(`checkConstraints: duplicate module id ${moduleId}`);
             }
-        });
-        this.chunks.forEach((chunk, idx) => {
-            if (this.chunks.indexOf(chunk) !== idx) {
+        }
+
+        const chunks = this.chunks;
+        for (let indexChunk = 0; indexChunk < chunks.length; indexChunk++) {
+            const chunk = chunks[indexChunk];
+
+            if (chunks.indexOf(chunk) !== indexChunk) {
                 throw new Error(`checkConstraints: duplicate chunk in compilation ${chunk.debugId}`);
             }
             chunk.checkConstraints();
-        });
+        }
     }
 }
 
@@ -1307,4 +1402,19 @@ function byId(a: any, b: any) {
         return 1;
     }
     return 0;
+}
+
+function iterationBlockVariable(variables: DependenciesBlockVariable[], fn: (input: any) => any) {
+    for (let indexVariable = 0; indexVariable < variables.length; indexVariable++) {
+        const varDep = variables[indexVariable].dependencies;
+        for (let indexVDep = 0; indexVDep < varDep.length; indexVDep++) {
+            fn(varDep[indexVDep]);
+        }
+    }
+}
+
+function iterationOfArrayCallback(arr: any[], fn: (input: any) => any) {
+    for (let index = 0; index < arr.length; index++) {
+        fn(arr[index]);
+    }
 }

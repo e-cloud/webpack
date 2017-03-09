@@ -64,9 +64,10 @@ declare interface ModuleOptions {
     exprContextRegExp?: RegExp;
     exprContextRequest?: string;
     /** A RegExp or an array of RegExps. Don’t parse files matching. */
-    noParse?: RegExp | RegExp[];
+    noParse?: RegExp | RegExp[] | string[] | string;
     rules: Rule[];
     loaders?: Rule[];
+    strictExportPresence?: boolean;
     unknownContextCritical?: boolean;
     unknownContextRecursive?: boolean;
     unknownContextRegExp?: RegExp;
@@ -406,6 +407,7 @@ declare interface NMFBeforeResolveResult {
     context: string;
     contextInfo: {
         issuer: string;
+        compiler: string;
     };
     dependencies: [ModuleDependency];
     request: string;

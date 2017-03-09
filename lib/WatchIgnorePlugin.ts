@@ -3,7 +3,7 @@
  Author Tobias Koppers @sokra
  */
 import Compiler = require('./Compiler')
-import { TimeStampMap, WatchOptions, ErrCallback, WatchFileSystem } from '../typings/webpack-types'
+import { ErrCallback, TimeStampMap, WatchFileSystem, WatchOptions } from '../typings/webpack-types'
 
 class WatchIgnorePlugin {
     constructor(protected paths: string[]) {

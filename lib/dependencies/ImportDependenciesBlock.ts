@@ -4,8 +4,8 @@
  */
 import AsyncDependenciesBlock = require('../AsyncDependenciesBlock');
 import ImportDependency = require('./ImportDependency');
-import { SourceRange } from '../../typings/webpack-types'
 import { SourceLocation } from 'estree'
+import { SourceRange } from '../../typings/webpack-types'
 import Module = require('../Module')
 
 class ImportDependenciesBlock extends AsyncDependenciesBlock {

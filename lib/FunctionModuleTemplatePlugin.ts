@@ -2,8 +2,8 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { ConcatSource, Source } from 'webpack-sources'
 import { Hash } from 'crypto'
+import { ConcatSource, Source } from 'webpack-sources'
 import ModuleTemplate = require('./ModuleTemplate')
 import Module = require('./Module')
 import NormalModule = require('./NormalModule')
@@ -14,7 +14,8 @@ class FunctionModuleTemplatePlugin {
             const source = new ConcatSource();
             const defaultArguments = [module.moduleArgument || 'module', module.exportsArgument || 'exports'];
 
-            if((module.arguments && module.arguments.length !== 0) || module.hasDependencies(d => d.requireWebpackRequire !== false)) {
+            if ((module.arguments && module.arguments.length !== 0) || module.hasDependencies(
+                    d => d.requireWebpackRequire !== false)) {
                 defaultArguments.push('__webpack_require__');
             }
             source.add(`/***/ (function(${defaultArguments.concat(module.arguments || []).join(', ')}) {\n\n`);

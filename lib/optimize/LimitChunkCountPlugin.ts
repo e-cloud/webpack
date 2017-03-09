@@ -7,13 +7,11 @@ import Compilation = require('../Compilation')
 import Chunk = require('../Chunk')
 
 class LimitChunkCountPlugin {
-    constructor(
-        public options: {
-            maxChunks: number
-        } = {} as any
-    ) {
+    constructor(public options: {
+                    maxChunks: number
+                } = {} as any) {
         if (options !== undefined && typeof options !== 'object' || Array.isArray(options)) {
-            throw new Error('Argument should be an options object.\nFor more info on options, see https://webpack.github.io/docs/list-of-plugins.html');
+            throw new Error('Argument should be an options object.\nFor more info on options, see https://webpack.js.org/plugins/');
         }
     }
 
@@ -34,31 +32,35 @@ class LimitChunkCountPlugin {
 
                 if (chunks.length > maxChunks) {
                     // todo: the form of combinations is too flexible, unable to attach a type system
-                    let combinations = [];
-                    chunks.forEach((a, idx) => {
-                        for (let i = 0; i < idx; i++) {
-                            const b = chunks[i];
-                            combinations.push([b, a]);
-                        }
-                    });
+                    const sortedExtendedPairCombinations = chunks.reduce((combinations, a, idx) => {
+                            // create combination pairs
+                            for (let i = 0; i < idx; i++) {
+                                const b = chunks[i];
+                                combinations.push([b, a]);
+                            }
+                            return combinations;
+                        }, [])
+                        .map((pair) => {
+                            // extend combination pairs with size and integrated size
+                            const a = pair[0].size(options);
+                            const b = pair[1].size(options);
+                            const ab = pair[0].integratedSize(pair[1], options);
+                            return [a + b - ab, ab, pair[0], pair[1], a, b];
+                        })
+                        .filter((extendedPair) => {
+                            // filter pairs that do not have an integratedSize
+                            // meaning they can NOT be integrated!
+                            return extendedPair[1] !== false;
+                        })
+                        .sort((a, b) => {
+                            // sadly javascript does an inplace sort here
+                            // sort them by size
+                            const diff = b[0] - a[0];
+                            if (diff !== 0) return diff;
+                            return a[1] - b[1];
+                        });
 
-                    combinations.forEach(pair => {
-                        const a = pair[0].size(options);
-                        const b = pair[1].size(options);
-                        const ab = pair[0].integratedSize(pair[1], options);
-                        pair.unshift(a + b - ab, ab);
-                        pair.push(a, b);
-                    });
-                    combinations = combinations.filter(pair => pair[1] !== false);
-                    combinations.sort((a, b) => {
-                        const diff = b[0] - a[0];
-                        if (diff !== 0) {
-                            return diff;
-                        }
-                        return a[1] - b[1];
-                    });
-
-                    const pair = combinations[0];
+                    const pair = sortedExtendedPairCombinations[0];
 
                     if (pair && pair[2].integrate(pair[3], 'limit')) {
                         chunks.splice(chunks.indexOf(pair[3]), 1);

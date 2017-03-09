@@ -19,7 +19,6 @@ class ImportParserPlugin {
             if (expr.arguments.length !== 1) {
                 throw new Error('Incorrect number of arguments provided to \'import(module: string) -> Promise\'.');
             }
-            let dep;
             const param = this.evaluateExpression(expr.arguments[0]);
             if (param.isString()) {
                 const depBlock = new ImportDependenciesBlock(param.string, expr.range, this.state.module, expr.loc);
@@ -27,7 +26,7 @@ class ImportParserPlugin {
                 return true;
             }
             else {
-                dep = ContextDependencyHelpers.create(ImportContextDependency, expr.range, param, expr, options);
+                const dep = ContextDependencyHelpers.create(ImportContextDependency, expr.range, param, expr, options);
                 if (!dep) {
                     return;
                 }

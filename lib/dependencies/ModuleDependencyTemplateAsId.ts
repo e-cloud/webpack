@@ -18,10 +18,7 @@ class ModuleDependencyTemplateAsId {
         if (!dep.range) {
             return;
         }
-        let comment = '';
-        if (outputOptions.pathinfo) {
-            comment = `/*! ${requestShortener.shorten(dep.request)} */ `;
-        }
+        const comment = outputOptions.pathinfo ? `/*! ${requestShortener.shorten(dep.request)} */ ` : '';
         let content;
         if (dep.module) {
             content = comment + JSON.stringify(dep.module.id);
@@ -30,13 +27,6 @@ class ModuleDependencyTemplateAsId {
             content = WebpackMissingModule.module(dep.request);
         }
         source.replace(dep.range[0], dep.range[1] - 1, content);
-    }
-
-    applyAsTemplateArgument(name: string, dep: ModuleDependency, source: ReplaceSource) {
-        if (!dep.range) {
-            return;
-        }
-        source.replace(dep.range[0], dep.range[1] - 1, name);
     }
 }
 

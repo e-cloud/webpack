@@ -9,14 +9,12 @@ import Compilation = require('./Compilation')
 import NormalModule = require('./NormalModule')
 
 class HashedModuleIdsPlugin {
-    constructor(
-        public options: {
-            hashFunction: string
-            hashDigest: HexBase64Latin1Encoding
-            hashDigestLength: number
-            context: string
-        } = {} as any
-    ) {
+    constructor(public options: {
+                    hashFunction: string
+                    hashDigest: HexBase64Latin1Encoding
+                    hashDigestLength: number
+                    context: string
+                } = {} as any) {
         this.options.hashFunction = this.options.hashFunction || 'md5';
         this.options.hashDigest = this.options.hashDigest || 'base64';
         this.options.hashDigestLength = this.options.hashDigestLength || 4;
@@ -24,22 +22,22 @@ class HashedModuleIdsPlugin {
 
     apply(compiler: Compiler) {
         compiler.plugin('compilation', (compilation: Compilation) => {
-            const usedIds = {};
+            const usedIds = new Set();
             compilation.plugin('before-module-ids', (modules: NormalModule[]) => {
                 modules.forEach((module) => {
                     if (module.id === null && module.libIdent) {
-                        let id = module.libIdent({
+                        const id = module.libIdent({
                             context: this.options.context || compiler.options.context
                         });
                         const hash = crypto.createHash(this.options.hashFunction);
                         hash.update(id);
-                        id = hash.digest(this.options.hashDigest);
+                        const hashId = hash.digest(this.options.hashDigest);
                         let len = this.options.hashDigestLength;
-                        while (usedIds[id.substr(0, len)]) {
-                            len++
+                        while (usedIds.has(hashId.substr(0, len))) {
+                            len++;
                         }
-                        module.id = id.substr(0, len);
-                        usedIds[module.id] = true;
+                        module.id = hashId.substr(0, len);
+                        usedIds.add(module.id);
                     }
                 });
             });

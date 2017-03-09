@@ -2,7 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { FunctionExpression, Expression, ReturnStatement, ArrowFunctionExpression } from 'estree'
+import { ArrowFunctionExpression, Expression, FunctionExpression, ReturnStatement } from 'estree'
 
 // todo: export with default
 export = function (expr: Expression): {

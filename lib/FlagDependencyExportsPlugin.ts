@@ -12,7 +12,7 @@ class FlagDependencyExportsPlugin {
     apply(compiler: Compiler) {
         compiler.plugin('compilation', function (compilation: Compilation) {
             compilation.plugin('finish-modules', function (modules: Module[]) {
-                const dependencies: Dictionary<Module[]> = {};
+                const dependencies: Dictionary<Module[]> = Object.create(null);
 
                 let module: Module;
                 let moduleWithExports;
@@ -31,17 +31,11 @@ class FlagDependencyExportsPlugin {
                 }
 
                 function processDependenciesBlock(depBlock: DependenciesBlock) {
-                    depBlock.dependencies.forEach(dep => {
-                        processDependency(dep);
-                    });
+                    depBlock.dependencies.forEach(dep => processDependency(dep));
                     depBlock.variables.forEach(variable => {
-                        variable.dependencies.forEach(dep => {
-                            processDependency(dep);
-                        });
+                        variable.dependencies.forEach(dep => processDependency(dep));
                     });
-                    depBlock.blocks.forEach(block => {
-                        processDependenciesBlock(block);
-                    });
+                    depBlock.blocks.forEach(processDependenciesBlock);
                 }
 
                 function processDependency(dep: Dependency) {
@@ -55,10 +49,16 @@ class FlagDependencyExportsPlugin {
                     if (exportDeps) {
                         exportDeps.forEach(dep => {
                             const depIdent = dep.identifier();
-                            let array = dependencies[`$${depIdent}`];
+                            // if this was not yet initialized
+                            // initialize it as an array containing the module and stop
+                            const array = dependencies[depIdent];
                             if (!array) {
-                                array = dependencies[`$${depIdent}`] = [];
+                                dependencies[depIdent] = [module];
+                                return;
                             }
+
+                            // check if this module is known
+                            // if not, add it to the dependencies for this identifier
                             if (!array.includes(module)) {
                                 array.push(module);
                             }
@@ -86,11 +86,9 @@ class FlagDependencyExportsPlugin {
                 }
 
                 function notifyDependencies() {
-                    const deps = dependencies[`$${module.identifier()}`];
+                    const deps = dependencies[module.identifier()];
                     if (deps) {
-                        deps.forEach(dep => {
-                            queue.push(dep);
-                        });
+                        deps.forEach(dep => queue.push(dep));
                     }
                 }
             });

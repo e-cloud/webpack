@@ -7,7 +7,24 @@ import LocalModule = require('./LocalModule')
 import { ReplaceSource } from 'webpack-sources'
 import { SourceRange } from '../../typings/webpack-types'
 
-class Template {
+class AMDDefineDependency extends NullDependency {
+    localModule: LocalModule
+
+    constructor(
+        public range: SourceRange,
+        public arrayRange: SourceRange,
+        public functionRange: SourceRange,
+        public objectRange: SourceRange
+    ) {
+        super();
+    }
+
+    get type() {
+        return 'amd define';
+    }
+}
+
+AMDDefineDependency.Template = class Template {
     get definitions() {
         return {
             f: [
@@ -125,25 +142,6 @@ class Template {
             throw new Error('Implementation error');
         }
     }
-}
-
-class AMDDefineDependency extends NullDependency {
-    localModule: LocalModule
-
-    constructor(
-        public range: SourceRange,
-        public arrayRange: SourceRange,
-        public functionRange: SourceRange,
-        public objectRange: SourceRange
-    ) {
-        super();
-    }
-
-    get type() {
-        return 'amd define';
-    }
-
-    static Template = Template
 }
 
 export = AMDDefineDependency;

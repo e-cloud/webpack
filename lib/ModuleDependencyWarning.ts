@@ -12,13 +12,11 @@ class ModuleDependencyWarning extends Error {
 
     constructor(public module: Module, public error: Error, loc: SourceLocation | string) {
         super();
-        if (Error.hasOwnProperty('captureStackTrace')) {
-            Error.captureStackTrace(this, this.constructor);
-        }
         this.name = 'ModuleDependencyWarning';
         this.message = `${formatLocation(loc)} ${error.message}`;
         this.details = error.stack.split('\n').slice(1).join('\n');
         this.origin = module;
+        Error.captureStackTrace(this, this.constructor);
     }
 }
 

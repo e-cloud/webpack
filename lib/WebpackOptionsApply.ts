@@ -199,10 +199,10 @@ class WebpackOptionsApply extends OptionsApply {
             const evalWrapped = options.devtool.includes('eval');
             const cheap = options.devtool.includes('cheap');
             const moduleMaps = options.devtool.includes('module');
-            let noSources = options.devtool.includes('nosources');
-            let legacy = options.devtool.includes('@');
-            let modern = options.devtool.includes('#');
-            let comment = legacy && modern
+            const noSources = options.devtool.includes('nosources');
+            const legacy = options.devtool.includes('@');
+            const modern = options.devtool.includes('#');
+            const comment = legacy && modern
                 ? '\n/*\n//@ sourceMappingURL=[url]\n//# sourceMappingURL=[url]\n*/'
                 : legacy
                     ? '\n/*\n//@ sourceMappingURL=[url]\n*/'
@@ -226,9 +226,9 @@ class WebpackOptionsApply extends OptionsApply {
             );
         }
         else if (options.devtool && options.devtool.includes('eval')) {
-            let legacy = options.devtool.includes('@');
-            let modern = options.devtool.includes('#');
-            let comment = legacy && modern
+            const legacy = options.devtool.includes('@');
+            const modern = options.devtool.includes('#');
+            const comment = legacy && modern
                 ? '\n//@ sourceURL=[url]\n//# sourceURL=[url]'
                 : legacy
                     ? '\n//@ sourceURL=[url]'
@@ -243,7 +243,7 @@ class WebpackOptionsApply extends OptionsApply {
 
         compiler.apply(
             new CompatibilityPlugin(),
-            new HarmonyModulesPlugin(),
+            new HarmonyModulesPlugin(options.module),
             new AMDPlugin(options.module, options.amd || {}),
             new CommonJsPlugin(options.module),
             new LoaderPlugin(),

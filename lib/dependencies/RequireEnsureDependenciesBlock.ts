@@ -4,7 +4,7 @@
  */
 import AsyncDependenciesBlock = require('../AsyncDependenciesBlock');
 import RequireEnsureDependency = require('./RequireEnsureDependency');
-import { FunctionExpression, SourceLocation, CallExpression, ArrowFunctionExpression } from 'estree'
+import { ArrowFunctionExpression, CallExpression, FunctionExpression, SourceLocation } from 'estree'
 import { SourceRange } from '../../typings/webpack-types'
 import Module = require('../Module')
 

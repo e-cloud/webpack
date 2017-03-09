@@ -2,7 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { SourceLocation, Position } from 'estree'
+import { Position, SourceLocation } from 'estree'
 
 export = function formatLocation(loc: string | number | SourceLocation) {
     if (typeof loc === 'string') {

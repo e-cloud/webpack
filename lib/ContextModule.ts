@@ -3,15 +3,17 @@
  Author Tobias Koppers @sokra
  */
 import path = require('path');
-import { OriginalSource, RawSource } from 'webpack-sources'
-import { WebpackOptions, TimeStampMap, ErrCallback } from '../typings/webpack-types'
-import { SourceLocation } from 'estree'
 import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
+import { OriginalSource, RawSource } from 'webpack-sources'
+import { ErrCallback, TimeStampMap, WebpackOptions } from '../typings/webpack-types'
 import Module = require('./Module');
 import AsyncDependenciesBlock = require('./AsyncDependenciesBlock');
 import ModuleDependency = require('./dependencies/ModuleDependency');
 import RequestShortener = require('./RequestShortener')
 import Compilation = require('./Compilation')
+import Resolver = require('enhanced-resolve/lib/Resolver')
+import Dependency = require('./Dependency')
+import DependenciesBlock = require('./DependenciesBlock')
 
 class ContextModule extends Module {
     async: boolean
@@ -33,70 +35,88 @@ class ContextModule extends Module {
         public recursive: boolean,
         public regExp: RegExp,
         public addon: string,
-        async: boolean
+        isAsync: boolean
     ) {
         super();
-        this.async = !!async;
+        this.async = !!isAsync;
         this.cacheable = true;
         this.contextDependencies = [context];
         this.built = false;
     }
 
+    prettyRegExp(regexString: string) {
+        // remove the "/" at the front and the beginning
+        // "/foo/" -> "foo"
+        return regexString.substring(1, regexString.length - 1);
+    }
+
+    contextify(context: string, request: string) {
+        return request.split('!')
+            .map(subrequest => {
+                let rp = path.relative(context, subrequest);
+                if (path.sep === '\\') {
+                    rp = rp.replace(/\\/g, '/');
+                }
+                if (rp.indexOf('../') !== 0) {
+                    rp = './' + rp;
+                }
+                return rp;
+            })
+            .join('!');
+    }
+
     identifier() {
-        let identifier = '';
-        identifier += `${this.context} `;
+        let identifier = this.context;
         if (this.async) {
-            identifier += 'async ';
+            identifier += ' async';
         }
         if (!this.recursive) {
-            identifier += 'nonrecursive ';
+            identifier += ' nonrecursive';
         }
         if (this.addon) {
-            identifier += this.addon;
+            identifier += ` ${this.addon}`;
         }
         if (this.regExp) {
-            identifier += this.regExp;
+            identifier += ` ${this.regExp}`;
         }
-        return identifier.replace(/ $/, '');
+
+        return identifier;
     }
 
     readableIdentifier(requestShortener: RequestShortener) {
-        let identifier = '';
-        identifier += `${requestShortener.shorten(this.context)} `;
+        let identifier = requestShortener.shorten(this.context);
         if (this.async) {
-            identifier += 'async ';
+            identifier += ' async';
         }
         if (!this.recursive) {
-            identifier += 'nonrecursive ';
+            identifier += ' nonrecursive';
         }
         if (this.addon) {
-            identifier += requestShortener.shorten(this.addon);
+            identifier += ` ${requestShortener.shorten(this.addon)}`;
         }
         if (this.regExp) {
-            identifier += prettyRegExp(`${this.regExp}`);
+            identifier += ` ${this.prettyRegExp(this.regExp + '')}`;
         }
-        return identifier.replace(/ $/, '');
+
+        return identifier;
     }
 
-    libIdent(
-        options: {
-            context: string
-        }
-    ) {
-        let identifier = `${contextify(options, this.context)} `;
+    libIdent(options: { context: string }) {
+        let identifier = this.contextify(options.context, this.context);
         if (this.async) {
-            identifier += 'async ';
+            identifier += ' async';
         }
         if (this.recursive) {
-            identifier += 'recursive ';
+            identifier += ' recursive';
         }
         if (this.addon) {
-            identifier += contextify(options, this.addon);
+            identifier += ` ${this.contextify(options.context, this.addon)}`;
         }
         if (this.regExp) {
-            identifier += prettyRegExp(`${this.regExp}`)
+            identifier += ` ${this.prettyRegExp(this.regExp + '')}`;
         }
-        return identifier.replace(/ $/, '');
+
+        return identifier;
     }
 
     needRebuild(fileTimestamps: TimeStampMap, contextTimestamps: TimeStampMap) {
@@ -104,6 +124,7 @@ class ContextModule extends Module {
         if (!ts) {
             return true;
         }
+
         return ts >= this.builtTime;
     }
 
@@ -113,161 +134,166 @@ class ContextModule extends Module {
     }
 
     build(
-        options: WebpackOptions, compilation: Compilation, resolver: any, fs: AbstractInputFileSystem,
+        options: WebpackOptions,
+        compilation: Compilation,
+        resolver: Resolver,
+        fs: AbstractInputFileSystem,
         callback: ErrCallback
     ) {
         this.built = true;
         this.builtTime = new Date().getTime();
-        const addon = this.addon;
         this.resolveDependencies(fs, this.context, this.recursive, this.regExp, (err, dependencies) => {
-            if (err) {
-                return callback(err);
+            if (err) return callback(err);
+
+            if (!dependencies) {
+                this.dependencies = [];
+                callback();
+                return;
             }
-            if (dependencies) {
-                dependencies.forEach(dep => {
-                    dep.loc = dep.userRequest;
-                    dep.request = addon + dep.request;
-                });
-            }
-            if (this.async) {
-                if (dependencies) {
-                    dependencies.forEach(function (dep) {
-                        const block = new AsyncDependenciesBlock(null, dep.module, dep.loc as SourceLocation);
-                        block.addDependency(dep);
-                        this.addBlock(block);
-                    }, this);
-                }
-            }
-            else {
+
+            // enhance dependencies
+            dependencies.forEach(dep => {
+                dep.loc = dep.userRequest;
+                dep.request = this.addon + dep.request;
+            });
+
+            // if these we are not a async context
+            // add dependencies and continue
+            if (!this.async) {
                 this.dependencies = dependencies;
+                callback();
+                return;
             }
-            return callback();
+
+            // if we are async however create a new async dependency block
+            // and add that block to this context
+            dependencies.forEach(dep => {
+                const block = new AsyncDependenciesBlock(null, dep.module, dep.loc);
+                block.addDependency(dep);
+                this.addBlock(block);
+            });
+            callback();
         });
     }
 
-    source() {
-        let str;
-        const map = {};
-        if (this.dependencies && this.dependencies.length > 0) {
-            this.dependencies.slice().sort((a, b) => {
+    getSourceWithDependencies(dependencies: Dependency[], id: number) {
+        // if we filter first we get a new array
+        // therefor we dont need to create a clone of dependencies explicitly
+        // therefore the order of this is !important!
+        const map = dependencies
+            .filter(dependency => dependency.module)
+            .sort((a, b) => {
                 if (a.userRequest === b.userRequest) {
                     return 0;
                 }
                 return a.userRequest < b.userRequest ? -1 : 1;
-            }).forEach(dep => {
-                if (dep.module) {
-                    map[dep.userRequest] = dep.module.id;
-                }
-            });
-            str = [
-                'var map = ',
-                JSON.stringify(map, null, '\t'),
-                ';\n',
-                'function webpackContext(req) {\n',
-                '\treturn __webpack_require__(webpackContextResolve(req));\n',
-                '};\n',
-                'function webpackContextResolve(req) {\n',
-                '\tvar id = map[req];\n',
-                '\tif(!(id + 1)) // check for number\n',
-                '\t\tthrow new Error("Cannot find module \'" + req + "\'.");\n',
-                '\treturn id;\n',
-                '};\n',
-                'webpackContext.keys = function webpackContextKeys() {\n',
-                '\treturn Object.keys(map);\n',
-                '};\n',
-                'webpackContext.resolve = webpackContextResolve;\n',
-                'module.exports = webpackContext;\n',
-                `webpackContext.id = ${JSON.stringify(this.id)};\n`
-            ];
-        }
-        else if (this.blocks && this.blocks.length > 0) {
-            const items = this.blocks.map(block => ({
+            }).reduce(function (map, dep) {
+                map[dep.userRequest] = dep.module.id;
+                return map;
+            }, Object.create(null));
+        return `var map = ${JSON.stringify(map, null, '\t')};
+function webpackContext(req) {
+	return __webpack_require__(webpackContextResolve(req));
+};
+function webpackContextResolve(req) {
+	var id = map[req];
+	if(!(id + 1)) // check for number or string
+		throw new Error("Cannot find module '" + req + "'.");
+	return id;
+};
+webpackContext.keys = function webpackContextKeys() {
+	return Object.keys(map);
+};
+webpackContext.resolve = webpackContextResolve;
+module.exports = webpackContext;
+webpackContext.id = ${JSON.stringify(id)};`;
+    }
+
+    getSourceWithBlocks(blocks: DependenciesBlock[], id: number) {
+        let hasMultipleOrNoChunks = false;
+        const map = blocks
+            .filter(block => block.dependencies[0].module)
+            .map((block) => ({
                 dependency: block.dependencies[0],
-                block,
+                block: block,
                 userRequest: block.dependencies[0].userRequest
-            })).filter(item => item.dependency.module);
-            let hasMultipleChunks = false;
-            items.sort((a, b) => {
-                if (a.userRequest === b.userRequest) {
-                    return 0;
-                }
+            })).sort((a, b) => {
+                if (a.userRequest === b.userRequest) return 0;
                 return a.userRequest < b.userRequest ? -1 : 1;
-            }).forEach(item => {
-                if (item.dependency.module) {
-                    const chunks = item.block.chunks || [];
-                    if (chunks.length !== 1) {
-                        hasMultipleChunks = true;
-                    }
-                    map[item.userRequest] = [item.dependency.module.id].concat(chunks.map(chunk => chunk.id));
+            }).reduce((map, item) => {
+                const chunks = item.block.chunks || [];
+                if (chunks.length !== 1) {
+                    hasMultipleOrNoChunks = true;
                 }
-            });
-            str = [
-                'var map = ',
-                JSON.stringify(map, null, '\t'),
-                ';\n',
-                'function webpackAsyncContext(req) {\n',
-                '\tvar ids = map[req];',
-                '\tif(!ids)\n',
-                '\t\treturn Promise.reject(new Error("Cannot find module \'" + req + "\'."));\n',
-                '\treturn ',
-                hasMultipleChunks
-                    ? 'Promise.all(ids.slice(1).map(__webpack_require__.e))'
-                    : '__webpack_require__.e(ids[1])',
-                '.then(function() {\n',
-                '\t\treturn __webpack_require__(ids[0]);\n',
-                '\t});\n',
-                '};\n',
-                'webpackAsyncContext.keys = function webpackAsyncContextKeys() {\n',
-                '\treturn Object.keys(map);\n',
-                '};\n',
-                'module.exports = webpackAsyncContext;\n',
-                `webpackAsyncContext.id = ${JSON.stringify(this.id)};\n`
-            ];
+                map[item.userRequest] = [item.dependency.module.id]
+                    .concat(chunks.map(chunk => chunk.id));
+
+                return map;
+            }, Object.create(null));
+
+        const requestPrefix = hasMultipleOrNoChunks
+            ? 'Promise.all(ids.slice(1).map(__webpack_require__.e))'
+            : '__webpack_require__.e(ids[1])';
+
+        return `var map = ${JSON.stringify(map, null, '\t')};
+function webpackAsyncContext(req) {
+	var ids = map[req];
+	if(!ids)
+		return Promise.reject(new Error("Cannot find module '" + req + "'."));
+	return ${requestPrefix}.then(function() {
+		return __webpack_require__(ids[0]);
+	});
+};
+webpackAsyncContext.keys = function webpackAsyncContextKeys() {
+	return Object.keys(map);
+};
+module.exports = webpackAsyncContext;
+webpackAsyncContext.id = ${JSON.stringify(id)};`;
+    }
+
+    getSourceForEmptyContext(id: number) {
+        return `function webpackEmptyContext(req) {
+	throw new Error("Cannot find module '" + req + "'.");
+}
+webpackEmptyContext.keys = function() { return []; };
+webpackEmptyContext.resolve = webpackEmptyContext;
+module.exports = webpackEmptyContext;
+webpackEmptyContext.id = ${JSON.stringify(id)};`;
+    }
+
+    getSourceString() {
+        if (this.dependencies && this.dependencies.length > 0) {
+            return this.getSourceWithDependencies(this.dependencies, this.id);
         }
-        else {
-            str = [
-                'function webpackEmptyContext(req) {\n',
-                '\tthrow new Error("Cannot find module \'" + req + "\'.");\n',
-                '}\n',
-                'webpackEmptyContext.keys = function() { return []; };\n',
-                'webpackEmptyContext.resolve = webpackEmptyContext;\n',
-                'module.exports = webpackEmptyContext;\n',
-                `webpackEmptyContext.id = ${JSON.stringify(this.id)};\n`
-            ];
+
+        if (this.blocks && this.blocks.length > 0) {
+            return this.getSourceWithBlocks(this.blocks, this.id);
         }
+
+        return this.getSourceForEmptyContext(this.id);
+    }
+
+    getSource(sourceString: string) {
         if (this.useSourceMap) {
-            return new OriginalSource(str.join(''), this.identifier());
+            return new OriginalSource(sourceString, this.identifier());
         }
-        else {
-            return new RawSource(str.join(''));
-        }
+        return new RawSource(sourceString);
+    }
+
+    source() {
+        return this.getSource(
+            this.getSourceString()
+        );
     }
 
     size() {
-        return this.dependencies.map(dep => dep.userRequest.length + 5)
-            .reduce((a, b) => a + b, 160);
+        // base penalty
+        const initialSize = 160;
+
+        // if we dont have dependencies we stop here.
+        return this.dependencies
+            .reduce((size, dependency) => size + 5 + dependency.userRequest.length, initialSize);
     }
 }
 
 export = ContextModule;
-
-function prettyRegExp(str: string) {
-    return str.substring(1, str.length - 1);
-}
-
-function contextify(
-    options: {
-        context: string
-    }, request: string
-) {
-    return request.split('!').map(function (r) {
-        let rp = path.relative(options.context, r);
-        if (path.sep === '\\') {
-            rp = rp.replace(/\\/g, '/');
-        }
-        if (rp.indexOf('../') !== 0) {
-            rp = `./${rp}`;
-        }
-        return rp;
-    }).join('!');
-}

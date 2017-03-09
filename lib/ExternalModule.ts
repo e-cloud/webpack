@@ -7,19 +7,23 @@ import { ErrCallback, ExternalsModuleObject } from '../typings/webpack-types'
 import Module = require('./Module');
 import WebpackMissingModule = require('./dependencies/WebpackMissingModule');
 import Chunk = require('./Chunk')
+import Template = require('./Template')
 
 class ExternalModule extends Module {
     _EnsureChunkConditionsPlugin_usedChunks: Chunk[]
     builtTime: number
-    chunkCondition: (chunk: Chunk) => boolean
     external: boolean
     optional: boolean
     useSourceMap: boolean
 
     constructor(public request: ExternalsModuleObject | string[] | string, public type: string) {
         super();
-        this.chunkCondition = (chunk: Chunk) => chunk.hasEntryModule();
         this.built = false;
+        this.external = true;
+    }
+
+    chunkCondition(chunk: Chunk) {
+        return chunk.hasEntryModule();
     }
 
     identifier() {
@@ -39,60 +43,72 @@ class ExternalModule extends Module {
         callback();
     }
 
-    source() {
-        let str = 'throw new Error(\'Externals not supported\');';
-        let request = this.request;
-        if (typeof request === 'object') {
-            request = request[this.type];
+    getSourceForGlobalVariableExternal(variableName: string | string[], type: string) {
+        // todo: it seems to be unclear about use case of array type request
+        if (!Array.isArray(variableName)) {
+            // make it an array as the look up works the same basically
+            variableName = [variableName];
         }
+
+        // needed for e.g. window["some"]["thing"]
+        const objectLookup = variableName.map(r => `[${JSON.stringify(r)}]`).join('');
+        return `(function() { module.exports = ${type}${objectLookup}; }());`;
+    }
+
+    getSourceForCommonJsExternal(moduleAndSpecifiers: string | string[]) {
+        if (!Array.isArray(moduleAndSpecifiers)) {
+            return `module.exports = require(${JSON.stringify(moduleAndSpecifiers)});`;
+        }
+
+        const moduleName = moduleAndSpecifiers[0];
+        const objectLookup = moduleAndSpecifiers.slice(1).map(r => `[${JSON.stringify(r)}]`).join('');
+        return `module.exports = require(${moduleName})${objectLookup};`;
+    }
+
+    checkExternalVariable(variableToCheck: string, request: string) {
+        return `if(typeof ${variableToCheck} === 'undefined') {${WebpackMissingModule.moduleCode(request)}}\n`;
+    }
+
+    getSourceForAmdOrUmdExternal(id: number, optional: boolean, request: string) {
+        const externalVariable = Template.toIdentifier(`__WEBPACK_EXTERNAL_MODULE_${id}__`);
+        const missingModuleError = optional ? this.checkExternalVariable(externalVariable, request) : '';
+        return `${missingModuleError}module.exports = ${externalVariable};`;
+    }
+
+    getSourceForDefaultCase(optional: boolean, request: string) {
+        const missingModuleError = optional ? this.checkExternalVariable(request, request) : '';
+        return `${missingModuleError}module.exports = ${request};`;
+    }
+
+    getSourceString() {
+        const request = typeof this.request === 'object' ? this.request[this.type] : this.request;
         switch (this.type) {
             case 'this':
             case 'window':
             case 'global':
-                // todo: it seems to be unclear about use case of array type request
-                if (Array.isArray(request)) {
-                    str = `(function() { module.exports = ${this.type}${request.map(
-                        r => `[${JSON.stringify(r)}]`)
-                        .join('')}; }());`;
-                }
-                else {
-                    str = `(function() { module.exports = ${this.type}[${JSON.stringify(request)}]; }());`;
-                }
-                break;
+                return this.getSourceForGlobalVariableExternal(request, this.type);
             case 'commonjs':
             case 'commonjs2':
-                if (Array.isArray(request)) {
-                    str = `module.exports = require(${JSON.stringify(request[0])})${request.slice(1)
-                        .map(r => `[${JSON.stringify(r)}]`)
-                        .join('')};`;
-                }
-                else {
-                    str = `module.exports = require(${JSON.stringify(request)});`;
-                }
-                break;
+                return this.getSourceForCommonJsExternal(request);
             case 'amd':
             case 'umd':
             case 'umd2':
-                str = '';
-                if (this.optional) {
-                    str += `if(typeof __WEBPACK_EXTERNAL_MODULE_${this.id}__ === 'undefined') {${WebpackMissingModule.moduleCode(request)}}\n`;
-                }
-                str += `module.exports = __WEBPACK_EXTERNAL_MODULE_${this.id}__;`;
-                break;
+                return this.getSourceForAmdOrUmdExternal(this.id, this.optional, request);
             default:
-                str = '';
-                if (this.optional) {
-                    str += `if(typeof ${request} === 'undefined') {${WebpackMissingModule.moduleCode(request)}}\n`;
-                }
-                str += `module.exports = ${request};`;
-                break;
+                return this.getSourceForDefaultCase(this.optional, request);
         }
+    }
+
+    getSource(sourceString: string) {
         if (this.useSourceMap) {
-            return new OriginalSource(str, this.identifier());
+            return new OriginalSource(sourceString, this.identifier());
         }
-        else {
-            return new RawSource(str);
-        }
+
+        return new RawSource(sourceString);
+    }
+
+    source() {
+        return this.getSource(this.getSourceString());
     }
 
     size() {

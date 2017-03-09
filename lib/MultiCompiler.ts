@@ -6,7 +6,7 @@ import Tapable = require('tapable');
 import async = require('async');
 import Stats = require('./Stats');
 import Compiler = require('./Compiler')
-import { WatchCallback, ErrCallback, WatchOptions, AbstractStats } from '../typings/webpack-types'
+import { AbstractStats, ErrCallback, WatchCallback, WatchOptions } from '../typings/webpack-types'
 import MultiStats = require('./MultiStats')
 import Watching = Compiler.Watching
 import MultiWatching = require('./MultiWatching')
@@ -56,7 +56,7 @@ class MultiCompiler extends Tapable {
 
         let doneCompilers = 0;
         const compilerStats: Stats[] = [];
-        this.compilers.forEach(function (compiler: Compiler, idx) {
+        this.compilers.forEach((compiler: Compiler, idx) => {
             let compilerDone = false;
             compiler.plugin('done', (stats: Stats) => {
                 if (!compilerDone) {
@@ -75,7 +75,7 @@ class MultiCompiler extends Tapable {
                 }
                 this.applyPlugins('invalid');
             });
-        }, this);
+        });
     }
 
     watch(watchOptions: WatchOptions, handler: WatchCallback<AbstractStats>) {
@@ -94,7 +94,7 @@ class MultiCompiler extends Tapable {
                     allStats[compilerIdx] = stats;
                     compilerStatus[compilerIdx] = 'new';
                     if (compilerStatus.every(Boolean)) {
-                        const freshStats = allStats.filter(function(s, idx) {
+                        const freshStats = allStats.filter(function (s, idx) {
                             return compilerStatus[idx] === 'new';
                         });
                         compilerStatus.fill(true);
@@ -112,7 +112,7 @@ class MultiCompiler extends Tapable {
             // ignore
         });
 
-        return new MultiWatching(watchings);
+        return new MultiWatching(watchings, this);
     }
 
     run(callback: WatchCallback<AbstractStats>) {

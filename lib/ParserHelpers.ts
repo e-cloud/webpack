@@ -10,7 +10,8 @@ import Dependency = require('./Dependency')
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import ConstDependency = require('./dependencies/ConstDependency');
 import UnsupportedFeatureWarning = require('./UnsupportedFeatureWarning');
-import { VariableDeclaration, Expression } from 'estree'
+import { Expression, VariableDeclaration } from 'estree'
+import path = require('path')
 
 export function addParsedVariableToModule(parser: Parser, name: string, expression: string) {
     if (!parser.state.current.addVariable) {
@@ -30,9 +31,17 @@ export function addParsedVariableToModule(parser: Parser, name: string, expressi
     return true;
 }
 
+export function requireFileAsExpression(context: string, pathToModule: string) {
+    let moduleJsPath = path.relative(context, pathToModule);
+    if (!/^[A-Z]:/i.test(moduleJsPath)) {
+        moduleJsPath = `./${moduleJsPath.replace(/\\/g, '/')}`;
+    }
+    return `require(${JSON.stringify(moduleJsPath)})`;
+}
+
 export function toConstantDependency(value: string) {
     return function constantDependency(expr: VariableDeclaration) {
-        const dep = new ConstDependency(JSON.stringify(value), expr.range);
+        const dep = new ConstDependency(value, expr.range);
         dep.loc = expr.loc;
         this.state.current.addDependency(dep);
         return true;
@@ -42,6 +51,12 @@ export function toConstantDependency(value: string) {
 export function evaluateToString(value: string) {
     return function stringExpression(expr: Expression) {
         return new BasicEvaluatedExpression().setString(value).setRange(expr.range);
+    };
+}
+
+export function evaluateToBoolean(value: boolean) {
+    return function booleanExpression(expr: Expression) {
+        return new BasicEvaluatedExpression().setBoolean(value).setRange(expr.range);
     };
 }
 
@@ -56,4 +71,12 @@ export function expressionIsUnsupported(message: string) {
         this.state.module.warnings.push(new UnsupportedFeatureWarning(this.state.module, message));
         return true;
     };
+}
+
+export function skipTraversal() {
+    return true;
+}
+
+export function approve() {
+    return true;
 }

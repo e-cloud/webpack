@@ -12,14 +12,14 @@ import ContextDependencyHelpers = require('./ContextDependencyHelpers');
 import LocalModulesHelpers = require('./LocalModulesHelpers');
 import Parser = require('../Parser')
 import {
-    Expression,
     CallExpression,
+    Expression,
     FunctionExpression,
-    ObjectExpression,
-    Literal,
-    Pattern,
     Identifier,
+    Literal,
     MemberExpression,
+    ObjectExpression,
+    Pattern,
     SimpleCallExpression
 } from 'estree'
 import { ModuleOptions } from '../../typings/webpack-types'
@@ -146,7 +146,7 @@ class AMDDefineDependencyParserPlugin {
                     fnParams = fn.params;
                 }
                 else if (isBoundFunctionExpression(fn)) {
-                    let lcFn = fn as BoundFunctionCallExpression
+                    const lcFn = fn as BoundFunctionCallExpression
                     fnParams = lcFn.callee.object.params;
                     fnParamsOffset = lcFn.arguments.length - 1;
                     if (fnParamsOffset < 0) {
@@ -190,7 +190,7 @@ class AMDDefineDependencyParserPlugin {
             let inTry: boolean;
             if (fn && fn.type === 'FunctionExpression') {
                 inTry = this.scope.inTry;
-                let lcFn = fn as FunctionExpression
+                const lcFn = fn as FunctionExpression
                 this.inScope(fnParams, () => {
                     this.scope.renames = fnRenames;
                     this.scope.inTry = inTry;
@@ -204,7 +204,7 @@ class AMDDefineDependencyParserPlugin {
             }
             else if (fn && isBoundFunctionExpression(fn)) {
                 inTry = this.scope.inTry;
-                let lcFn = fn as BoundFunctionCallExpression
+                const lcFn = fn as BoundFunctionCallExpression
                 this.inScope(
                     lcFn.callee.object.params.filter((i: Identifier) =>
                         !['require', 'module', 'exports'].includes(i.name)
@@ -238,11 +238,13 @@ class AMDDefineDependencyParserPlugin {
             return true;
         });
         parser.plugin('call define:amd:array', function (
-            expr: CallExpression, param: BasicEvaluatedExpression,
-            identifiers: {}, namedModule: string
+            expr: CallExpression,
+            param: BasicEvaluatedExpression,
+            identifiers: {},
+            namedModule: string
         ) {
             if (param.isArray()) {
-                param.items.forEach(function (param, idx) {
+                param.items.forEach((param, idx) => {
                     if (param.isString() && ['require', 'module', 'exports'].includes(param.string)) {
                         identifiers[idx] = param.string;
                     }
@@ -250,12 +252,12 @@ class AMDDefineDependencyParserPlugin {
                     if (result === undefined) {
                         this.applyPluginsBailResult('call define:amd:context', expr, param);
                     }
-                }, this);
+                });
                 return true;
             }
             else if (param.isConstArray()) {
                 const deps: (string | ModuleDependency)[] = [];
-                param.array.forEach(function (request, idx) {
+                param.array.forEach((request, idx) => {
                     let dep;
                     let localModule;
                     if (request === 'require') {
@@ -279,7 +281,7 @@ class AMDDefineDependencyParserPlugin {
                         this.state.current.addDependency(dep);
                     }
                     deps.push(dep);
-                }, this);
+                });
                 const dep = new AMDRequireArrayDependency(deps, param.range);
                 dep.loc = expr.loc;
                 dep.optional = !!this.scope.inTry;
@@ -288,16 +290,17 @@ class AMDDefineDependencyParserPlugin {
             }
         });
         parser.plugin('call define:amd:item', function (
-            expr: CallExpression, param: BasicEvaluatedExpression,
+            expr: CallExpression,
+            param: BasicEvaluatedExpression,
             namedModule: string
         ) {
             if (param.isConditional()) {
-                param.options.forEach(function (param) {
+                param.options.forEach((param) => {
                     const result = this.applyPluginsBailResult('call define:amd:item', expr, param);
                     if (result === undefined) {
                         this.applyPluginsBailResult('call define:amd:context', expr, param);
                     }
-                }, this);
+                });
                 return true;
             }
             else if (param.isString()) {

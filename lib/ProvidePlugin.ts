@@ -2,14 +2,14 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import ParserHelpers = require("./ParserHelpers");
+import ParserHelpers = require('./ParserHelpers');
 import ConstDependency = require('./dependencies/ConstDependency');
 import NullFactory = require('./NullFactory');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Parser = require('./Parser')
-import { CompilationParams, PlainObject, ParserOptions } from '../typings/webpack-types'
 import { Expression } from 'estree'
+import { CompilationParams, ParserOptions, PlainObject } from '../typings/webpack-types'
 
 class ProvidePlugin {
     constructor(public definitions: PlainObject) {
@@ -29,7 +29,7 @@ class ProvidePlugin {
                         if (splitName.length > 0) {
                             splitName.slice(1).forEach((_, i) => {
                                 const name = splitName.slice(0, i + 1).join('.');
-                                parser.plugin(`can-rename ${name}`, () => true);
+                                parser.plugin(`can-rename ${name}`, ParserHelpers.approve);
                             });
                         }
                         parser.plugin(`expression ${name}`, function (expr: Expression) {
@@ -40,17 +40,13 @@ class ProvidePlugin {
                                 nameIdentifier = `__webpack_provided_${name.replace(/\./g, '_dot_')}`;
                             }
                             if (request.length > 1) {
-                                expression += request.slice(1).map(function (r) {
-                                    return `[${JSON.stringify(r)}]`;
-                                }).join('');
+                                expression += request.slice(1).map(r => `[${JSON.stringify(r)}]`).join('');
                             }
                             if (!ParserHelpers.addParsedVariableToModule(this, nameIdentifier, expression)) {
                                 return false;
                             }
                             if (scopedName) {
-                                const dep = new ConstDependency(nameIdentifier, expr.range);
-                                dep.loc = expr.loc;
-                                this.state.current.addDependency(dep);
+                                ParserHelpers.toConstantDependency(nameIdentifier).call(this, expr);
                             }
                             return true;
                         });

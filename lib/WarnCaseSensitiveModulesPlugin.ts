@@ -13,22 +13,20 @@ class WarnCaseSensitiveModulesPlugin {
                 const moduleWithoutCase = {};
                 this.modules.forEach(
                     module => {
-                        const ident = module.identifier().toLowerCase();
-                        if (moduleWithoutCase[`$${ident}`]) {
-                            moduleWithoutCase[`$${ident}`].push(module);
+                        const identifier = module.identifier().toLowerCase();
+                        if (moduleWithoutCase[identifier]) {
+                            moduleWithoutCase[identifier].push(module);
                         }
                         else {
-                            moduleWithoutCase[`$${ident}`] = [module];
+                            moduleWithoutCase[identifier] = [module];
                         }
                     }
                 );
-                Object.keys(moduleWithoutCase).forEach(
-                    function (key) {
-                        if (moduleWithoutCase[key].length > 1) {
-                            this.warnings.push(new CaseSensitiveModulesWarning(moduleWithoutCase[key]));
-                        }
+                Object.keys(moduleWithoutCase).forEach((key) => {
+                    if (moduleWithoutCase[key].length > 1) {
+                        this.warnings.push(new CaseSensitiveModulesWarning(moduleWithoutCase[key]));
                     }
-                    , this);
+                });
             });
         });
     }

@@ -44,8 +44,7 @@ class AggressiveSplittingPlugin {
                     for (i = 0; i < chunks.length; i++) {
                         chunk = chunks[i];
                         const chunkModuleNames = chunk.modules.map(m => makeRelative(compiler, m.identifier()));
-                        // todo: wrong type comparison
-                        if (chunkModuleNames.length < splitData.modules) {
+                        if (chunkModuleNames.length < splitData.modules.length) {
                             continue;
                         }
                         const moduleIndicies = splitData.modules.map(m => chunkModuleNames.indexOf(m));

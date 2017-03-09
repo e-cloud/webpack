@@ -21,7 +21,11 @@ import { CompilationParams, ParserOptions } from '../../typings/webpack-types'
 import HarmonyCompatibilityDependency = require('./HarmonyCompatibilityDependency')
 
 class HarmonyModulesPlugin {
+    constructor(public options: HarmonyImportDependencyParserPlugin.Options) {
+    }
+
     apply(compiler: Compiler) {
+        const self = this
         compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
             const normalModuleFactory = params.normalModuleFactory;
 
@@ -60,7 +64,7 @@ class HarmonyModulesPlugin {
 
                 parser.apply(
                     new HarmonyDetectionParserPlugin(),
-                    new HarmonyImportDependencyParserPlugin(),
+                    new HarmonyImportDependencyParserPlugin(self.options),
                     new HarmonyExportDependencyParserPlugin()
                 );
             });

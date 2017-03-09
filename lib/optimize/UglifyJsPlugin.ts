@@ -3,7 +3,7 @@
  Author Tobias Koppers @sokra
  */
 import { SourceMapConsumer } from 'source-map'
-import { SourceMapSource, RawSource } from 'webpack-sources'
+import { ConcatSource, RawSource, Source, SourceMapSource } from 'webpack-sources'
 import { PlainObject } from '../../typings/webpack-types'
 import uglify = require('uglify-js');
 import RequestShortener = require('../RequestShortener');
@@ -18,7 +18,7 @@ class UglifyJsPlugin {
     options: UglifyJsPlugin.Option
 
     constructor(options: UglifyJsPlugin.Option) {
-        if (typeof options !== 'object') {
+        if (typeof options !== 'object' || Array.isArray(options)) {
             options = {} as any;
         }
         if (typeof options.compressor !== 'undefined') {
@@ -30,6 +30,7 @@ class UglifyJsPlugin {
     apply(compiler: Compiler) {
         const options = this.options;
         options.test = options.test || /\.js($|\?)/i;
+        const warningsFilter = options.warningsFilter || (() => true);
 
         const requestShortener = new RequestShortener(compiler.context);
         compiler.plugin('compilation', function (compilation: Compilation) {
@@ -40,17 +41,11 @@ class UglifyJsPlugin {
                 });
             }
             compilation.plugin('optimize-chunk-assets', function (chunks: Chunk[], callback) {
-                let files: string[] = [];
-                chunks.forEach(chunk => {
-                    chunk.files.forEach(file => {
-                        files.push(file);
-                    });
-                });
-                compilation.additionalChunkAssets.forEach(file => {
-                    files.push(file);
-                });
-                files = files.filter(ModuleFilenameHelpers.matchObject.bind(undefined, options));
-                files.forEach(file => {
+                const files: string[] = [];
+                chunks.forEach((chunk) => files.push.apply(files, chunk.files));
+                files.push.apply(files, compilation.additionalChunkAssets);
+                const filterdFiles = files.filter(ModuleFilenameHelpers.matchObject.bind(undefined, options));
+                filterdFiles.forEach(file => {
                     const oldWarnFunction = uglify.AST_Node.warn_function;
                     const warnings: string[] = [];
                     let sourceMap: SourceMapConsumer
@@ -66,8 +61,7 @@ class UglifyJsPlugin {
                                 const sourceAndMap = asset.sourceAndMap();
                                 inputSourceMap = sourceAndMap.map;
                                 input = sourceAndMap.source;
-                            }
-                            else {
+                            } else {
                                 inputSourceMap = asset.map();
                                 input = asset.source();
                             }
@@ -81,9 +75,9 @@ class UglifyJsPlugin {
                                     line,
                                     column
                                 });
-                                if (!original || !original.source || original.source === file) {
-                                    return;
-                                }
+                                if (!original || !original.source || original.source === file) return;
+                                if (!warningsFilter(original.source)) return;
+
                                 warnings.push(`${warning.replace(/\[.+:([0-9]+),([0-9]+)\]/, '')}[${requestShortener.shorten(original.source)}:${original.line},${original.column}]`);
                             };
                         }
@@ -103,7 +97,7 @@ class UglifyJsPlugin {
                             const compress = uglify.Compressor(options.compress || {
                                     warnings: false
                                 }); // eslint-disable-line new-cap
-                            ast = ast.transform(compress);
+                            ast = compress.compress(ast);
                         }
                         if (options.mangle !== false) {
                             ast.figure_out_scope(options.mangle || {});
@@ -121,6 +115,63 @@ class UglifyJsPlugin {
                         for (const k in options.output) {
                             output[k] = options.output[k];
                         }
+                        const extractedComments: string[] = [];
+                        if (options.extractComments) {
+                            const condition: {
+                                preserve: any
+                                extract: any
+                            } = {} as any;
+                            if (typeof options.extractComments === 'string' || options.extractComments instanceof RegExp) {
+                                // extractComments specifies the extract condition and output.comments specifies the
+                                // preserve condition
+                                condition.preserve = output.comments;
+                                condition.extract = options.extractComments;
+                            } else if (Object.prototype.hasOwnProperty.call(options.extractComments, 'condition')) {
+                                // Extract condition is given in extractComments.condition
+                                condition.preserve = output.comments;
+                                condition.extract = options.extractComments.condition;
+                            } else {
+                                // No extract condition is given. Extract comments that match output.comments instead
+                                // of preserving them
+                                condition.preserve = false;
+                                condition.extract = output.comments;
+                            }
+
+                            // Ensure that both conditions are functions
+                            ['preserve', 'extract'].forEach(key => {
+                                let regex: RegExp
+                                switch (typeof condition[key]) {
+                                    case 'boolean':
+                                        const b = condition[key];
+                                        condition[key] = () => b;
+                                        break;
+                                    case 'function':
+                                        break;
+                                    case 'string':
+                                        if (condition[key] === 'all') {
+                                            condition[key] = () => true;
+                                            break;
+                                        }
+                                        regex = new RegExp(condition[key]);
+                                        condition[key] = (astNode: any, comment: any) => regex.test(comment.value);
+                                        break;
+                                    default:
+                                        regex = condition[key];
+                                        condition[key] = (astNode: any, comment: any) => regex.test(comment.value);
+                                }
+                            });
+
+                            // Redefine the comments function to extract and preserve
+                            // comments according to the two conditions
+                            output.comments = function (astNode: any, comment: any) {
+                                if (condition.extract(astNode, comment)) {
+                                    extractedComments.push(
+                                        comment.type === 'comment2' ? '/*' + comment.value + '*/' : '//' + comment.value
+                                    );
+                                }
+                                return condition.preserve(astNode, comment);
+                            };
+                        }
                         let map: SourceMap
                         let mapToString: string
                         if (options.sourceMap) {
@@ -135,10 +186,44 @@ class UglifyJsPlugin {
                         if (map) {
                             mapToString = `${map}`;
                         }
-                        const streamToString = `${stream}`;
-                        asset.__UglifyJsPlugin = compilation.assets[file] = mapToString
-                            ? new SourceMapSource(streamToString, file, JSON.parse(mapToString), input, inputSourceMap)
-                            : new RawSource(streamToString);
+                        const stringifiedStream = `${stream}`;
+                        let outputSource: Source = mapToString
+                            ? new SourceMapSource(stringifiedStream, file, JSON.parse(mapToString), input, inputSourceMap)
+                            : new RawSource(stringifiedStream);
+                        if (extractedComments.length > 0) {
+                            let commentsFile = options.extractComments.filename || `${file}.LICENSE`;
+                            if (typeof commentsFile === 'function') {
+                                commentsFile = commentsFile(file);
+                            }
+
+                            // Write extracted comments to commentsFile
+                            const commentsSource = new RawSource(extractedComments.join('\n\n') + '\n');
+                            if (commentsFile in compilation.assets) {
+                                // commentsFile already exists, append new comments...
+                                if (compilation.assets[commentsFile] instanceof ConcatSource) {
+                                    compilation.assets[commentsFile].add('\n');
+                                    compilation.assets[commentsFile].add(commentsSource);
+                                } else {
+                                    compilation.assets[commentsFile] = new ConcatSource(
+                                        compilation.assets[commentsFile], '\n', commentsSource
+                                    );
+                                }
+                            } else {
+                                compilation.assets[commentsFile] = commentsSource;
+                            }
+
+                            // Add a banner to the original file
+                            if (options.extractComments.banner !== false) {
+                                let banner = options.extractComments.banner || `For license information please see ${commentsFile}`;
+                                if (typeof banner === 'function') {
+                                    banner = banner(commentsFile);
+                                }
+                                if (banner) {
+                                    outputSource = new ConcatSource(`/*! ${banner} */\n`, outputSource);
+                                }
+                            }
+                        }
+                        asset.__UglifyJsPlugin = compilation.assets[file] = outputSource;
                         if (warnings.length > 0) {
                             compilation.warnings.push(new Error(`${file} from UglifyJs\n${warnings.join('\n')}`));
                         }
@@ -180,9 +265,15 @@ declare namespace UglifyJsPlugin {
         mangle: {
             props: any
         } | false
+        extractComments: string | RegExp | {
+            condition: string
+            banner: string
+            filename: string
+        }
         comments: RegExp
         beautify: boolean
         output: PlainObject
+        warningsFilter: (val: string) => boolean
     }
 }
 

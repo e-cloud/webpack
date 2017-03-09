@@ -28,6 +28,8 @@ class LoaderOptionsPlugin {
 
     apply(compiler: Compiler) {
         const options = this.options;
+        const filterSet = new Set(['include', 'exclude', 'test']);
+
         compiler.plugin('compilation', function (compilation: Compilation) {
             compilation.plugin('normal-module-loader', function (context: LoaderContext, module: NormalModule) {
                 const resource = module.resource;
@@ -37,10 +39,8 @@ class LoaderOptionsPlugin {
                 const i = resource.indexOf('?');
                 if (ModuleFilenameHelpers.matchObject(options, i < 0 ? resource : resource.substr(0, i))) {
                     Object.keys(options)
-                        .filter(key => !['include', 'exclude', 'test'].includes(key))
-                        .forEach(key => {
-                            context[key] = options[key];
-                        });
+                        .filter((key) => !filterSet.has(key))
+                        .forEach((key) => context[key] = options[key]);
                 }
             });
         });

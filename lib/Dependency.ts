@@ -32,7 +32,8 @@ abstract class Dependency {
         }
         return {
             module: this.module,
-            importedNames: true
+            importedNames: true // true: full object, false: only sideeffects/no export, array of strings: the exports
+                                // with this names
         };
     }
 

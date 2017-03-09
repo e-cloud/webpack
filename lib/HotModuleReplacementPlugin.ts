@@ -6,10 +6,10 @@ import Template = require('./Template');
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import ModuleHotAcceptDependency = require('./dependencies/ModuleHotAcceptDependency');
 import ModuleHotDeclineDependency = require('./dependencies/ModuleHotDeclineDependency');
-import { RawSource } from 'webpack-sources'
-import { CompilationParams, Record, ParserOptions } from '../typings/webpack-types'
 import { Hash } from 'crypto'
-import { Identifier, CallExpression, Expression } from 'estree'
+import { CallExpression, Identifier } from 'estree'
+import { RawSource } from 'webpack-sources'
+import { CompilationParams, ParserOptions, Record } from '../typings/webpack-types'
 import ConstDependency = require('./dependencies/ConstDependency');
 import NullFactory = require('./NullFactory');
 import crypto = require('crypto')
@@ -17,7 +17,7 @@ import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Parser = require('./Parser')
 import Chunk = require('./Chunk')
-import ParserHelpers = require("./ParserHelpers");
+import ParserHelpers = require('./ParserHelpers');
 
 const hotInitCode = Template.getFunctionContent(require('./HotModuleReplacement.runtime.js'));
 
@@ -25,12 +25,10 @@ class HotModuleReplacementPlugin {
     multiStep: boolean
     fullBuildTimeout: number
 
-    constructor(
-        options: {
-            multiStep: boolean
-            fullBuildTimeout: number
-        } = {} as any
-    ) {
+    constructor(options: {
+                    multiStep: boolean
+                    fullBuildTimeout: number
+                } = {} as any) {
         this.multiStep = options.multiStep;
         this.fullBuildTimeout = options.fullBuildTimeout || 200;
     }
@@ -127,7 +125,7 @@ class HotModuleReplacementPlugin {
                 }
                 this.modules.forEach(module => {
                     const identifier = module.identifier();
-                    let hash = crypto.createHash('md5');
+                    const hash = crypto.createHash('md5');
                     module.updateHash(hash);
                     const hashStr = hash.digest('hex');
                     module.hotUpdate = records.moduleHashs[identifier] !== hashStr;
@@ -136,7 +134,7 @@ class HotModuleReplacementPlugin {
                     h: this.hash,
                     c: {}
                 };
-                Object.keys(records.chunkHashs).forEach(function (chunkId) {
+                Object.keys(records.chunkHashs).forEach((chunkId) => {
                     const chunkIdNum = +chunkId;
                     const currentChunk = this.chunks.filter(chunk => chunk.id === chunkIdNum)[0];
                     if (currentChunk) {
@@ -162,7 +160,7 @@ class HotModuleReplacementPlugin {
                     else {
                         hotUpdateMainContent.c[chunkIdNum] = false;
                     }
-                }, this);
+                });
 
                 const source = new RawSource(JSON.stringify(hotUpdateMainContent));
                 const filename = this.getPath(hotUpdateMainFilename, {
@@ -227,16 +225,11 @@ class HotModuleReplacementPlugin {
             });
 
             params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions: ParserOptions) {
-                parser.plugin('expression __webpack_hash__', function (expr: Expression) {
-                    const dep = new ConstDependency('__webpack_require__.h()', expr.range);
-                    dep.loc = expr.loc;
-                    this.state.current.addDependency(dep);
-                    return true;
-                });
-                parser.plugin('evaluate typeof __webpack_hash__', ParserHelpers.evaluateToString("string"));
+                parser.plugin('expression __webpack_hash__', ParserHelpers.toConstantDependency('__webpack_require__.h()'));
+
+                parser.plugin('evaluate typeof __webpack_hash__', ParserHelpers.evaluateToString('string'));
                 parser.plugin('evaluate Identifier module.hot', function (expr: Identifier) {
-                    return new BasicEvaluatedExpression().setBoolean(!!this.state.compilation.hotUpdateChunkTemplate)
-                        .setRange(expr.range);
+                    return ParserHelpers.evaluateToBoolean(!!this.state.compilation.hotUpdateChunkTemplate)(expr);
                 });
                 parser.plugin('call module.hot.accept', function (expr: CallExpression) {
                     if (!this.state.compilation.hotUpdateChunkTemplate) {
@@ -293,7 +286,7 @@ class HotModuleReplacementPlugin {
                         });
                     }
                 });
-                parser.plugin('expression module.hot', () => true);
+                parser.plugin('expression module.hot', ParserHelpers.skipTraversal);
             });
         });
     }

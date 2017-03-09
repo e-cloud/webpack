@@ -82,7 +82,7 @@ class JsonpMainTemplatePlugin {
                 'if(installedChunks[chunkId] === 0)',
                 this.indent(['return Promise.resolve();']),
                 '',
-                '// an Promise means "currently loading".',
+                '// a Promise means "currently loading".',
                 'if(installedChunks[chunkId]) {',
                 this.indent(['return installedChunks[chunkId][2];']),
                 '}',
@@ -142,15 +142,15 @@ class JsonpMainTemplatePlugin {
                         'while(resolves.length)',
                         this.indent('resolves.shift()();'),
                         this.entryPointInChildren(chunk) ? [
-                                'if(executeModules) {',
-                                this.indent([
-                                    'for(i=0; i < executeModules.length; i++) {',
-                                    this.indent(`result = ${this.requireFn}(${this.requireFn}.s = executeModules[i]);`),
-                                    '}'
-                                ]),
-                                '}',
-                                'return result;'
-                            ] : ''
+                            'if(executeModules) {',
+                            this.indent([
+                                'for(i=0; i < executeModules.length; i++) {',
+                                this.indent(`result = ${this.requireFn}(${this.requireFn}.s = executeModules[i]);`),
+                                '}'
+                            ]),
+                            '}',
+                            'return result;'
+                        ] : ''
                     ]),
                     '};'
                 ]);

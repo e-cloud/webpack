@@ -9,9 +9,6 @@ class AssetsOverSizeLimitWarning extends Error {
 
     constructor(assetsOverSizeLimit: AssetsOverSizeLimitWarning.OverSizeLimit[], assetLimit: number) {
         super();
-        if (Error.hasOwnProperty('captureStackTrace')) {
-            Error.captureStackTrace(this, this.constructor);
-        }
         this.name = 'AssetsOverSizeLimitWarning';
         this.assets = assetsOverSizeLimit;
 
@@ -19,6 +16,7 @@ class AssetsOverSizeLimitWarning extends Error {
             .join('');
 
         this.message = `asset size limit: The following asset(s) exceed the recommended size limit (${SizeFormatHelpers.formatSize(assetLimit)}).\nThis can impact web performance.\nAssets: ${assetLists}`;
+        Error.captureStackTrace(this, this.constructor);
     }
 }
 

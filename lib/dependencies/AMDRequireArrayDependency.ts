@@ -5,7 +5,7 @@
 import Dependency = require('../Dependency');
 import WebpackMissingModule = require('./WebpackMissingModule');
 import { ReplaceSource } from 'webpack-sources'
-import { WebpackOutputOptions, SourceRange } from '../../typings/webpack-types'
+import { SourceRange, WebpackOutputOptions } from '../../typings/webpack-types'
 import RequestShortener = require('../RequestShortener')
 import ModuleDependency = require('./ModuleDependency')
 
@@ -20,9 +20,8 @@ class Template {
         source.replace(dep.range[0], dep.range[1] - 1, content);
     }
 
-    getContent(
-        dep: AMDRequireArrayDependency, outputOptions: WebpackOutputOptions,
-        requestShortener: RequestShortener
+    getContent(dep: AMDRequireArrayDependency, outputOptions: WebpackOutputOptions,
+               requestShortener: RequestShortener
     ) {
         const requires = dep.depsArray.map((dependency) => {
             if (typeof dependency === 'string') {
@@ -42,6 +41,10 @@ class Template {
     }
 
     contentForDependency(dep: ModuleDependency, comment: string) {
+        if (typeof dep === 'string') {
+            return dep;
+        }
+
         if (dep.module) {
             const stringifiedId = JSON.stringify(dep.module.id);
             return `__webpack_require__(${comment}${stringifiedId})`;

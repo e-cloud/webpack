@@ -2,9 +2,9 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { ReplaceSource, RawSource } from 'webpack-sources'
 import { Hash } from 'crypto'
-import { WebpackOutputOptions, DependencyFilter } from '../typings/webpack-types'
+import { RawSource, ReplaceSource } from 'webpack-sources'
+import { DependencyFilter, WebpackOutputOptions } from '../typings/webpack-types'
 import Dependency = require('./Dependency')
 import RequestShortener = require('./RequestShortener')
 
@@ -20,9 +20,8 @@ class DependenciesBlockVariable {
         });
     }
 
-    expressionSource(
-        dependencyTemplates: Map<Function, any>, outputOptions: WebpackOutputOptions,
-        requestShortener: RequestShortener
+    expressionSource(dependencyTemplates: Map<Function, any>, outputOptions: WebpackOutputOptions,
+                     requestShortener: RequestShortener
     ) {
         const source = new ReplaceSource(new RawSource(this.expression), undefined);
         this.dependencies.forEach(dep => {
@@ -42,10 +41,10 @@ class DependenciesBlockVariable {
     }
 
     hasDependencies(filter: DependencyFilter) {
-        if(filter) {
-            if(this.dependencies.some(filter)) return true;
+        if (filter) {
+            if (this.dependencies.some(filter)) return true;
         } else {
-            if(this.dependencies.length > 0) return true;
+            if (this.dependencies.length > 0) return true;
         }
         return false;
     }

@@ -3,8 +3,8 @@
  Author Tobias Koppers @sokra
  */
 import Module = require('./Module');
-import { RawSource } from 'webpack-sources'
 import { Hash } from 'crypto'
+import { RawSource } from 'webpack-sources'
 import { ErrCallback } from '../typings/webpack-types'
 import ModuleDependency = require('./dependencies/ModuleDependency')
 

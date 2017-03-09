@@ -9,7 +9,10 @@ import RequestShortener = require('../RequestShortener')
 import SystemImportContextDependency = require('./ImportContextDependency')
 import CommonJsRequireContextDependency = require('./CommonJsRequireContextDependency')
 
-type RequireContextDependency = AMDRequireContextDependency | SystemImportContextDependency | CommonJsRequireContextDependency
+type RequireContextDependency =
+    AMDRequireContextDependency
+    | SystemImportContextDependency
+    | CommonJsRequireContextDependency
 
 class ContextDependencyTemplateAsRequireCall {
     apply(
@@ -18,10 +21,7 @@ class ContextDependencyTemplateAsRequireCall {
         outputOptions: WebpackOutputOptions,
         requestShortener: RequestShortener
     ) {
-        let comment = '';
-        if (outputOptions.pathinfo) {
-            comment = `/*! ${requestShortener.shorten(dep.request)} */ `;
-        }
+        const comment = outputOptions.pathinfo ? `/*! ${requestShortener.shorten(dep.request)} */ ` : '';
         const containsDeps = dep.module && dep.module.dependencies && dep.module.dependencies.length > 0;
         const isAsync = dep.module && dep.module.async;
         if (dep.module && (isAsync || containsDeps)) {
@@ -43,18 +43,6 @@ class ContextDependencyTemplateAsRequireCall {
         else {
             const content = require('./WebpackMissingModule').module(dep.request);
             source.replace(dep.range[0], dep.range[1] - 1, content);
-        }
-    }
-
-    applyAsTemplateArgument(name: string, dep: RequireContextDependency, source: ReplaceSource) {
-        if (dep.valueRange) {
-            source.replace(dep.valueRange[1], dep.range[1] - 1, ')');
-            source.replace(dep.range[0],
-                dep.valueRange[0] - 1, `__webpack_require__(${name})(${
-                    typeof dep.prepend === 'string' ? JSON.stringify(dep.prepend) : ''}`);
-        }
-        else {
-            source.replace(dep.range[0], dep.range[1] - 1, `__webpack_require__(${name})`);
         }
     }
 }

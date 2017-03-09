@@ -4,7 +4,7 @@
  */
 import RequestShortener = require('./RequestShortener');
 import Compilation = require('./Compilation')
-import { StatsOptions, PlainObject, WebpackError } from '../typings/webpack-types'
+import { StatsOptions, WebpackError } from '../typings/webpack-types'
 import { formatSize } from './SizeFormatHelpers'
 import Module = require('./Module')
 import NormalModule = require('./NormalModule')
@@ -12,12 +12,12 @@ import formatLocation = require('./formatLocation');
 
 interface Colors {
     bold(str: string | number): void
-    cyan(str: string| number): void
-    green(str: string| number): void
-    magenta(str: string| number): void
-    normal(str: string| number): void
-    red(str: string| number): void
-    yellow(str: string| number): void
+    cyan(str: string | number): void
+    green(str: string | number): void
+    magenta(str: string | number): void
+    normal(str: string | number): void
+    red(str: string | number): void
+    yellow(str: string | number): void
 }
 
 interface StatsChunkOrigin {
@@ -120,7 +120,7 @@ interface StatsJson {
     warnings: string[]
 }
 
-function d(v: any, def: any) {
+function optionOrFallback(v: any, def: any) {
     return v === undefined ? def : v;
 }
 
@@ -143,6 +143,22 @@ class Stats {
         return this.compilation.errors.length > 0;
     }
 
+    // remove a prefixed "!" that can be specified to reverse sort order
+    normalizeFieldKey(field: string) {
+        if (field[0] === '!') {
+            return field.substr(1);
+        }
+        return field;
+    }
+
+    // if a field is prefixed by a "!" reverse sort order
+    sortOrderRegular(field: string) {
+        if (field[0] === '!') {
+            return false;
+        }
+        return true;
+    }
+
     toJson(options: StatsOptions, forToString: boolean) {
         if (typeof options === 'boolean' || typeof options === 'string') {
             options = Stats.presetToOptions(options);
@@ -152,39 +168,39 @@ class Stats {
         }
 
         const compilation = this.compilation;
-        const requestShortener = new RequestShortener(d(options.context, process.cwd()));
-        const showPerformance = d(options.performance, true);
-        const showHash = d(options.hash, true);
-        const showVersion = d(options.version, true);
-        const showTimings = d(options.timings, true);
-        const showAssets = d(options.assets, true);
-        const showEntryPoints = d(options.entrypoints, !forToString);
-        const showChunks = d(options.chunks, true);
-        const showChunkModules = d(options.chunkModules, !!forToString);
-        const showChunkOrigins = d(options.chunkOrigins, !forToString);
-        const showModules = d(options.modules, !forToString);
-        const showDepth = d(options.depth, !forToString);
-        const showCachedModules = d(options.cached, true);
-        const showCachedAssets = d(options.cachedAssets, true);
-        const showReasons = d(options.reasons, !forToString);
-        const showUsedExports = d(options.usedExports, !forToString);
-        const showProvidedExports = d(options.providedExports, !forToString);
-        const showChildren = d(options.children, true);
-        const showSource = d(options.source, !forToString);
-        const showErrors = d(options.errors, true);
-        const showErrorDetails = d(options.errorDetails, !forToString);
-        const showWarnings = d(options.warnings, true);
-        const showPublicPath = d(options.publicPath, !forToString);
-        const excludeModules = [].concat(d(options.exclude, [])).map(str => {
+        const requestShortener = new RequestShortener(optionOrFallback(options.context, process.cwd()));
+        const showPerformance = optionOrFallback(options.performance, true);
+        const showHash = optionOrFallback(options.hash, true);
+        const showVersion = optionOrFallback(options.version, true);
+        const showTimings = optionOrFallback(options.timings, true);
+        const showAssets = optionOrFallback(options.assets, true);
+        const showEntryPoints = optionOrFallback(options.entrypoints, !forToString);
+        const showChunks = optionOrFallback(options.chunks, true);
+        const showChunkModules = optionOrFallback(options.chunkModules, !!forToString);
+        const showChunkOrigins = optionOrFallback(options.chunkOrigins, !forToString);
+        const showModules = optionOrFallback(options.modules, !forToString);
+        const showDepth = optionOrFallback(options.depth, !forToString);
+        const showCachedModules = optionOrFallback(options.cached, true);
+        const showCachedAssets = optionOrFallback(options.cachedAssets, true);
+        const showReasons = optionOrFallback(options.reasons, !forToString);
+        const showUsedExports = optionOrFallback(options.usedExports, !forToString);
+        const showProvidedExports = optionOrFallback(options.providedExports, !forToString);
+        const showChildren = optionOrFallback(options.children, true);
+        const showSource = optionOrFallback(options.source, !forToString);
+        const showErrors = optionOrFallback(options.errors, true);
+        const showErrorDetails = optionOrFallback(options.errorDetails, !forToString);
+        const showWarnings = optionOrFallback(options.warnings, true);
+        const showPublicPath = optionOrFallback(options.publicPath, !forToString);
+        const excludeModules = [].concat(optionOrFallback(options.exclude, [])).map(str => {
             if (typeof str !== 'string') {
                 return str;
             }
             return new RegExp(`[\\\\/]${str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&')}([\\\\/]|$|!|\\?)`);
         });
-        const maxModules = d(options.maxModules, forToString ? 15 : Infinity);
-        const sortModules = d(options.modulesSort, 'id');
-        const sortChunks = d(options.chunksSort, 'id');
-        const sortAssets = d(options.assetsSort, '');
+        const maxModules = optionOrFallback(options.maxModules, forToString ? 15 : Infinity);
+        const sortModules = optionOrFallback(options.modulesSort, 'id');
+        const sortChunks = optionOrFallback(options.chunksSort, 'id');
+        const sortAssets = optionOrFallback(options.assetsSort, '');
 
         function createModuleFilter() {
             let i = 0;
@@ -203,50 +219,33 @@ class Stats {
             };
         }
 
-        function sortByField(field: string) {
-            if (!field) {
-                return () => 0;
-            }
-            if (field[0] === '!') {
-                field = field.substr(1);
-                return (a: PlainObject, b: PlainObject) => {
-                    if (a[field] === null && b[field] === null) {
-                        return 0;
-                    }
-                    if (a[field] === null) {
-                        return 1;
-                    }
-                    if (b[field] === null) {
-                        return -1;
-                    }
-                    if (a[field] === b[field]) {
-                        return 0;
-                    }
-                    return a[field] < b[field] ? 1 : -1;
-                };
-            }
-            return (a: PlainObject, b: PlainObject) => {
-                if (a[field] === null && b[field] === null) {
+        const sortByFieldAndOrder = (fieldKey: string, a: object, b: object) => {
+            if (a[fieldKey] === null && b[fieldKey] === null) return 0;
+            if (a[fieldKey] === null) return 1;
+            if (b[fieldKey] === null) return -1;
+            if (a[fieldKey] === b[fieldKey]) return 0;
+            return a[fieldKey] < b[fieldKey] ? -1 : 1;
+        };
+
+        const sortByField = (field: string) =>
+            (a: object, b: object) => {
+                if (!field) {
                     return 0;
                 }
-                if (a[field] === null) {
-                    return 1;
-                }
-                if (b[field] === null) {
-                    return -1;
-                }
-                if (a[field] === b[field]) {
-                    return 0;
-                }
-                return a[field] < b[field] ? -1 : 1;
+
+                const fieldKey = this.normalizeFieldKey(field);
+
+                // if a field is prefixed with a "!" the sort is reversed!
+                const sortIsRegular = this.sortOrderRegular(field);
+
+                return sortByFieldAndOrder(fieldKey, sortIsRegular ? a : b, sortIsRegular ? b : a);
             };
-        }
 
         function formatError(e: WebpackError | string) {
             let text = '';
-            let err: WebpackError = typeof e === 'string' ? {
-                    message: e
-                } : e;
+            const err: WebpackError = typeof e === 'string' ? {
+                message: e
+            } : e;
             if (err.chunk) {
                 text += `chunk ${err.chunk.name || err.chunk.id}${err.chunk.hasRuntime()
                     ? ' [entry]'
@@ -514,7 +513,7 @@ class Stats {
             options = {} as StatsOptions;
         }
 
-        const useColors = d(options.colors, false);
+        const useColors = optionOrFallback(options.colors, false);
 
         const obj = this.toJson(options, true);
 
@@ -585,7 +584,7 @@ class Stats {
 
         type TableItem = {
             value: string
-            color: (str: string| number) => void
+            color: (str: string | number) => void
         }
 
         function table(array: TableItem[][], align: string, splitter = '  ') {
@@ -629,7 +628,7 @@ class Stats {
             }
         }
 
-        function getAssetColor(asset: StatsAsset, defaultColor: (str: string| number) => void) {
+        function getAssetColor(asset: StatsAsset, defaultColor: (str: string | number) => void) {
             if (asset.isOverSizeLimit) {
                 return colors.yellow;
             }
@@ -991,7 +990,7 @@ class Stats {
         }
         if (obj.children) {
             obj.children.forEach(child => {
-                let childString = Stats.jsonToString(child, useColors);
+                const childString = Stats.jsonToString(child, useColors);
                 if (childString) {
                     if (child.name) {
                         colors.normal('Child ');

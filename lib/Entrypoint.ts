@@ -31,8 +31,8 @@ class Entrypoint {
     getFiles() {
         const files: string[] = [];
 
-        for (let chunk of this.chunks) {
-            for (let file of chunk.files) {
+        for (const chunk of this.chunks) {
+            for (const file of chunk.files) {
                 if (!files.includes(file)) {
                     files.push(file)
                 }

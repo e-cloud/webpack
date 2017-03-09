@@ -4,8 +4,8 @@
  */
 import NullDependency = require('./NullDependency');
 import HarmonyModulesHelpers = require('./HarmonyModulesHelpers');
-import { ReplaceSource } from 'webpack-sources'
 import { Hash } from 'crypto'
+import { ReplaceSource } from 'webpack-sources'
 import Module = require('../Module')
 import Dependency = require('../Dependency')
 
@@ -50,7 +50,7 @@ class Template {
 
         // we want to reexport the module object as named export
         if (dep.name) {
-            return `/* harmony reexport (module object) */ ${getReexportStatement(JSON.stringify(used), "")}`;
+            return `/* harmony reexport (module object) */ ${getReexportStatement(JSON.stringify(used), '')}`;
         }
 
         // we know which exports are used
@@ -77,7 +77,7 @@ class Template {
 
             return items.map(function (item) {
                 return `/* harmony namespace reexport (by used) */ ${getReexportStatement(JSON.stringify(item[0]), JSON.stringify(item[1]))}`;
-            }).join("");
+            }).join('');
         }
 
         // not sure which exports are used, but we know which are provided
@@ -101,7 +101,7 @@ class Template {
 
             return items.map(function (item) {
                 return `/* harmony namespace reexport (by provided) */ ${getReexportStatement(JSON.stringify(item[0]), JSON.stringify(item[1]))}`;
-            }).join("");
+            }).join('');
         }
 
         // not sure which exports are used and provided
@@ -126,7 +126,7 @@ class Template {
 
     reexportStatementCreator(module: Module, importsExportsUnknown: boolean, name: string) {
         const exportsName = module.exportsArgument || 'exports';
-        const getReexportStatement = (key: string, valueKey: string| null) => {
+        const getReexportStatement = (key: string, valueKey: string | null) => {
             const conditional = this.getConditional(importsExportsUnknown, valueKey, name);
             const returnValue = this.getReturnValue(valueKey);
             return `${conditional}__webpack_require__.d(${exportsName}, ${key}, function() { return ${name}${returnValue}; });\n`;
@@ -136,7 +136,7 @@ class Template {
 
     getConditional(importsExportsUnknown: boolean, valueKey: string | null, name: string) {
         if (!importsExportsUnknown || !valueKey) {
-            return "";
+            return '';
         }
 
         return `if(__webpack_require__.o(${name}, ${valueKey})) `;
@@ -297,7 +297,7 @@ class HarmonyExportImportedSpecifierDependency extends NullDependency {
 
     getHashValue(importedModule: Module): string {
         if (!importedModule) {
-            return importedModule;
+            return '';
         }
 
         const stringifiedUsedExport = JSON.stringify(importedModule.usedExports);

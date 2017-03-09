@@ -18,10 +18,7 @@ class ModuleDependencyTemplateAsRequireId {
         if (!dep.range) {
             return;
         }
-        let comment = '';
-        if (outputOptions.pathinfo) {
-            comment = `/*! ${requestShortener.shorten(dep.request)} */ `;
-        }
+        const comment = outputOptions.pathinfo ? `/*! ${requestShortener.shorten(dep.request)} */ ` : '';
         let content;
         if (dep.module) {
             content = `__webpack_require__(${comment}${JSON.stringify(dep.module.id)})`;
@@ -30,13 +27,6 @@ class ModuleDependencyTemplateAsRequireId {
             content = WebpackMissingModule.module(dep.request);
         }
         source.replace(dep.range[0], dep.range[1] - 1, content);
-    }
-
-    applyAsTemplateArgument(name: string, dep: ModuleDependency, source: ReplaceSource) {
-        if (!dep.range) {
-            return;
-        }
-        source.replace(dep.range[0], dep.range[1] - 1, `(__webpack_require__(${name}))`);
     }
 }
 

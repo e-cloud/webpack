@@ -5,8 +5,8 @@
 import WebpackMissingModule = require('./WebpackMissingModule')
 import RequireResolveContextDependency = require('./RequireResolveContextDependency')
 import RequestShortener = require('../RequestShortener')
-import { WebpackOutputOptions } from '../../typings/webpack-types'
 import { ReplaceSource } from 'webpack-sources'
+import { WebpackOutputOptions } from '../../typings/webpack-types'
 
 class ContextDependencyTemplateAsId {
     apply(

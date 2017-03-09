@@ -9,7 +9,7 @@ import WebpackOptionsApply = require('./WebpackOptionsApply');
 import WebpackOptionsDefaulter = require('./WebpackOptionsDefaulter');
 import validateSchema = require('./validateSchema');
 import WebpackOptionsValidationError = require('./WebpackOptionsValidationError');
-import { WebpackOptions, WatchCallback, AbstractStats } from '../typings/webpack-types'
+import { AbstractStats, WatchCallback, WebpackOptions } from '../typings/webpack-types'
 import Watching = Compiler.Watching
 import MultiWatching = MultiCompiler.MultiWatching
 

@@ -5,7 +5,7 @@
 import Compiler = require('./Compiler')
 import NormalModuleFactory = require('./NormalModuleFactory')
 import ContextModuleFactory = require('./ContextModuleFactory')
-import { NMFBeforeResolveResult, CMFBeforeResolveResult } from '../typings/webpack-types'
+import { CMFBeforeResolveResult, NMFBeforeResolveResult } from '../typings/webpack-types'
 
 class IgnorePlugin {
     constructor(public resourceRegExp: RegExp, public contextRegExp: RegExp) {

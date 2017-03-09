@@ -2,9 +2,9 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { Source, RawSource } from 'webpack-sources'
-import { RawSourceMap } from 'source-map'
 import { Hash } from 'crypto'
+import { RawSourceMap } from 'source-map'
+import { RawSource, Source } from 'webpack-sources'
 import { FilenameTemplate } from '../typings/webpack-types'
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
 import Compilation = require('./Compilation');
@@ -15,13 +15,11 @@ class EvalSourceMapDevToolModuleTemplatePlugin {
     sourceMapComment: string
     moduleFilenameTemplate: FilenameTemplate
 
-    constructor(
-        public compilation: Compilation, public options: {
-            append: string | false
-            moduleFilenameTemplate: FilenameTemplate
-            sourceRoot?: string
-        }
-    ) {
+    constructor(public compilation: Compilation, public options: {
+                    append: string | false
+                    moduleFilenameTemplate: FilenameTemplate
+                    sourceRoot?: string
+                }) {
         this.sourceMapComment = options.append || '//# sourceMappingURL=[url]';
         this.moduleFilenameTemplate = options.moduleFilenameTemplate || 'webpack:///[resource-path]?[hash]';
     }
@@ -58,9 +56,9 @@ class EvalSourceMapDevToolModuleTemplatePlugin {
                 const module = self.compilation.findModule(source);
                 return module || source;
             });
-            let moduleFilenames = modules.map(function (module) {
+            let moduleFilenames = modules.map((module) => {
                 return ModuleFilenameHelpers.createFilename(module, self.moduleFilenameTemplate, this.requestShortener);
-            }, this);
+            });
             moduleFilenames = ModuleFilenameHelpers.replaceDuplicates(moduleFilenames, (filename, i, n) => {
                 for (let j = 0; j < n; j++) {
                     filename += '*'
@@ -69,9 +67,9 @@ class EvalSourceMapDevToolModuleTemplatePlugin {
             });
             sourceMap.sources = moduleFilenames;
             if (sourceMap.sourcesContent) {
-                sourceMap.sourcesContent = sourceMap.sourcesContent.map(function (content, i) {
+                sourceMap.sourcesContent = sourceMap.sourcesContent.map((content, i) => {
                     return `${content}\n\n\n${ModuleFilenameHelpers.createFooter(modules[i], this.requestShortener)}`;
-                }, this);
+                });
             }
             sourceMap.sourceRoot = options.sourceRoot || '';
             sourceMap.file = `${module.id}.js`;

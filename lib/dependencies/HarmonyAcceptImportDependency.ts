@@ -10,7 +10,6 @@ class Template {
 }
 
 class HarmonyAcceptImportDependency extends HarmonyImportDependency {
-
     get type() {
         return 'harmony accept';
     }

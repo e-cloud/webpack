@@ -3,7 +3,7 @@
  Author Tobias Koppers @sokra
  */
 import { OriginalSource, RawSource } from 'webpack-sources'
-import { WebpackOptions, ErrCallback } from '../typings/webpack-types'
+import { ErrCallback, WebpackOptions } from '../typings/webpack-types'
 import Module = require('./Module');
 import WebpackMissingModule = require('./dependencies/WebpackMissingModule');
 import DelegatedSourceDependency = require('./dependencies/DelegatedSourceDependency');

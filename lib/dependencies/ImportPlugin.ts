@@ -7,7 +7,7 @@ import ImportContextDependency = require('./ImportContextDependency');
 import ImportParserPlugin = require('./ImportParserPlugin');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
-import { CompilationParams, ParserOptions, ModuleOptions } from '../../typings/webpack-types'
+import { CompilationParams, ModuleOptions, ParserOptions } from '../../typings/webpack-types'
 import Parser = require('../Parser')
 
 class ImportPlugin {

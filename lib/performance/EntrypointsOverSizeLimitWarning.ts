@@ -7,20 +7,16 @@ import SizeFormatHelpers = require('../SizeFormatHelpers');
 class EntrypointsOverSizeLimitWarning extends Error {
     constructor(public entrypoints: EntrypointsOverSizeLimitWarning.OverSizeLimit[], entrypointLimit: number) {
         super();
-        if (Error.hasOwnProperty('captureStackTrace')) {
-            Error.captureStackTrace(this, this.constructor);
-        }
         this.name = 'EntrypointsOverSizeLimitWarning';
 
-        const entrypointList = this.entrypoints.map(entrypoint =>
+        const entrypointList = this.entrypoints
+            .map(entrypoint =>
                 `\n  ${entrypoint.name} (${SizeFormatHelpers.formatSize(entrypoint.size)})\n${
-                    entrypoint.files
-                        .map((asset) => `      ${asset}\n`)
-                        .join('')}`
-            )
+                    entrypoint.files.map((asset) => `      ${asset}`).join('\n')}`)
             .join('');
 
-        this.message = `entrypoint size limit: The following entrypoint(s) combined asset size exceeds the recommended limit (${SizeFormatHelpers.formatSize(entrypointLimit)}). This can impact web performance.\nEntrypoints:${entrypointList}`;
+        this.message = `entrypoint size limit: The following entrypoint(s) combined asset size exceeds the recommended limit (${SizeFormatHelpers.formatSize(entrypointLimit)}). This can impact web performance.\nEntrypoints:${entrypointList}\n`;
+        Error.captureStackTrace(this, this.constructor);
     }
 }
 

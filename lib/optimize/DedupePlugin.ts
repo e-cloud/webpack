@@ -8,7 +8,7 @@ import Compilation = require('../Compilation')
 class DedupePlugin {
     apply(compiler: Compiler) {
         compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.warnings.push(new Error('DedupePlugin: This plugin was removed from webpack. remove it from configuration.'));
+            compilation.warnings.push(new Error('DedupePlugin: This plugin was removed from webpack. Remove it from your configuration.'));
         });
     }
 }

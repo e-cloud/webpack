@@ -8,11 +8,9 @@ import NormalModule = require('./NormalModule')
 import Module = require('./Module')
 
 class NamedModulesPlugin {
-    constructor(
-        public options: {
-            context: string
-        } = {} as any
-    ) {
+    constructor(public options: {
+                    context: string
+                } = {} as any) {
     }
 
     apply(compiler: Compiler) {

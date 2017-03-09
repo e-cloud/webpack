@@ -2,14 +2,13 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import path = require('path')
 import nodeLibsBrowser = require('node-libs-browser');
 import AliasPlugin = require('enhanced-resolve/lib/AliasPlugin');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
 import { CompilationParams, NodeOption, ParserOptions } from '../../typings/webpack-types'
-import ParserHelpers = require("../ParserHelpers");
+import ParserHelpers = require('../ParserHelpers');
 
 class NodeSourcePlugin {
     constructor(public options: NodeOption) {
@@ -36,20 +35,13 @@ class NodeSourcePlugin {
             }
         }
 
-        function buildExpression(context: string, pathToModule: string) {
-            let moduleJsPath = path.relative(context, pathToModule);
-            if (!/^[A-Z]:/i.test(moduleJsPath)) {
-                moduleJsPath = `./${moduleJsPath.replace(/\\/g, '/')}`;
-            }
-            return `require(${JSON.stringify(moduleJsPath)})`;
-        }
-
         function addExpression(parser: Parser, name: string, module: string, type: string | boolean, suffix = '') {
             parser.plugin(`expression ${name}`, function () {
                 if (this.state.module && this.state.module.resource === getPathToModule(module, type)) {
                     return;
                 }
-                return ParserHelpers.addParsedVariableToModule(this, name, buildExpression(this.state.module.context, getPathToModule(module, type)) + suffix);
+                const mockModule = ParserHelpers.requireFileAsExpression(this.state.module.context, getPathToModule(module, type));
+                return ParserHelpers.addParsedVariableToModule(this, name, mockModule + suffix);
             });
         }
 
@@ -66,7 +58,8 @@ class NodeSourcePlugin {
 
                 if (localOptions.global) {
                     parser.plugin('expression global', function () {
-                        return ParserHelpers.addParsedVariableToModule(this, 'global', buildExpression(this.state.module.context, require.resolve('../../buildin/global.js')));
+                        const retrieveGlobalModule = ParserHelpers.requireFileAsExpression(this.state.module.context, require.resolve('../../buildin/global.js'));
+                        return ParserHelpers.addParsedVariableToModule(this, 'global', retrieveGlobalModule);
                     });
                 }
 

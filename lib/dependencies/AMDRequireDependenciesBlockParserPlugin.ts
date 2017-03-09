@@ -87,17 +87,17 @@ class AMDRequireDependenciesBlockParserPlugin {
         });
         parser.plugin('call require:amd:array', function (expr: CallExpression, param: BasicEvaluatedExpression) {
             if (param.isArray()) {
-                param.items.forEach(function (param) {
+                param.items.forEach((param) => {
                     const result = this.applyPluginsBailResult('call require:amd:item', expr, param);
                     if (result === undefined) {
                         this.applyPluginsBailResult('call require:amd:context', expr, param);
                     }
-                }, this);
+                });
                 return true;
             }
             else if (param.isConstArray()) {
                 const deps: ModuleDependency[] = [];
-                param.array.forEach(function (request) {
+                param.array.forEach((request) => {
                     let dep;
                     let localModule;
                     if (request === 'require') {
@@ -107,7 +107,6 @@ class AMDRequireDependenciesBlockParserPlugin {
                         dep = request;
                     }
                     else if (localModule = LocalModulesHelpers.getLocalModule(this.state, request)) {
-                        // eslint-disable-line no-cond-assign
                         dep = new LocalModuleDependency(localModule);
                         dep.loc = expr.loc;
                         this.state.current.addDependency(dep);
@@ -119,7 +118,7 @@ class AMDRequireDependenciesBlockParserPlugin {
                         this.state.current.addDependency(dep);
                     }
                     deps.push(dep);
-                }, this);
+                });
                 const dep = new AMDRequireArrayDependency(deps, param.range);
                 dep.loc = expr.loc;
                 dep.optional = !!this.scope.inTry;
@@ -129,12 +128,12 @@ class AMDRequireDependenciesBlockParserPlugin {
         });
         parser.plugin('call require:amd:item', function (expr: CallExpression, param: BasicEvaluatedExpression) {
             if (param.isConditional()) {
-                param.options.forEach(function (param) {
+                param.options.forEach((param) => {
                     const result = this.applyPluginsBailResult('call require:amd:item', expr, param);
                     if (result === undefined) {
                         this.applyPluginsBailResult('call require:amd:context', expr, param);
                     }
-                }, this);
+                });
                 return true;
             }
             else if (param.isString()) {
@@ -142,9 +141,9 @@ class AMDRequireDependenciesBlockParserPlugin {
                 let localModule;
                 if (param.string === 'require') {
                     dep = new ConstDependency('__webpack_require__', param.range);
-                } else if(param.string === 'module') {
+                } else if (param.string === 'module') {
                     dep = new ConstDependency(this.state.module.moduleArgument || 'module', param.range);
-                } else if(param.string === 'exports') {
+                } else if (param.string === 'exports') {
                     dep = new ConstDependency(this.state.module.exportsArgument || 'exports', param.range);
                 }
                 else if (localModule = LocalModulesHelpers.getLocalModule(this.state, param.string)) {

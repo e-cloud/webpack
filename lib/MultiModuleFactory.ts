@@ -7,12 +7,10 @@ import MultiModule = require('./MultiModule');
 import { ErrCallback } from '../typings/webpack-types'
 
 class MultiModuleFactory extends Tapable {
-    create(
-        data: {
-            context: string
-            dependencies: [MultiModule]
-        }, callback: ErrCallback
-    ) {
+    create(data: {
+               context: string
+               dependencies: [MultiModule]
+           }, callback: ErrCallback) {
         const dependency = data.dependencies[0];
         callback(null, new MultiModule(data.context, dependency.dependencies, dependency.name));
     }

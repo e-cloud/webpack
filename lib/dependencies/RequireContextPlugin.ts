@@ -8,7 +8,7 @@ import RequireContextDependencyParserPlugin = require('./RequireContextDependenc
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
-import { CompilationParams, AlternativeModule, ParserOptions } from '../../typings/webpack-types'
+import { AlternativeModule, CompilationParams, ParserOptions } from '../../typings/webpack-types'
 
 class RequireContextPlugin {
     constructor(public modulesDirectories: string[], public extensions: string[]) {

@@ -4,38 +4,51 @@
  */
 import DefinePlugin = require('./DefinePlugin');
 import Compiler = require('./Compiler')
-import Compilation = require('./Compilation')
 
 class EnvironmentPlugin {
     keys: string[]
+    defaultValues: object
 
     constructor(keys: string[])
     constructor(...keys: string[])
 
     constructor(keys: any) {
-        this.keys = Array.isArray(keys) ? keys : Array.prototype.slice.call(arguments);
+        if (Array.isArray(keys)) {
+            this.keys = keys;
+            this.defaultValues = {};
+        } else if (keys && typeof keys === 'object') {
+            this.keys = Object.keys(keys);
+            this.defaultValues = keys;
+        } else {
+            this.keys = Array.prototype.slice.call(arguments);
+            this.defaultValues = {};
+        }
     }
 
     apply(compiler: Compiler) {
-        compiler.apply(
-            new DefinePlugin(
-                this.keys.reduce((definitions, key) => {
-                    const value = process.env[key];
+        const definitions = this.keys.reduce((defs, key) => {
+            const value = process.env[key] || this.defaultValues[key];
 
-                    if (value === undefined) {
-                        compiler.plugin('this-compilation', function (compilation: Compilation) {
-                            const error = new Error(`${key} environment variable is undefined.`);
-                            error.name = 'EnvVariableNotDefinedError';
-                            compilation.warnings.push(error);
-                        });
-                    }
+            if (value === undefined) {
+                compiler.plugin('this-compilation', compilation => {
+                    const error = new Error(
+                        `EnvironmentPlugin - ${key} environment variable is undefined.
 
-                    definitions[`process.env.${key}`] = value ? JSON.stringify(value) : 'undefined';
+You can pass an object with default values to suppress this warning.
+See https://webpack.js.org/plugins/environment-plugin for example.`
+                    );
 
-                    return definitions;
-                }, {})
-            )
-        );
+                    error.name = 'EnvVariableNotDefinedError';
+                    compilation.warnings.push(error);
+                });
+            }
+
+            defs[`process.env.${key}`] = typeof value === 'undefined' ? 'undefined' : JSON.stringify(value);
+
+            return defs;
+        }, {});
+
+        compiler.apply(new DefinePlugin(definitions));
     }
 }
 

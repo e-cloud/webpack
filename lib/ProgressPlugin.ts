@@ -15,12 +15,10 @@ class ProgressPlugin {
     profile: boolean
     handler: ProgressPluginHandler
 
-    constructor(
-        options: ProgressPluginHandler | {
-            profile?: boolean
-            handler: ProgressPluginHandler
-        } = {} as any
-    ) {
+    constructor(options: ProgressPluginHandler | {
+                    profile?: boolean
+                    handler: ProgressPluginHandler
+                } = {} as any) {
         if (typeof options === 'function') {
             options = {
                 handler: options
@@ -53,7 +51,7 @@ class ProgressPlugin {
             const activeModules: string[] = [];
 
             // todo: to be refactor
-            function update() {
+            const update = function update() {
                 handler(
                     0.1 + doneModules / Math.max(lastModulesCount, moduleCount) * 0.6,
                     'building modules',
@@ -63,7 +61,7 @@ class ProgressPlugin {
                 );
             }
 
-            function moduleDone(module: Module) {
+            const moduleDone = function moduleDone(module: Module) {
                 doneModules++;
                 const ident = module.identifier();
                 if (ident) {

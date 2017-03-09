@@ -2,7 +2,6 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import ConstDependency = require('./ConstDependency');
 import CommonJsRequireDependency = require('./CommonJsRequireDependency');
 import CommonJsRequireContextDependency = require('./CommonJsRequireContextDependency');
 import RequireHeaderDependency = require('./RequireHeaderDependency');
@@ -10,8 +9,9 @@ import LocalModuleDependency = require('./LocalModuleDependency');
 import ContextDependencyHelpers = require('./ContextDependencyHelpers');
 import LocalModulesHelpers = require('./LocalModulesHelpers');
 import Parser = require('../Parser')
-import { Expression, CallExpression } from 'estree'
+import { CallExpression, Expression } from 'estree'
 import { ModuleOptions } from '../../typings/webpack-types'
+import ParserHelpers = require('../ParserHelpers');
 
 class CommonJsRequireDependencyParserPlugin {
     constructor(public options: ModuleOptions) {
@@ -19,12 +19,7 @@ class CommonJsRequireDependencyParserPlugin {
 
     apply(parser: Parser) {
         const options = this.options;
-        parser.plugin('expression require.cache', function (expr: Expression) {
-            const dep = new ConstDependency('__webpack_require__.c', expr.range);
-            dep.loc = expr.loc;
-            this.state.current.addDependency(dep);
-            return true;
-        });
+        parser.plugin('expression require.cache', ParserHelpers.toConstantDependency('__webpack_require__.c'));
         parser.plugin('expression require', function (expr: Expression) {
             const dep = new CommonJsRequireContextDependency(options.unknownContextRequest, options.unknownContextRecursive, options.unknownContextRegExp, expr.range);
             dep.critical = options.unknownContextCritical && 'require function is used in a way in which dependencies cannot be statically extracted';
@@ -38,20 +33,19 @@ class CommonJsRequireDependencyParserPlugin {
                 return;
             }
             let localModule;
-            let dep;
             const param = this.evaluateExpression(expr.arguments[0]);
             if (param.isConditional()) {
                 let isExpression = false;
                 const prevLength = this.state.current.dependencies.length;
-                dep = new RequireHeaderDependency(expr.callee.range);
+                const dep = new RequireHeaderDependency(expr.callee.range);
                 dep.loc = expr.loc;
                 this.state.current.addDependency(dep);
-                param.options.forEach(function (param) {
+                param.options.forEach((param) => {
                     const result = this.applyPluginsBailResult('call require:commonjs:item', expr, param);
                     if (result === undefined) {
                         isExpression = true;
                     }
-                }, this);
+                });
                 if (isExpression) {
                     this.state.current.dependencies.length = prevLength;
                 }
@@ -60,7 +54,7 @@ class CommonJsRequireDependencyParserPlugin {
                 }
             }
             if (param.isString() && (localModule = LocalModulesHelpers.getLocalModule(this.state, param.string))) {
-                dep = new LocalModuleDependency(localModule, expr.range);
+                const dep = new LocalModuleDependency(localModule, expr.range);
                 dep.loc = expr.loc;
                 this.state.current.addDependency(dep);
                 return true;
@@ -71,7 +65,7 @@ class CommonJsRequireDependencyParserPlugin {
                     this.applyPluginsBailResult('call require:commonjs:context', expr, param);
                 }
                 else {
-                    dep = new RequireHeaderDependency(expr.callee.range);
+                    const dep = new RequireHeaderDependency(expr.callee.range);
                     dep.loc = expr.loc;
                     this.state.current.addDependency(dep);
                 }

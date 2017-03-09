@@ -8,7 +8,7 @@ import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Parser = require('./Parser')
 import { CallExpression } from 'estree'
-import { CompilationParams, ParserOptions, NMFAfterResolveResult } from '../typings/webpack-types'
+import { CompilationParams, NMFAfterResolveResult, ParserOptions } from '../typings/webpack-types'
 import ContextDependency = require('./dependencies/ContextDependency')
 
 const jsonLoaderPath = require.resolve('json-loader');

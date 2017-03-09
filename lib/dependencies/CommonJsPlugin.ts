@@ -15,8 +15,8 @@ import CommonJsRequireDependencyParserPlugin = require('./CommonJsRequireDepende
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
-import { ModuleOptions, CompilationParams, ParserOptions } from '../../typings/webpack-types'
-import ParserHelpers = require("../ParserHelpers");
+import { CompilationParams, ModuleOptions, ParserOptions } from '../../typings/webpack-types'
+import ParserHelpers = require('../ParserHelpers');
 
 class CommonJsPlugin {
     constructor(public options: ModuleOptions) {
@@ -66,7 +66,7 @@ class CommonJsPlugin {
                     this.scope.definitions.push('require');
                     return true;
                 });
-                parser.plugin('can-rename require', () => true);
+                parser.plugin('can-rename require', ParserHelpers.approve);
                 parser.plugin('rename require', function (expr) {
                     // define the require variable. It's still undefined, but not "not defined".
                     const dep = new ConstDependency('var require;', 0);
@@ -74,7 +74,7 @@ class CommonJsPlugin {
                     this.state.current.addDependency(dep);
                     return false;
                 });
-                parser.plugin('typeof module', () => true);
+                parser.plugin('typeof module', ParserHelpers.skipTraversal);
                 parser.plugin('evaluate typeof exports', ParserHelpers.evaluateToString('object'));
                 parser.apply(new CommonJsRequireDependencyParserPlugin(options), new RequireResolveDependencyParserPlugin(options));
             });

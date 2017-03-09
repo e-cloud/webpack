@@ -6,7 +6,7 @@ import SingleEntryPlugin = require('./SingleEntryPlugin');
 import MultiEntryPlugin = require('./MultiEntryPlugin');
 import Compiler = require('./Compiler')
 import { Entry } from '../typings/webpack-types'
-import DynamicEntryPlugin = require("./DynamicEntryPlugin");
+import DynamicEntryPlugin = require('./DynamicEntryPlugin');
 
 class EntryOptionPlugin {
     apply(compiler: Compiler) {
@@ -27,7 +27,7 @@ class EntryOptionPlugin {
                 Object.keys(entry).forEach(name => {
                     compiler.apply(itemToPlugin(entry[name], name));
                 });
-            } else if(typeof entry === 'function') {
+            } else if (typeof entry === 'function') {
                 compiler.apply(new DynamicEntryPlugin(context, entry));
             }
             return true;

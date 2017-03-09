@@ -2,11 +2,12 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { ConcatSource } from 'webpack-sources'
 import { Hash } from 'crypto'
+import { ConcatSource } from 'webpack-sources'
 import Compilation = require('./Compilation')
 import Chunk = require('./Chunk')
 import ExternalModule = require('./ExternalModule')
+import Template = require('./Template')
 
 class AmdMainTemplatePlugin {
     constructor(public name: string) {
@@ -21,7 +22,7 @@ class AmdMainTemplatePlugin {
                 (m: ExternalModule) => typeof m.request === 'object' ? m.request.amd : m.request)
             );
             const externalsArguments = externals
-                .map(m => `__WEBPACK_EXTERNAL_MODULE_${m.id}__`)
+                .map(m => Template.toIdentifier(`__WEBPACK_EXTERNAL_MODULE_${m.id}__`))
                 .join(', ');
             if (this.name) {
                 const name = mainTemplate.applyPluginsWaterfall('asset-path', this.name, {
@@ -45,7 +46,7 @@ class AmdMainTemplatePlugin {
         });
         mainTemplate.plugin('hash', (hash: Hash) => {
             hash.update('exports amd');
-            hash.update(`${this.name}`);
+            hash.update(this.name);
         });
     }
 }

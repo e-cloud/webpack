@@ -3,8 +3,8 @@
  Author Tobias Koppers @sokra
  */
 import NullDependency = require('./NullDependency');
-import { SourceRange, WebpackOutputOptions } from '../../typings/webpack-types'
 import { ReplaceSource } from 'webpack-sources'
+import { SourceRange, WebpackOutputOptions } from '../../typings/webpack-types'
 import RequestShortener = require('../RequestShortener')
 
 class Template {
@@ -14,10 +14,6 @@ class Template {
         outputOptions: WebpackOutputOptions,
         requestShortener: RequestShortener
     ) {
-        source.replace(dep.range[0], dep.range[1] - 1, '/*require.resolve*/');
-    }
-
-    applyAsTemplateArgument(name: string, dep: RequireResolveHeaderDependency, source: ReplaceSource) {
         source.replace(dep.range[0], dep.range[1] - 1, '/*require.resolve*/');
     }
 }

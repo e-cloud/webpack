@@ -8,7 +8,7 @@ import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Parser = require('./Parser')
 import { CompilationParams, ParserOptions } from '../typings/webpack-types'
-import { Expression, CallExpression } from 'estree'
+import ParserHelpers = require('./ParserHelpers')
 
 class RequireJsStuffPlugin {
     apply(compiler: Compiler) {
@@ -21,28 +21,12 @@ class RequireJsStuffPlugin {
                     return;
                 }
 
-                function remove(this: Parser, expr: CallExpression) {
-                    const dep = new ConstDependency(';', expr.range);
-                    dep.loc = expr.loc;
-                    this.state.current.addDependency(dep);
-                    return true;
-                }
+                parser.plugin('call require.config', ParserHelpers.toConstantDependency('undefined'));
+                parser.plugin('call requirejs.config', ParserHelpers.toConstantDependency('undefined'));
 
-                parser.plugin('call require.config', remove);
-                parser.plugin('call requirejs.config', remove);
+                parser.plugin('expression require.version', ParserHelpers.toConstantDependency(JSON.stringify('0.0.0')));
+                parser.plugin('expression requirejs.onError', ParserHelpers.toConstantDependency(JSON.stringify('__webpack_require__.oe')));
 
-                parser.plugin('expression require.version', function (expr: Expression) {
-                    const dep = new ConstDependency(JSON.stringify('0.0.0'), expr.range);
-                    dep.loc = expr.loc;
-                    this.state.current.addDependency(dep);
-                    return true;
-                });
-                parser.plugin('expression requirejs.onError', function (expr: Expression) {
-                    const dep = new ConstDependency(JSON.stringify('__webpack_require__.oe'), expr.range);
-                    dep.loc = expr.loc;
-                    this.state.current.addDependency(dep);
-                    return true;
-                });
             });
         });
     }

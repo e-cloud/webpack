@@ -16,7 +16,7 @@ export = class HarmonyDetectionParserPlugin {
                 );
             });
             if (isHarmony) {
-                let module = parser.state.module;
+                const module = parser.state.module;
                 const dep = new HarmonyCompatibilityDependency(module);
                 dep.loc = {
                     start: {
@@ -45,14 +45,14 @@ export = class HarmonyDetectionParserPlugin {
         });
 
         function skipInHarmony() {
-            let module = this.state.module;
+            const module = this.state.module;
             if (module && module.meta && module.meta.harmonyModule) {
                 return true;
             }
         }
 
         function nullInHarmony(): null | undefined {
-            let module = this.state.module;
+            const module = this.state.module;
             if (module && module.meta && module.meta.harmonyModule) {
                 return null;
             }

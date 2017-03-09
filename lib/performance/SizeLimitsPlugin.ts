@@ -35,29 +35,29 @@ class SizeLimitsPlugin {
         compiler.plugin('after-emit', (compilation: Compilation, callback) => {
             const warnings = [];
 
-            const getEntrypointSize = (entrypoint: Entrypoint) => {
-                const files = entrypoint.getFiles();
-
-                return files.filter(assetFilter)
+            const getEntrypointSize = (entrypoint: Entrypoint) =>
+                entrypoint.getFiles()
+                    .filter(assetFilter)
                     .map(file => compilation.assets[file])
                     .filter(Boolean)
                     .map(asset => asset.size())
                     .reduce((currentSize, nextSize) => currentSize + nextSize, 0);
-            };
 
             const assetsOverSizeLimit: AssetsOverSizeLimitWarning.OverSizeLimit[] = [];
-            Object.keys(compilation.assets).filter(assetFilter).forEach(assetName => {
-                const asset = compilation.assets[assetName];
-                const size = asset.size();
+            Object.keys(compilation.assets)
+                .filter(assetFilter)
+                .forEach(assetName => {
+                    const asset = compilation.assets[assetName];
+                    const size = asset.size();
 
-                if (size > assetSizeLimit) {
-                    assetsOverSizeLimit.push({
-                        name: assetName,
-                        size
-                    });
-                    asset.isOverSizeLimit = true;
-                }
-            });
+                    if (size > assetSizeLimit) {
+                        assetsOverSizeLimit.push({
+                            name: assetName,
+                            size
+                        });
+                        asset.isOverSizeLimit = true;
+                    }
+                });
 
             const entrypointsOverLimit: EntrypointsOverSizeLimitWarning.OverSizeLimit[] = [];
             Object.keys(compilation.entrypoints).forEach(key => {

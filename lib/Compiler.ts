@@ -8,20 +8,20 @@ import Tapable = require('tapable');
 import Compilation = require('./Compilation');
 import NormalModuleFactory = require('./NormalModuleFactory');
 import ContextModuleFactory = require('./ContextModuleFactory');
+import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
 import {
+    AbstractStats,
     CompilationParams,
-    Record,
-    WebpackOutputOptions,
-    WatchCallback,
-    WebpackOptions,
     ErrCallback,
+    Record,
     TimeStampMap,
+    WatchCallback,
+    Watcher,
     WatchFileSystem,
     WatchOptions,
-    AbstractStats,
-    Watcher
+    WebpackOptions,
+    WebpackOutputOptions
 } from '../typings/webpack-types'
-import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
 import Stats = require('./Stats')
 import NodeOutputFileSystem = require('./node/NodeOutputFileSystem')
 
@@ -152,9 +152,8 @@ class Watching {
             missing,
             this.startTime,
             this.watchOptions,
-            (
-                err: Error, filesModified: string[], contextModified: string[], missingModified: string[],
-                fileTimestamps: TimeStampMap, contextTimestamps: TimeStampMap
+            (err: Error, filesModified: string[], contextModified: string[], missingModified: string[],
+             fileTimestamps: TimeStampMap, contextTimestamps: TimeStampMap
             ) => {
                 this.watcher = null;
                 if (err) {
@@ -198,10 +197,11 @@ class Watching {
         if (this.running) {
             this.invalid = true;
             this._done = () => {
+                this.compiler.applyPlugins('watch-close');
                 callback();
             };
-        }
-        else {
+        } else {
+            this.compiler.applyPlugins('watch-close');
             callback();
         }
     }
@@ -510,8 +510,17 @@ class Compiler extends Tapable {
         });
     }
 
-    createChildCompiler(compilation: Compilation, compilerName: string, outputOptions: WebpackOutputOptions) {
+    createChildCompiler(
+        compilation: Compilation,
+        compilerName: string,
+        outputOptions: WebpackOutputOptions,
+        plugins?: Tapable.Plugin[]
+    ) {
         const childCompiler = new Compiler();
+
+        if (Array.isArray(plugins)) {
+            plugins.forEach(plugin => childCompiler.apply(plugin));
+        }
 
         for (const pluginName in this._plugins) {
             if (![

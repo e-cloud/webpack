@@ -75,7 +75,7 @@
     "simple-git": "^1.65.0",
     "sinon": "^1.17.7",
     "style-loader": "~0.13.0",
-    "tslint": "^4.0.0",
+    "tslint": "^4.5.1",
     "typescript": "next",
     "url-loader": "~0.5.0",
     "val-loader": "~0.5.0",

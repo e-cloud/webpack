@@ -5,7 +5,6 @@
 import ModuleDependency = require('./ModuleDependency');
 
 class ContextElementDependency extends ModuleDependency {
-    type: string
     optional: boolean
 
     constructor(request: string, userRequest?: string) {

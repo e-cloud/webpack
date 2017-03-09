@@ -5,11 +5,12 @@
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 
+let deprecationReported = false;
+
 class NoErrorsPlugin {
     apply(compiler: Compiler) {
-        let deprecationReported = false;
         compiler.plugin('should-emit', function (compilation: Compilation) {
-            if(!deprecationReported) {
+            if (!deprecationReported) {
                 compilation.warnings.push(new Error('webpack: Using NoErrorsPlugin is deprecated.\nUse NoEmitOnErrorsPlugin instead.\n'));
                 deprecationReported = true;
             }

@@ -9,12 +9,10 @@ import Compiler = require('./Compiler')
 import { StaticEntry } from '../typings/webpack-types'
 
 class DllPlugin {
-    constructor(
-        public options: {
-            name: string
-            path: string
-        }
-    ) {
+    constructor(public options: {
+                    name: string
+                    path: string
+                }) {
     }
 
     apply(compiler: Compiler) {

@@ -217,9 +217,9 @@ class BasicEvaluatedExpression {
         if (!this.options) {
             this.options = [];
         }
-        options.forEach(function (item) {
+        options.forEach((item) => {
             this.options.push(item);
-        }, this);
+        });
         return this;
     }
 

@@ -149,9 +149,9 @@ class SourceMapDevToolPlugin {
                 tasks.forEach(task => {
                     task.moduleFilenames = allModuleFilenames.slice(0, task.moduleFilenames.length);
                     allModuleFilenames = allModuleFilenames.slice(task.moduleFilenames.length);
-                }, this);
+                });
 
-                tasks.forEach(function (task) {
+                tasks.forEach((task) => {
                     const chunk = task.chunk;
                     const file = task.file;
                     const asset = task.asset;
@@ -202,7 +202,7 @@ class SourceMapDevToolPlugin {
                             .replace(/\[map\]/g, () => JSON.stringify(sourceMap))
                             .replace(/\[url\]/g, () => `data:application/json;charset=utf-8;base64,${new Buffer(JSON.stringify(sourceMap), 'utf8').toString('base64')}`));
                     }
-                }, this);
+                });
             });
         });
     }

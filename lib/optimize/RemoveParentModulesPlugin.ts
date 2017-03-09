@@ -18,7 +18,7 @@ function chunkContainsModule(chunk: Chunk, module: Module) {
     }
 }
 
-function hasModule(chunk: Chunk, module: Module, checkedChunks: Chunk[]): boolean | Chunk[] {
+function hasModule(chunk: Chunk, module: Module, checkedChunks: Chunk[]): false | Chunk[] {
     if (chunkContainsModule(chunk, module)) {
         return [chunk];
     }
@@ -36,24 +36,27 @@ function allHaveModule(someChunks: Chunk[], module: Module, checkedChunks: Chunk
         if (!subChunks) {
             return false;
         }
-        addToSet(chunks, subChunks as Chunk[]);
+        for (let index = 0; index < subChunks.length; index++) {
+            const item = subChunks[index];
+
+            if (!chunks.length || chunks.indexOf(item) < 0) {
+                chunks.push(item);
+            }
+        }
     }
     return chunks;
 }
 
-function addToSet(set: any[], items: any[]) {
-    items.forEach(item => {
-        if (!set.includes(item)) {
-            set.push(item);
-        }
-    });
-}
-
 function debugIds(chunks: Chunk[]) {
-    const list = chunks.map(chunk => chunk.debugId);
-    const debugIdMissing = list.some(dId => typeof dId !== 'number');
-    if (debugIdMissing) {
-        return 'no';
+    const list = [];
+    for (let i = 0; i < chunks.length; i++) {
+        const debugId = chunks[i].debugId;
+
+        if (typeof debugId !== 'number') {
+            return 'no';
+        }
+
+        list.push(debugId);
     }
     list.sort();
     return list.join(',');
@@ -63,26 +66,33 @@ class RemoveParentModulesPlugin {
     apply(compiler: Compiler) {
         compiler.plugin('compilation', function (compilation: Compilation) {
             compilation.plugin(['optimize-chunks-basic', 'optimize-extracted-chunks-basic'], (chunks: Chunk[]) => {
-                chunks.forEach(chunk => {
-                    const cache = {};
-                    chunk.modules.slice().forEach(module => {
-                        if (chunk.parents.length === 0) {
-                            return;
-                        }
-                        const dId = `$${debugIds(module.chunks)}`;
+                for (let index = 0; index < chunks.length; index++) {
+                    const chunk = chunks[index];
+                    if (chunk.parents.length === 0) continue;
+
+                    // TODO consider Map when performance has improved
+                    // https://gist.github.com/sokra/b36098368da7b8f6792fd7c85fca6311
+                    const cache = Object.create(null);
+                    const modules = chunk.modules.slice();
+                    for (let i = 0; i < modules.length; i++) {
+                        const module = modules[i];
+
+                        const dId = debugIds(module.chunks);
                         let parentChunksWithModule;
-                        if (dId in cache && dId !== '$no') {
+
+                        if ((dId in cache) && dId !== 'no') {
                             parentChunksWithModule = cache[dId];
                         }
                         else {
                             parentChunksWithModule = cache[dId] = allHaveModule(chunk.parents, module);
                         }
+
                         if (parentChunksWithModule) {
                             module.rewriteChunkInReasons(chunk, parentChunksWithModule);
                             chunk.removeModule(module);
                         }
-                    });
-                });
+                    }
+                }
             });
         });
     }

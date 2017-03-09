@@ -9,18 +9,24 @@ import HarmonyAcceptDependency = require('./HarmonyAcceptDependency');
 import HarmonyModulesHelpers = require('./HarmonyModulesHelpers');
 import Parser = require('../Parser')
 import {
-    ImportDeclaration,
-    Identifier,
-    MemberExpression,
     CallExpression,
-    SimpleLiteral,
-    FunctionExpression
+    FunctionExpression,
+    Identifier,
+    ImportDeclaration,
+    MemberExpression,
+    SimpleLiteral
 } from 'estree'
 
 class HarmonyImportDependencyParserPlugin {
-    apply(parser: Parser) {
-        parser.plugin('import', function (this: Parser, statement: ImportDeclaration, source: string) {
+    strictExportPresence: boolean
 
+    constructor(moduleOptions: HarmonyImportDependencyParserPlugin.Options) {
+        this.strictExportPresence = moduleOptions.strictExportPresence;
+    }
+
+    apply(parser: Parser) {
+        const self = this
+        parser.plugin('import', function (this: Parser, statement: ImportDeclaration, source: string) {
             const dep = new HarmonyImportDependency(source, HarmonyModulesHelpers.getNewModuleVar(this.state, source), statement.range);
             dep.loc = statement.loc;
             this.state.current.addDependency(dep);
@@ -28,10 +34,12 @@ class HarmonyImportDependencyParserPlugin {
             return true;
         })
         parser.plugin('import specifier', function (
-            this: Parser, statement: ImportDeclaration, source: string,
-            id: string, name: string
+            this: Parser,
+            statement: ImportDeclaration,
+            source: string,
+            id: string,
+            name: string
         ) {
-
             this.scope.definitions.length--;
             this.scope.renames[`$${name}`] = 'imported var';
             if (!this.state.harmonySpecifier) {
@@ -45,10 +53,9 @@ class HarmonyImportDependencyParserPlugin {
             return true;
         })
         parser.plugin('expression imported var', function (this: Parser, expr: Identifier) {
-
             const name = expr.name;
             const settings = this.state.harmonySpecifier[`$${name}`];
-            const dep = new HarmonyImportSpecifierDependency(settings[0], settings[1], settings[2], name, expr.range);
+            const dep = new HarmonyImportSpecifierDependency(settings[0], settings[1], settings[2], name, expr.range, self.strictExportPresence);
             dep.shorthand = this.scope.inShorthand;
             dep.directImport = true;
             dep.loc = expr.loc;
@@ -59,13 +66,12 @@ class HarmonyImportDependencyParserPlugin {
             this: Parser,
             expr: MemberExpression & { object: Identifier }
         ) {
-
             const name = expr.object.name;
             const settings = this.state.harmonySpecifier[`$${name}`];
             if (settings[2] !== null) {
                 return false;
             }
-            const dep = new HarmonyImportSpecifierDependency(settings[0], settings[1], (expr.property as Identifier).name || ((expr.property as SimpleLiteral).value as string), name, expr.range);
+            const dep = new HarmonyImportSpecifierDependency(settings[0], settings[1], (expr.property as Identifier).name || ((expr.property as SimpleLiteral).value as string), name, expr.range, self.strictExportPresence);
             dep.shorthand = this.scope.inShorthand;
             dep.directImport = false;
             dep.loc = expr.loc;
@@ -73,13 +79,12 @@ class HarmonyImportDependencyParserPlugin {
             return true;
         })
         parser.plugin('call imported var', function (this: Parser, expr: CallExpression) {
-
             const args = expr.arguments;
             const fullExpr = expr;
             const exprCalle = expr.callee as Identifier;
             const name = exprCalle.name;
             const settings = this.state.harmonySpecifier[`$${name}`];
-            const dep = new HarmonyImportSpecifierDependency(settings[0], settings[1], settings[2], name, exprCalle.range);
+            const dep = new HarmonyImportSpecifierDependency(settings[0], settings[1], settings[2], name, exprCalle.range, self.strictExportPresence);
             dep.directImport = true;
             dep.callArgs = args;
             dep.call = fullExpr;
@@ -91,17 +96,16 @@ class HarmonyImportDependencyParserPlugin {
             return true;
         })
         parser.plugin('hot accept callback', function (this: Parser, expr: FunctionExpression, requests: string[]) {
-
             const dependencies = requests
-                .filter(function (request) {
+                .filter(request => {
                     return HarmonyModulesHelpers.checkModuleVar(this.state, request);
-                }, this)
-                .map(function (request) {
+                })
+                .map(request => {
                     const dep = new HarmonyAcceptImportDependency(request, HarmonyModulesHelpers.getModuleVar(this.state, request), expr.range);
                     dep.loc = expr.loc;
                     this.state.current.addDependency(dep);
                     return dep;
-                }, this);
+                });
             if (dependencies.length > 0) {
                 const dep = new HarmonyAcceptDependency(expr.range, dependencies, true);
                 dep.loc = expr.loc;
@@ -110,15 +114,15 @@ class HarmonyImportDependencyParserPlugin {
         })
         parser.plugin('hot accept without callback', function (this: Parser, expr: CallExpression, requests: string[]) {
             const dependencies = requests
-                .filter(function (request) {
+                .filter((request) => {
                     return HarmonyModulesHelpers.checkModuleVar(this.state, request);
-                }, this)
-                .map(function (request) {
+                })
+                .map((request) => {
                     const dep = new HarmonyAcceptImportDependency(request, HarmonyModulesHelpers.getModuleVar(this.state, request), expr.range);
                     dep.loc = expr.loc;
                     this.state.current.addDependency(dep);
                     return dep;
-                }, this);
+                });
 
             if (dependencies.length > 0) {
                 const dep = new HarmonyAcceptDependency(expr.range, dependencies, false);
@@ -129,4 +133,11 @@ class HarmonyImportDependencyParserPlugin {
     }
 
 }
+
+declare namespace HarmonyImportDependencyParserPlugin {
+    interface Options {
+        strictExportPresence?: boolean
+    }
+}
+
 export = HarmonyImportDependencyParserPlugin;

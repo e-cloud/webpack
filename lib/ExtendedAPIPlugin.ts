@@ -7,11 +7,10 @@ import NullFactory = require('./NullFactory');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Parser = require('./Parser')
-import { CompilationParams, ParserOptions } from '../typings/webpack-types'
 import { Hash } from 'crypto'
-import { Expression } from 'estree'
+import { CompilationParams, ParserOptions } from '../typings/webpack-types'
 import Chunk = require('./Chunk')
-import ParserHelpers = require("./ParserHelpers");
+import ParserHelpers = require('./ParserHelpers');
 
 const REPLACEMENTS = {
     __webpack_hash__: '__webpack_require__.h' // eslint-disable-line camelcase
@@ -36,12 +35,7 @@ class ExtendedAPIPlugin {
 
             params.normalModuleFactory.plugin('parser', function (parser: Parser, parserOptions: ParserOptions) {
                 Object.keys(REPLACEMENTS).forEach(key => {
-                    parser.plugin(`expression ${key}`, function (expr: Expression) {
-                        const dep = new ConstDependency(REPLACEMENTS[key], expr.range);
-                        dep.loc = expr.loc;
-                        this.state.current.addDependency(dep);
-                        return true;
-                    });
+                    parser.plugin(`expression ${key}`, ParserHelpers.toConstantDependency(REPLACEMENTS[key]));
                     parser.plugin(`evaluate typeof ${key}`, ParserHelpers.evaluateToString(REPLACEMENT_TYPES[key]));
                 });
             });

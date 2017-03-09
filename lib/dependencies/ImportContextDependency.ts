@@ -22,7 +22,7 @@ class ImportContextDependency extends ContextDependency {
     }
 
     get type() {
-        return 'System.import context';
+        return 'import() context';
     }
 
     getWarnings() {

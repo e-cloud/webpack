@@ -2,9 +2,9 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { RawSource } from 'webpack-sources'
-import { WebpackOutputOptions, ErrCallback } from '../typings/webpack-types'
 import { Hash } from 'crypto'
+import { RawSource } from 'webpack-sources'
+import { ErrCallback, WebpackOutputOptions } from '../typings/webpack-types'
 import Module = require('./Module');
 import ModuleDependency = require('./dependencies/ModuleDependency')
 import RequestShortener = require('./RequestShortener')
@@ -40,7 +40,7 @@ class MultiModule extends Module {
 
     source(dependencyTemplates: Map<Function, any>, outputOptions: WebpackOutputOptions) {
         const str: string[] = [];
-        this.dependencies.forEach(function (dep, idx) {
+        this.dependencies.forEach((dep, idx) => {
             if (dep.module) {
                 if (idx === this.dependencies.length - 1) {
                     str.push('module.exports = ');
@@ -54,11 +54,11 @@ class MultiModule extends Module {
             }
             else {
                 str.push('(function webpackMissingModule() { throw new Error(');
-                str.push(JSON.stringify(`Cannot find module "${dep.request}"`));
+                str.push(JSON.stringify(`Cannot find module \"${dep.request}\"`));
                 str.push('); }())');
             }
             str.push(';\n');
-        }, this);
+        });
         return new RawSource(str.join(''));
     }
 

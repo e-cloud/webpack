@@ -13,14 +13,12 @@ class ModuleNotFoundError extends Error {
 
     constructor(public module: Module, public err: ResolveError, public dependencies: Dependency[]) {
         super();
-        if (Error.hasOwnProperty('captureStackTrace')) {
-            Error.captureStackTrace(this, this.constructor);
-        }
         this.name = 'ModuleNotFoundError';
         this.message = `Module not found: ${err}`;
         this.details = err.details;
         this.missing = err.missing;
         this.origin = module;
+        Error.captureStackTrace(this, this.constructor);
     }
 }
 

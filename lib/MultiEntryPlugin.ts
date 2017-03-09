@@ -31,7 +31,7 @@ class MultiEntryPlugin {
     static createDependency(entries: string[], name: string) {
         return new MultiEntryDependency(entries.map((e, idx) => {
             const dep = new SingleEntryDependency(e);
-            dep.loc = `${this.name}:${100000 + idx}`;
+            dep.loc = `${name}:${100000 + idx}`;
             return dep;
         }), name);
     }

@@ -17,6 +17,7 @@ const ajv = new Ajv({
 });
 
 defineKeywords(ajv, ['instanceof']);
+require('../schemas/ajv.absolutePath')(ajv);
 
 function validateSchema(schema: any, options: Options): ErrorObject[] {
     const validate = ajv.compile(schema);

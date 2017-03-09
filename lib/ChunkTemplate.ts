@@ -2,8 +2,8 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { ConcatSource } from 'webpack-sources'
 import { Hash } from 'crypto'
+import { ConcatSource } from 'webpack-sources'
 import { WebpackOutputOptions } from '../typings/webpack-types'
 import Template = require('./Template');
 import Chunk = require('./Chunk')

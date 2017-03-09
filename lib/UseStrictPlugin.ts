@@ -6,8 +6,8 @@
 import Compilation = require('./Compilation')
 import Compiler = require('./Compiler')
 import Parser = require('./Parser')
-import { CompilationParams } from '../typings/webpack-types'
 import { Program } from 'estree'
+import { CompilationParams } from '../typings/webpack-types'
 import ConstDependency = require('./dependencies/ConstDependency')
 
 class UseStrictPlugin {

@@ -5,7 +5,7 @@
 import LoaderDependency = require('./LoaderDependency');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
-import { LoaderContext, CompilationParams } from '../../typings/webpack-types'
+import { CompilationParams, LoaderContext } from '../../typings/webpack-types'
 
 class LoaderPlugin {
     apply(compiler: Compiler) {
@@ -58,12 +58,12 @@ class LoaderPlugin {
                                 source = moduleSource.source();
                             }
                             if ((dep.module).fileDependencies) {
-                                dep.module.fileDependencies.forEach(function (dep) {
+                                dep.module.fileDependencies.forEach(dep => {
                                     loaderContext.addDependency(dep);
                                 });
                             }
                             if (dep.module.contextDependencies) {
-                                dep.module.contextDependencies.forEach(function (dep) {
+                                dep.module.contextDependencies.forEach(dep => {
                                     loaderContext.addContextDependency(dep);
                                 });
                             }

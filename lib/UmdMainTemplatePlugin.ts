@@ -2,19 +2,20 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import { Hash } from 'crypto'
 import { ConcatSource, OriginalSource } from 'webpack-sources'
 import { AuxiliaryComment } from '../typings/webpack-types'
-import { Hash } from 'crypto'
 import Compilation = require('./Compilation')
 import Chunk = require('./Chunk')
 import ExternalModule = require('./ExternalModule')
+import Template = require('./Template')
 
 function accessorToObjectAccess(accessor: string[]) {
     return accessor.map(a => `[${JSON.stringify(a)}]`).join('');
 }
 
 function accessorAccess(base: string, accessor: string) {
-    let accessorArr = [].concat(accessor);
+    const accessorArr = [].concat(accessor);
     return accessorArr.map((a, idx) => {
         a = base + accessorToObjectAccess(accessorArr.slice(0, idx + 1));
         if (idx === accessorArr.length - 1) {
@@ -29,13 +30,11 @@ class UmdMainTemplatePlugin {
     optionalAmdExternalAsGlobal: boolean
     namedDefine: boolean
 
-    constructor(
-        public name: string, options: {
-            auxiliaryComment: AuxiliaryComment
-            optionalAmdExternalAsGlobal: boolean
-            namedDefine: boolean
-        }
-    ) {
+    constructor(public name: string, options: {
+                    auxiliaryComment: AuxiliaryComment
+                    optionalAmdExternalAsGlobal: boolean
+                    namedDefine: boolean
+                }) {
         this.optionalAmdExternalAsGlobal = options.optionalAmdExternalAsGlobal;
         this.namedDefine = options.namedDefine;
         this.auxiliaryComment = options.auxiliaryComment;
@@ -117,7 +116,7 @@ class UmdMainTemplatePlugin {
             }
 
             function externalsArguments(modules: ExternalModule[]) {
-                return modules.map(m => `__WEBPACK_EXTERNAL_MODULE_${m.id}__`)
+                return modules.map(m => Template.toIdentifier(`__WEBPACK_EXTERNAL_MODULE_${m.id}__`))
                     .join(', ');
             }
 
@@ -127,9 +126,11 @@ class UmdMainTemplatePlugin {
 
             let amdFactory;
             if (optionalExternals.length > 0) {
-                amdFactory = `function webpackLoadOptionalExternalModuleAmd(${externalsArguments(requiredExternals)}) {\n\t\t\treturn factory(${requiredExternals.length > 0
+                const wrapperArguments = externalsArguments(requiredExternals);
+                const factoryArguments = requiredExternals.length > 0
                     ? externalsArguments(requiredExternals) + ', ' + externalsRootArray(optionalExternals)
-                    : externalsRootArray(optionalExternals)});\n\t\t}`;
+                    : externalsRootArray(optionalExternals);
+                amdFactory = `function webpackLoadOptionalExternalModuleAmd(${wrapperArguments}) {\n\t\t\treturn factory(${factoryArguments});\n\t\t}`;
             }
             else {
                 amdFactory = 'factory';

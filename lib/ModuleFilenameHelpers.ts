@@ -126,9 +126,8 @@ export function createFooter(module: Module | string, requestShortener: RequestS
     }
 }
 
-export function replaceDuplicates(
-    array: string[], fn: (filename: string, i: number, n: number) => string,
-    comparator?: (a: any, b: any) => number
+export function replaceDuplicates(array: string[], fn: (filename: string, i: number, n: number) => string,
+                                  comparator?: (a: any, b: any) => number
 ) {
     const countMap = {};
     const posMap = {};
@@ -171,13 +170,11 @@ export function matchPart(str: string, test: TestCondition) {
     }
 }
 
-export function matchObject(
-    obj: {
-        test?: TestCondition
-        include?: TestCondition
-        exclude?: TestCondition
-    }, str: string
-) {
+export function matchObject(obj: {
+                                test?: TestCondition
+                                include?: TestCondition
+                                exclude?: TestCondition
+                            }, str: string) {
     if (obj.test) {
         if (!matchPart(str, obj.test)) {
             return false;

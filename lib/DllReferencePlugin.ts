@@ -43,7 +43,7 @@ class DllReferencePlugin {
         });
         compiler.plugin('compile', (params: CompilationParams) => {
             const optionsManifest = this.options.manifest
-            let manifest = typeof optionsManifest === 'string'
+            const manifest = typeof optionsManifest === 'string'
                 ? params[`dll reference ${optionsManifest}`]
                 : optionsManifest;
             const name = this.options.name || manifest.name;

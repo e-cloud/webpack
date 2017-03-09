@@ -14,15 +14,14 @@ class AsyncDependenciesBlock extends DependenciesBlock {
     constructor(public chunkName: string, public module: Module, public loc: SourceLocation) {
         super();
         this.chunks = null;
+    }
 
-        Object.defineProperty(this, 'chunk', {
-            get() {
-                throw new Error('`chunk` was been renamed to `chunks` and is now an array');
-            },
-            set() {
-                throw new Error('`chunk` was been renamed to `chunks` and is now an array');
-            }
-        });
+    get chunk() {
+        throw new Error('`chunk` was been renamed to `chunks` and is now an array');
+    }
+
+    set chunk(chunk) {
+        throw new Error('`chunk` was been renamed to `chunks` and is now an array');
     }
 
     updateHash(hash: Hash) {

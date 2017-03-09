@@ -8,9 +8,6 @@ import { Position } from 'estree'
 class ModuleParseError extends Error {
     constructor(public module: NormalModule, source: string, public err: Error & { loc?: Position }) {
         super();
-        if (Error.hasOwnProperty('captureStackTrace')) {
-            Error.captureStackTrace(this, this.constructor);
-        }
         this.name = 'ModuleParseError';
         this.message = `Module parse failed: ${module.request} ${err.message}`;
         this.message += '\nYou may need an appropriate loader to handle this file type.';
@@ -28,6 +25,7 @@ class ModuleParseError extends Error {
         else {
             this.message += `\n${err.stack}`;
         }
+        Error.captureStackTrace(this, this.constructor);
     }
 }
 

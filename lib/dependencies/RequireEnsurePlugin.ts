@@ -11,7 +11,7 @@ import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
 import { CompilationParams, ParserOptions } from '../../typings/webpack-types'
-import ParserHelpers = require("../ParserHelpers");
+import ParserHelpers = require('../ParserHelpers');
 
 class RequireEnsurePlugin {
     apply(compiler: Compiler) {
@@ -31,12 +31,8 @@ class RequireEnsurePlugin {
 
                 parser.apply(new RequireEnsureDependenciesBlockParserPlugin());
                 parser.plugin('evaluate typeof require.ensure', ParserHelpers.evaluateToString('function'));
-                parser.plugin('typeof require.ensure', function (expr) {
-                    const dep = new ConstDependency('\'function\'', expr.range);
-                    dep.loc = expr.loc;
-                    this.state.current.addDependency(dep);
-                    return true;
-                });
+                parser.plugin('typeof require.ensure', ParserHelpers.toConstantDependency(JSON.stringify('function')));
+
             });
         });
     }

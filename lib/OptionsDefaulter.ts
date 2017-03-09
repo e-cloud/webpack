@@ -33,9 +33,7 @@ class OptionsDefaulter {
                     if (!Array.isArray(oldValue)) {
                         oldValue = [];
                     }
-                    this.defaults[name].forEach((item: any) => {
-                        oldValue.push(item);
-                    });
+                    oldValue.push.apply(oldValue, this.defaults[name]);
                     setProperty(options, name, oldValue);
                     break;
                 default:
@@ -60,7 +58,7 @@ export = OptionsDefaulter;
 
 function getProperty(obj: PlainObject, name: string) {
     const props = name.split('.');
-    for (let prop of props.slice(0, props.length - 1)) {
+    for (const prop of props.slice(0, props.length - 1)) {
         obj = obj[prop];
         if (typeof obj !== 'object' || !obj) {
             return;
@@ -71,7 +69,7 @@ function getProperty(obj: PlainObject, name: string) {
 
 function setProperty(obj: PlainObject, name: string, value: any) {
     const props = name.split('.');
-    for (let prop of props.slice(0, props.length - 1)) {
+    for (const prop of props.slice(0, props.length - 1)) {
         if (typeof obj[prop] !== 'object' && typeof obj[prop] !== 'undefined') {
             return;
         }

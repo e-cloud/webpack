@@ -14,19 +14,19 @@ class RequestShortener {
 
     constructor(directory: string) {
         directory = directory.replace(/\\/g, '/');
-        let parentDirectory = path.dirname(directory);
         if (/[\/\\]$/.test(directory)) {
             directory = directory.substr(0, directory.length - 1);
         }
+
         if (directory) {
             const currentDirectoryRegExp = directory.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-
             this.currentDirectoryRegExp = new RegExp(`^${currentDirectoryRegExp}|(!)${currentDirectoryRegExp}`, 'g');
         }
 
-        if (/[\/\\]$/.test(parentDirectory)) {
-            parentDirectory = parentDirectory.substr(0, parentDirectory.length - 1);
-        }
+        const dirname = path.dirname(directory);
+        const endsWithSeperator = /[\/\\]$/.test(dirname);
+        const parentDirectory = endsWithSeperator ? dirname.substr(0, dirname.length - 1) : dirname;
+
         if (parentDirectory && parentDirectory !== directory) {
             const parentDirectoryRegExp = parentDirectory.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 
@@ -36,10 +36,10 @@ class RequestShortener {
         if (__dirname.length >= 2) {
             const buildins = path.join(__dirname, '..').replace(/\\/g, '/');
             const buildinsAsModule = this.currentDirectoryRegExp && this.currentDirectoryRegExp.test(buildins);
-            const buildinsRegExp = buildins.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+            const buildinsRegExpStr = buildins.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 
             this.buildinsAsModule = buildinsAsModule;
-            this.buildinsRegExp = new RegExp(`^${buildinsRegExp}|(!)${buildinsRegExp}`, 'g');
+            this.buildinsRegExp = new RegExp(`^${buildinsRegExpStr}|(!)${buildinsRegExpStr}`, 'g');
         }
 
         this.nodeModulesRegExp = /\/node_modules\//g;

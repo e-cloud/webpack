@@ -6,10 +6,10 @@ import ExternalModule = require('./ExternalModule');
 import Module = require('./Module')
 import NormalModuleFactory = require('./NormalModuleFactory')
 import {
-    NMFBeforeResolveResult,
     ErrCallback,
     ExternalsElement,
-    ExternalsObjectPropValue
+    ExternalsObjectPropValue,
+    NMFBeforeResolveResult
 } from '../typings/webpack-types'
 
 class ExternalModuleFactoryPlugin {
@@ -25,9 +25,8 @@ class ExternalModuleFactoryPlugin {
 
                 type ExternalCallback = (err?: Error, module?: Module) => void
 
-                function handleExternal(
-                    value: ExternalsObjectPropValue, type: string,
-                    callback: ExternalCallback
+                function handleExternal(value: ExternalsObjectPropValue, type: string,
+                                        callback: ExternalCallback
                 ): boolean
                 function handleExternal(value: ExternalsObjectPropValue, callback: ExternalCallback): boolean
 

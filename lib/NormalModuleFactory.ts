@@ -8,14 +8,14 @@ import NormalModule = require('./NormalModule');
 import RawModule = require('./RawModule');
 import Parser = require('./Parser');
 import RuleSet = require('./RuleSet');
+import { ResolveContext, ResolveError } from 'enhanced-resolve/lib/common-types'
 import {
-    ModuleOptions,
-    NMFBeforeResolveResult,
     ErrCallback,
+    ModuleOptions,
     NMFAfterResolveResult,
+    NMFBeforeResolveResult,
     ParserOptions
 } from '../typings/webpack-types'
-import { ResolveError, ResolveContext, ResolverRequest } from 'enhanced-resolve/lib/common-types'
 import Dependency = require('./Dependency')
 import Module = require('./Module')
 import Resolver = require('enhanced-resolve/lib/Resolver')
@@ -31,8 +31,8 @@ function loaderToIdent(data: Loader) {
     if (typeof data.options !== 'object') {
         throw new Error('loader options must be string or object');
     }
-    if (data.options.ident) {
-        return `${data.loader}??${data.options.ident}`;
+    if (data.ident) {
+        return `${data.loader}??${data.ident}`;
     }
     return `${data.loader}?${JSON.stringify(data.options)}`;
 }
@@ -54,6 +54,7 @@ interface NotRawModule {
     resource: string
     source?: never
     userRequest: string
+    resourceResolveData
 }
 
 function identToLoaderRequest(resultString: string) {
@@ -77,7 +78,7 @@ function identToLoaderRequest(resultString: string) {
 class NormalModuleFactory extends Tapable {
     ruleSet: RuleSet
     parserCache: Dictionary<Parser>
-    cachePredicate: (val: ResolverRequest) => boolean
+    cachePredicate: (val: Module) => boolean
 
     constructor(public context = '', public resolvers: Compiler.Resolvers, options: ModuleOptions) {
         super();
@@ -148,7 +149,7 @@ class NormalModuleFactory extends Tapable {
                 const noAutoLoaders = /^-?!/.test(request);
                 const noPrePostAutoLoaders = /^!!/.test(request);
                 const noPostAutoLoaders = /^-!/.test(request);
-                let elements = request.replace(/^-?!+/, '')
+                const elements = request.replace(/^-?!+/, '')
                     .replace(/!!+/g, '!')
                     .split('!');
                 let resource: any = elements.pop();
@@ -160,24 +161,32 @@ class NormalModuleFactory extends Tapable {
                     },
                     callback => {
                         if (resource === '' || resource[0] === '?') {
-                            return callback(null, resource);
+                            return callback(null, {
+                                resource: resource
+                            });
                         }
-                        this.resolvers.normal.resolve(resolveContextInfo, context, resource, (
-                            err: ResolveError,
-                            result: string | boolean
-                        ) => {
-                            if (err) {
-                                return callback(err);
-                            }
-                            callback(null, result);
-                        });
+                        this.resolvers.normal.resolve(
+                            resolveContextInfo,
+                            context,
+                            resource,
+                            (err: ResolveError, resource: string | boolean, resourceResolveData) => {
+                                if (err) {
+                                    return callback(err);
+                                }
+                                callback(null, {
+                                    resourceResolveData,
+                                    resource,
+                                });
+                            });
                     }
-                ], (err: ResolveError, results: [any, string | boolean]) => {
+                ], (err: ResolveError, results: [any, { resource: string | boolean, resourceResolveData }]) => {
                     if (err) {
                         return callback(err);
                     }
                     let loaders = results[0] as Loader[];
-                    resource = results[1] as string | boolean;
+                    const resourceResolveData = results[1].resourceResolveData;
+                    resource = results[1];
+                    resource = results[1].resource as string | boolean;
 
                     // translate option idents
                     try {
@@ -208,7 +217,8 @@ class NormalModuleFactory extends Tapable {
                     const result = this.ruleSet.exec({
                         resource: resourcePath,
                         resourceQuery: resourceQuery,
-                        issuer: contextInfo.issuer
+                        issuer: contextInfo.issuer,
+                        compiler: contextInfo.compiler
                     });
                     const settings: any = {};
                     const useLoadersPost: Loader[] = [];
@@ -250,6 +260,7 @@ class NormalModuleFactory extends Tapable {
                                 rawRequest: request,
                                 loaders,
                                 resource,
+                                resourceResolveData,
                                 parser: this.getParser(settings.parser)
                             })
                         });
@@ -259,15 +270,14 @@ class NormalModuleFactory extends Tapable {
         });
     }
 
-    create(
-        data: {
-            context: string
-            dependencies: [NormalModule]
-            contextInfo: {
-                issuer: string
-            }
-        }, callback: ErrCallback
-    ) {
+    create(data: {
+               context: string
+               dependencies: [NormalModule]
+               contextInfo: {
+                   issuer: string
+                   compiler: string
+               }
+           }, callback: ErrCallback) {
         const dependencies = data.dependencies;
         const cacheEntry = dependencies[0].__NormalModuleFactoryCache;
         if (cacheEntry) {
@@ -331,7 +341,8 @@ class NormalModuleFactory extends Tapable {
                         if (!err2) {
                             err.message = `${err.message}
 BREAKING CHANGE: It's no longer allowed to omit the '-loader' suffix when using loaders.
-                 You need to specify '${item.loader}-loader' instead of '${item.loader}'.`;
+                 You need to specify '${item.loader}-loader' instead of '${item.loader}',
+                 see https://webpack.js.org/guides/migrating/#automatic-loader-module-name-extension-removed`;
                         }
                         callback(err);
                     });
@@ -340,8 +351,8 @@ BREAKING CHANGE: It's no longer allowed to omit the '-loader' suffix when using 
                     return callback(err);
                 }
                 const optionsOnly = item.options ? {
-                        options: item.options
-                    } : undefined;
+                    options: item.options
+                } : undefined;
                 return callback(null, Object.assign({}, item, identToLoaderRequest(result), optionsOnly));
 
             });

@@ -6,8 +6,8 @@ import ModuleDependency = require('./ModuleDependency');
 import DepBlockHelpers = require('./DepBlockHelpers');
 import WebpackMissingModule = require('./WebpackMissingModule');
 import RequestShortener = require('../RequestShortener')
-import { WebpackOutputOptions } from '../../typings/webpack-types'
 import { ReplaceSource } from 'webpack-sources'
+import { WebpackOutputOptions } from '../../typings/webpack-types'
 import ImportDependenciesBlock = require('./ImportDependenciesBlock')
 
 class Template {

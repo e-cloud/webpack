@@ -11,14 +11,12 @@ import NormalModule = require('./NormalModule')
 import Module = require('./Module')
 
 class LibManifestPlugin {
-    constructor(
-        public options: {
-            context?: string
-            name: string
-            path: string
-            type?: string
-        }
-    ) {
+    constructor(public options: {
+                    context?: string
+                    name: string
+                    path: string
+                    type?: string
+                }) {
     }
 
     apply(compiler: Compiler) {

@@ -14,9 +14,7 @@ class DelegatedPlugin {
 
     apply(compiler: Compiler) {
         compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
-            const normalModuleFactory = params.normalModuleFactory;
-
-            compilation.dependencyFactories.set(DelegatedSourceDependency, normalModuleFactory);
+            compilation.dependencyFactories.set(DelegatedSourceDependency, params.normalModuleFactory);
         });
         compiler.plugin('compile', (params: CompilationParams) => {
             params.normalModuleFactory.apply(new DelegatedModuleFactoryPlugin(this.options));

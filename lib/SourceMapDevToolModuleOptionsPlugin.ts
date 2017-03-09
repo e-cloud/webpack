@@ -7,12 +7,10 @@ import Compilation = require('./Compilation')
 import Module = require('./Module')
 
 class SourceMapDevToolModuleOptionsPlugin {
-    constructor(
-        public options: {
-            module: boolean
-            lineToLine: boolean
-        }
-    ) {
+    constructor(public options: {
+                    module: boolean
+                    lineToLine: boolean
+                }) {
     }
 
     apply(compilation: Compilation) {

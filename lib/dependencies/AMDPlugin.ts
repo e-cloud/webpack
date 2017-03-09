@@ -15,13 +15,12 @@ import NullFactory = require('../NullFactory');
 import AMDRequireDependenciesBlockParserPlugin = require('./AMDRequireDependenciesBlockParserPlugin');
 import AMDDefineDependencyParserPlugin = require('./AMDDefineDependencyParserPlugin');
 import AliasPlugin = require('enhanced-resolve/lib/AliasPlugin');
-import BasicEvaluatedExpression = require('../BasicEvaluatedExpression');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
-import { Expression, Identifier } from 'estree'
+import { Expression } from 'estree'
 import { CompilationParams, ModuleOptions, ParserOptions } from '../../typings/webpack-types'
-import ParserHelpers = require("../ParserHelpers");
+import ParserHelpers = require('../ParserHelpers');
 
 class AMDPlugin {
     constructor(public options: ModuleOptions, public amdOptions: any) {
@@ -80,15 +79,11 @@ class AMDPlugin {
                 });
                 parser.plugin('evaluate typeof define.amd', ParserHelpers.evaluateToString(typeof amdOptions));
                 parser.plugin('evaluate typeof require.amd', ParserHelpers.evaluateToString(typeof amdOptions));
-                parser.plugin('evaluate Identifier define.amd', (expr: Identifier) =>
-                    new BasicEvaluatedExpression().setBoolean(true).setRange(expr.range)
-                );
-                parser.plugin('evaluate Identifier require.amd', (expr: Identifier) =>
-                    new BasicEvaluatedExpression().setBoolean(true).setRange(expr.range)
-                );
-                parser.plugin('typeof define', ParserHelpers.toConstantDependency('function'));
+                parser.plugin('evaluate Identifier define.amd', ParserHelpers.evaluateToBoolean(true));
+                parser.plugin('evaluate Identifier require.amd', ParserHelpers.evaluateToBoolean(true));
+                parser.plugin('typeof define', ParserHelpers.toConstantDependency(JSON.stringify('function')));
                 parser.plugin('evaluate typeof define', ParserHelpers.evaluateToString('function'));
-                parser.plugin('can-rename define', () => true);
+                parser.plugin('can-rename define', ParserHelpers.approve);
                 parser.plugin('rename define', function (expr: Expression) {
                     const dep = new AMDRequireItemDependency('!!webpack amd define', expr.range);
                     dep.userRequest = 'define';
@@ -96,8 +91,8 @@ class AMDPlugin {
                     this.state.current.addDependency(dep);
                     return false;
                 });
-                parser.plugin("typeof require", ParserHelpers.toConstantDependency("function"));
-                parser.plugin("evaluate typeof require", ParserHelpers.evaluateToString("function"));
+                parser.plugin('typeof require', ParserHelpers.toConstantDependency(JSON.stringify('function')));
+                parser.plugin('evaluate typeof require', ParserHelpers.evaluateToString('function'));
 
             });
         });

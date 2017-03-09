@@ -11,7 +11,6 @@ class WebEnvironmentPlugin {
     }
 
     apply(compiler: Compiler) {
-        compiler.inputFileSystem = this.inputFileSystem;
         compiler.outputFileSystem = this.outputFileSystem;
     }
 }

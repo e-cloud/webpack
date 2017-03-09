@@ -6,8 +6,8 @@ import path = require('path');
 import ContextElementDependency = require('./dependencies/ContextElementDependency');
 import Compiler = require('./Compiler')
 import ContextModuleFactory = require('./ContextModuleFactory')
-import { CMFAfterResolveResult, CMFBeforeResolveResult, ErrCallback } from '../typings/webpack-types'
 import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
+import { CMFAfterResolveResult, CMFBeforeResolveResult, ErrCallback } from '../typings/webpack-types'
 
 interface CreateContextMap {
     (fs: AbstractInputFileSystem, callback: (err: Error, recursive: boolean) => any): void
@@ -26,14 +26,12 @@ class ContextReplacementPlugin {
     constructor(resourceRegExp: RegExp, newContentRegExp: RegExp);
     constructor(resourceRegExp: RegExp, newContentRecursive: boolean, newContentRegExp: RegExp);
     constructor(resourceRegExp: RegExp, newContentResource: string, newContentRegExp: RegExp);
-    constructor(
-        resourceRegExp: RegExp, newContentResource: string, newContentRecursive: boolean,
-        newContentRegExp: RegExp
+    constructor(resourceRegExp: RegExp, newContentResource: string, newContentRecursive: boolean,
+                newContentRegExp: RegExp
     );
 
-    constructor(
-        public resourceRegExp: RegExp, newContentResource: any, newContentRecursive?: any,
-        newContentRegExp?: any
+    constructor(public resourceRegExp: RegExp, newContentResource: any, newContentRecursive?: any,
+                newContentRegExp?: any
     ) {
         if (typeof newContentResource === 'function') {
             this.newContentCallback = newContentResource;
@@ -99,9 +97,7 @@ class ContextReplacementPlugin {
                 }
                 return callback(null, result);
             });
-            cmf.plugin('after-resolve', function (
-                result: CMFAfterResolveResult, callback
-            ) {
+            cmf.plugin('after-resolve', function (result: CMFAfterResolveResult, callback) {
                 if (!result) {
                     return callback();
                 }

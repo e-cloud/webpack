@@ -3,12 +3,12 @@
  Author Tobias Koppers @sokra
  */
 import ConstDependency = require('./dependencies/ConstDependency');
-import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import NullFactory = require('./NullFactory');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
+import { ConditionalExpression, Identifier, IfStatement } from 'estree'
 import { CompilationParams } from '../typings/webpack-types'
-import { IfStatement, ConditionalExpression, Identifier } from 'estree'
+import * as ParserHelpers from './ParserHelpers'
 import Parser = require('./Parser')
 
 function getQuery(request: string) {
@@ -51,10 +51,7 @@ class ConstPlugin {
                     if (!this.state.module) {
                         return;
                     }
-                    const res = new BasicEvaluatedExpression();
-                    res.setString(getQuery(this.state.module.resource));
-                    res.setRange(expr.range);
-                    return res;
+                    return ParserHelpers.evaluateToString(getQuery(this.state.module.resource))(expr);
                 });
                 parser.plugin('expression __resourceQuery', function () {
                     if (!this.state.module) {

@@ -2,9 +2,9 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
+import { Hash } from 'crypto'
 import { ConcatSource, OriginalSource, PrefixSource } from 'webpack-sources'
 import { WebpackOutputOptions } from '../typings/webpack-types'
-import { Hash } from 'crypto'
 import Template = require('./Template');
 import Chunk = require('./Chunk')
 import ModuleTemplate = require('./ModuleTemplate')
@@ -36,9 +36,8 @@ class MainTemplate extends Template {
             }
             return this.asString(buf);
         });
-        this.plugin('render', function (
-            bootstrapSource: OriginalSource, chunk: Chunk, hash: string,
-            moduleTemplate: ModuleTemplate, dependencyTemplates
+        this.plugin('render', function (bootstrapSource: OriginalSource, chunk: Chunk, hash: string,
+                                        moduleTemplate: ModuleTemplate, dependencyTemplates
         ) {
             const source = new ConcatSource();
             source.add('/******/ (function(modules) { // webpackBootstrap\n');
@@ -67,22 +66,22 @@ class MainTemplate extends Template {
                 '};',
                 '',
                 this.asString(outputOptions.strictModuleExceptionHandling ? [
-                        '// Execute the module function',
-                        'var threw = true;',
-                        'try {',
-                        this.indent([
-                            `modules[moduleId].call(module.exports, module, module.exports, ${this.renderRequireFunctionForModule(hash, chunk, 'moduleId')});`,
-                            'threw = false;'
-                        ]),
-                        '} finally {',
-                        this.indent([
-                            'if(threw) delete installedModules[moduleId];'
-                        ]),
-                        '}'
-                    ] : [
-                        '// Execute the module function',
+                    '// Execute the module function',
+                    'var threw = true;',
+                    'try {',
+                    this.indent([
                         `modules[moduleId].call(module.exports, module, module.exports, ${this.renderRequireFunctionForModule(hash, chunk, 'moduleId')});`,
+                        'threw = false;'
                     ]),
+                    '} finally {',
+                    this.indent([
+                        'if(threw) delete installedModules[moduleId];'
+                    ]),
+                    '}'
+                ] : [
+                    '// Execute the module function',
+                    `modules[moduleId].call(module.exports, module, module.exports, ${this.renderRequireFunctionForModule(hash, chunk, 'moduleId')});`,
+                ]),
                 '',
                 '// Flag the module as loaded',
                 'module.l = true;',
@@ -207,11 +206,9 @@ class MainTemplate extends Template {
         return checkChildren(chunk, []);
     }
 
-    getPublicPath(
-        options: {
-            hash: string
-        }
-    ) {
+    getPublicPath(options: {
+                      hash: string
+                  }) {
         return this.applyPluginsWaterfall('asset-path', this.outputOptions.publicPath || '', options);
     }
 

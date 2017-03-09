@@ -6,14 +6,13 @@ import compareLocations = require('./compareLocations');
 import Module = require('./Module')
 import DependenciesBlock = require('./DependenciesBlock')
 import Entrypoint = require('./Entrypoint')
-import removeAndDo = require('./removeAndDo')
-import { SourceLocation } from 'estree'
 import { Hash } from 'crypto'
+import { SourceLocation } from 'estree'
 import AggressiveSplittingPlugin = require('./optimize/AggressiveSplittingPlugin')
 
 let debugId = 1000;
 
-class Chunk implements IRemoveAndDo {
+class Chunk {
     _aggressiveSplittingInvalid: boolean
     _fromAggressiveSplitting: boolean
     _fromAggressiveSplittingIndex: number
@@ -42,7 +41,6 @@ class Chunk implements IRemoveAndDo {
         this.id = null;
         this.ids = null;
         this.debugId = debugId++;
-        this.name = name;
         this.modules = [];
         this.entrypoints = [];
         this.chunks = [];
@@ -76,10 +74,6 @@ class Chunk implements IRemoveAndDo {
         throw new Error('Chunk.initial was removed. Use isInitial()');
     }
 
-    _removeAndDo(collection: string, thing: any, action: string) {
-        return removeAndDo.call(this, collection, thing, action)
-    }
-
     hasRuntime() {
         if (this.entrypoints.length === 0) {
             return false;
@@ -95,32 +89,63 @@ class Chunk implements IRemoveAndDo {
         return !!this.entryModule;
     }
 
-    addModule(module: Module) {
-        if (this.modules.includes(module)) {
+    addToCollection(collection: any[], item: any) {
+        if (item === this) {
             return false;
         }
-        this.modules.push(module);
+
+        if (collection.indexOf(item) > -1) {
+            return false;
+        }
+
+        collection.push(item);
         return true;
     }
 
-    removeModule(module: Module) {
-        this._removeAndDo('modules', module, 'removeChunk');
+    addChunk(chunk: Chunk) {
+        return this.addToCollection(this.chunks, chunk);
     }
 
-    removeChunk(chunk: Chunk) {
-        this._removeAndDo('chunks', chunk, 'removeParent');
+    addParent(parentChunk: Chunk) {
+        return this.addToCollection(this.parents, parentChunk);
     }
 
-    removeParent(chunk: Chunk) {
-        this._removeAndDo('parents', chunk, 'removeChunk');
+    addModule(module: Module) {
+        return this.addToCollection(this.modules, module);
     }
 
     addBlock(block: DependenciesBlock) {
-        if (this.blocks.includes(block)) {
-            return false;
+        return this.addToCollection(this.blocks, block);
+    }
+
+    removeModule(module: Module) {
+        const idx = this.modules.indexOf(module);
+        if (idx >= 0) {
+            this.modules.splice(idx, 1);
+            module.removeChunk(this);
+            return true;
         }
-        this.blocks.push(block);
-        return true;
+        return false;
+    }
+
+    removeChunk(chunk: Chunk) {
+        const idx = this.chunks.indexOf(chunk);
+        if (idx >= 0) {
+            this.chunks.splice(idx, 1);
+            chunk.removeParent(this);
+            return true;
+        }
+        return false;
+    }
+
+    removeParent(chunk: Chunk) {
+        const idx = this.parents.indexOf(chunk);
+        if (idx >= 0) {
+            this.parents.splice(idx, 1);
+            chunk.removeChunk(this);
+            return true;
+        }
+        return false;
     }
 
     addOrigin(module: Module, loc: SourceLocation) {
@@ -132,126 +157,144 @@ class Chunk implements IRemoveAndDo {
     }
 
     remove(reason: string) {
-        this.modules.slice().forEach(function (m) {
-            m.removeChunk(this);
-        }, this);
-        this.parents.forEach(function (c) {
-            const idx = c.chunks.indexOf(this);
+        // cleanup modules
+        this.modules.slice().forEach(module => {
+            module.removeChunk(this);
+        });
+
+        // cleanup parents
+        this.parents.forEach(parentChunk => {
+            // remove this chunk from its parents
+            const idx = parentChunk.chunks.indexOf(this);
             if (idx >= 0) {
-                c.chunks.splice(idx, 1);
+                parentChunk.chunks.splice(idx, 1);
             }
-            this.chunks.forEach(cc => {
-                cc.addParent(c);
+
+            // cleanup "sub chunks"
+            this.chunks.forEach(chunk => {
+                /**
+                 * remove this chunk as "intermediary" and connect
+                 * it "sub chunks" and parents directly
+                 */
+                // add parent to each "sub chunk"
+                chunk.addParent(parentChunk);
+                // add "sub chunk" to parent
+                parentChunk.addChunk(chunk);
             });
-        }, this);
-        this.chunks.forEach(function (c) {
-            const idx = c.parents.indexOf(this);
+        });
+
+        /**
+         * we need to iterate again over the chunks
+         * to remove this from the chunks parents.
+         * This can not be done in the above loop
+         * as it is not garuanteed that `this.parents` contains anything.
+         */
+        this.chunks.forEach(chunk => {
+            // remove this as parent of every "sub chunk"
+            const idx = chunk.parents.indexOf(this);
             if (idx >= 0) {
-                c.parents.splice(idx, 1);
+                chunk.parents.splice(idx, 1);
             }
-            this.parents.forEach(cc => {
-                cc.addChunk(c);
-            });
-        }, this);
-        this.blocks.forEach(function (b) {
-            const idx = b.chunks.indexOf(this);
+        });
+
+        // cleanup blocks
+        this.blocks.forEach(block => {
+            const idx = block.chunks.indexOf(this);
             if (idx >= 0) {
-                b.chunks.splice(idx, 1);
-                if (b.chunks.length === 0) {
-                    b.chunks = null;
-                    b.chunkReason = reason;
+                block.chunks.splice(idx, 1);
+                if (block.chunks.length === 0) {
+                    block.chunks = null;
+                    block.chunkReason = reason;
                 }
             }
-        }, this);
+        });
     }
 
-    moveModule(module: Module, other: Chunk) {
+    moveModule(module: Module, otherChunk: Chunk) {
         module.removeChunk(this);
-        module.addChunk(other);
-        other.addModule(module);
-        module.rewriteChunkInReasons(this, [other]);
+        module.addChunk(otherChunk);
+        otherChunk.addModule(module);
+        module.rewriteChunkInReasons(this, [otherChunk]);
     }
 
-    integrate(other: Chunk, reason: string) {
-        if (!this.canBeIntegrated(other)) {
+    replaceChunk(oldChunk: Chunk, newChunk: Chunk) {
+        const idx = this.chunks.indexOf(oldChunk);
+        if (idx >= 0) {
+            this.chunks.splice(idx, 1);
+        }
+        if (this !== newChunk && newChunk.addParent(this)) {
+            this.addChunk(newChunk);
+        }
+    }
+
+    replaceParentChunk(oldParentChunk: Chunk, newParentChunk: Chunk) {
+        const idx = this.parents.indexOf(oldParentChunk);
+        if (idx >= 0) {
+            this.parents.splice(idx, 1);
+        }
+        if (this !== newParentChunk && newParentChunk.addChunk(this)) {
+            this.addParent(newParentChunk);
+        }
+    }
+
+    integrate(otherChunk: Chunk, reason: string) {
+        if (!this.canBeIntegrated(otherChunk)) {
             return false;
         }
 
-        const otherModules = other.modules.slice();
-        otherModules.forEach(function (m) {
-            m.removeChunk(other);
-            m.addChunk(this);
-            this.addModule(m);
-            m.rewriteChunkInReasons(other, [this]);
-        }, this);
-        other.modules.length = 0;
+        const otherChunkModules = otherChunk.modules.slice();
+        otherChunkModules.forEach(module => otherChunk.moveModule(module, this));
+        otherChunk.modules.length = 0;
 
-        function moveChunks(chunks: Chunk[], kind: string, onChunk: (chunk: Chunk) => void) {
-            chunks.forEach(c => {
-                const idx = c[kind].indexOf(other);
-                if (idx >= 0) {
-                    c[kind].splice(idx, 1);
-                }
-                onChunk(c);
-            });
-        }
+        otherChunk.parents.forEach(parentChunk => parentChunk.replaceChunk(otherChunk, this));
+        otherChunk.parents.length = 0;
 
-        moveChunks(other.parents, 'chunks', chunk => {
-            if (chunk !== this && this.addParent(chunk)) {
-                chunk.addChunk(this);
-            }
-        });
-        other.parents.length = 0;
-        moveChunks(other.chunks, 'parents', chunk => {
-            if (chunk !== this && this.addChunk(chunk)) {
-                chunk.addParent(this);
-            }
-        });
-        other.chunks.length = 0;
-        other.blocks.forEach(function (b) {
-            b.chunks = (b.chunks || [this]).map(function (c) {
-                return c === other ? this : c;
-            }, this);
+        otherChunk.chunks.forEach(chunk => chunk.replaceParentChunk(otherChunk, this));
+        otherChunk.chunks.length = 0;
+
+        otherChunk.blocks.forEach(b => {
+            b.chunks = b.chunks ? b.chunks.map(c => {
+                return c === otherChunk ? this : c;
+            }) : [this];
             b.chunkReason = reason;
             this.addBlock(b);
-        }, this);
-        other.blocks.length = 0;
-        other.origins.forEach(function (origin) {
+        });
+        otherChunk.blocks.length = 0;
+
+        otherChunk.origins.forEach(origin => {
             this.origins.push(origin);
-        }, this);
+        });
         this.origins.forEach(origin => {
             if (!origin.reasons) {
                 origin.reasons = [reason];
-            }
-            else if (origin.reasons[0] !== reason) {
+            } else if (origin.reasons[0] !== reason) {
                 origin.reasons.unshift(reason);
             }
         });
-        this.chunks = this.chunks.filter(function (c) {
-            return c !== other && c !== this;
+        this.chunks = this.chunks.filter(chunk => {
+            return chunk !== otherChunk && chunk !== this;
         });
-        this.parents = this.parents.filter(function (c) {
-            return c !== other && c !== this;
+        this.parents = this.parents.filter(parentChunk => {
+            return parentChunk !== otherChunk && parentChunk !== this;
         });
         return true;
     }
 
     split(newChunk: Chunk) {
-        const _this = this;
-        this.blocks.forEach(b => {
-            newChunk.blocks.push(b);
-            b.chunks.push(newChunk);
+        this.blocks.forEach(block => {
+            newChunk.blocks.push(block);
+            block.chunks.push(newChunk);
         });
-        this.chunks.forEach(c => {
-            newChunk.chunks.push(c);
-            c.parents.push(newChunk);
+        this.chunks.forEach(chunk => {
+            newChunk.chunks.push(chunk);
+            chunk.parents.push(newChunk);
         });
-        this.parents.forEach(p => {
-            p.chunks.push(newChunk);
-            newChunk.parents.push(p);
+        this.parents.forEach(parentChunk => {
+            parentChunk.chunks.push(newChunk);
+            newChunk.parents.push(parentChunk);
         });
-        this.entrypoints.forEach(e => {
-            e.insertChunk(newChunk, _this);
+        this.entrypoints.forEach(entrypoint => {
+            entrypoint.insertChunk(newChunk, this);
         });
     }
 
@@ -268,62 +311,71 @@ class Chunk implements IRemoveAndDo {
         });
     }
 
-    size(options: AggressiveSplittingPlugin.Option) {
-        const CHUNK_OVERHEAD = typeof options.chunkOverhead === 'number' ? options.chunkOverhead : 10000;
-        const ENTRY_CHUNK_MULTIPLICATOR = options.entryChunkMultiplicator || 10;
-
-        const modulesSize = this.modules.reduce((a, b) => a + b.size(), 0);
-        return modulesSize * (this.isInitial() ? ENTRY_CHUNK_MULTIPLICATOR : 1) + CHUNK_OVERHEAD;
-    }
-
-    canBeIntegrated(other: Chunk) {
-        if (other.isInitial()) {
+    canBeIntegrated(otherChunk: Chunk) {
+        if (otherChunk.isInitial()) {
             return false;
         }
         if (this.isInitial()) {
-            if (other.parents.length !== 1 || other.parents[0] !== this) {
+            if (otherChunk.parents.length !== 1 || otherChunk.parents[0] !== this) {
                 return false;
             }
         }
         return true;
     }
 
-    integratedSize(other: Chunk, options: any) {
+    addMultiplierAndOverhead(size: number, options: AggressiveSplittingPlugin.Option) {
+        const overhead = typeof options.chunkOverhead === 'number' ? options.chunkOverhead : 10000;
+        const multiplicator = this.isInitial() ? (options.entryChunkMultiplicator || 10) : 1;
+
+        return size * multiplicator + overhead;
+    }
+
+    modulesSize() {
+        let count = 0;
+        for (let i = 0; i < this.modules.length; i++) {
+            count += this.modules[i].size();
+        }
+        return count;
+    }
+
+    size(options: AggressiveSplittingPlugin.Option) {
+        return this.addMultiplierAndOverhead(this.modulesSize(), options);
+    }
+
+    integratedSize(otherChunk: Chunk, options: AggressiveSplittingPlugin.Option) {
         // Chunk if it's possible to integrate this chunk
-        if (!this.canBeIntegrated(other)) {
+        if (!this.canBeIntegrated(otherChunk)) {
             return false;
         }
 
-        const CHUNK_OVERHEAD = typeof options.chunkOverhead === 'number' ? options.chunkOverhead : 10000;
-        const ENTRY_CHUNK_MULTIPLICATOR = options.entryChunkMultiplicator || 10;
-
-        const mergedModules = this.modules.slice();
-        other.modules.forEach(function (m) {
-            if (!this.modules.includes(m)) {
-                mergedModules.push(m);
+        let integratedModulesSize = this.modulesSize();
+        // only count modules that do not exist in this chunk!
+        for (let i = 0; i < otherChunk.modules.length; i++) {
+            const otherModule = otherChunk.modules[i];
+            if (this.modules.indexOf(otherModule) === -1) {
+                integratedModulesSize += otherModule.size();
             }
-        }, this);
+        }
 
-        const modulesSize = mergedModules.reduce((a, m) => a + m.size(), 0);
-        return modulesSize * (this.isInitial() || other.isInitial() ? ENTRY_CHUNK_MULTIPLICATOR : 1) + CHUNK_OVERHEAD;
+        return this.addMultiplierAndOverhead(integratedModulesSize, options);
     }
 
     getChunkMaps(includeEntries?: boolean, realHash?: boolean) {
         const chunksProcessed: Chunk[] = [];
         const chunkHashMap = {};
         const chunkNameMap = {};
-        (function addChunk(c) {
-            if (chunksProcessed.includes(c)) {
+        (function addChunk(chunk) {
+            if (chunksProcessed.includes(chunk)) {
                 return;
             }
-            chunksProcessed.push(c);
-            if (!c.hasRuntime() || includeEntries) {
-                chunkHashMap[c.id] = realHash ? c.hash : c.renderedHash;
-                if (c.name) {
-                    chunkNameMap[c.id] = c.name;
+            chunksProcessed.push(chunk);
+            if (!chunk.hasRuntime() || includeEntries) {
+                chunkHashMap[chunk.id] = realHash ? chunk.hash : chunk.renderedHash;
+                if (chunk.name) {
+                    chunkNameMap[chunk.id] = chunk.name;
                 }
             }
-            c.chunks.forEach(addChunk);
+            chunk.chunks.forEach(addChunk);
         })(this);
         return {
             hash: chunkHashMap,
@@ -367,36 +419,14 @@ class Chunk implements IRemoveAndDo {
                 throw new Error(`checkConstraints: child missing parent ${chunk.debugId} -> ${child.debugId}`);
             }
         });
-        chunk.parents.forEach((parent, idx) => {
-            if (chunk.parents.indexOf(parent) !== idx) {
-                throw new Error(`checkConstraints: duplicate parent in chunk ${chunk.debugId} ${parent.debugId}`);
+        chunk.parents.forEach((parentChunk, idx) => {
+            if (chunk.parents.indexOf(parentChunk) !== idx) {
+                throw new Error(`checkConstraints: duplicate parent in chunk ${chunk.debugId} ${parentChunk.debugId}`);
             }
-            if (!parent.chunks.includes(chunk)) {
-                throw new Error(`checkConstraints: parent missing child ${parent.debugId} <- ${chunk.debugId}`);
+            if (!parentChunk.chunks.includes(chunk)) {
+                throw new Error(`checkConstraints: parent missing child ${parentChunk.debugId} <- ${chunk.debugId}`);
             }
         });
-    }
-
-    addChunk(chunk: Chunk) {
-        if (chunk === this) {
-            return false;
-        }
-        if (this.chunks.includes(chunk)) {
-            return false;
-        }
-        this.chunks.push(chunk);
-        return true;
-    }
-
-    addParent(chunk: Chunk) {
-        if (chunk === this) {
-            return false;
-        }
-        if (this.parents.includes(chunk)) {
-            return false;
-        }
-        this.parents.push(chunk);
-        return true;
     }
 }
 

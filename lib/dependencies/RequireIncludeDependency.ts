@@ -5,7 +5,7 @@
 import ModuleDependency = require('./ModuleDependency');
 import RequestShortener = require('../RequestShortener')
 import { ReplaceSource } from 'webpack-sources'
-import { WebpackOutputOptions, SourceRange } from '../../typings/webpack-types'
+import { SourceRange, WebpackOutputOptions } from '../../typings/webpack-types'
 
 class Template {
     apply(
@@ -20,7 +20,7 @@ class Template {
 
     getOptionalComment(shouldHaveComment: boolean, shortenedRequest: string) {
         if (shouldHaveComment) {
-            return "";
+            return '';
         }
         return `/*! require.include ${shortenedRequest} */`;
     }

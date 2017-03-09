@@ -30,12 +30,12 @@ class RequireResolveDependencyParserPlugin {
             const param = this.evaluateExpression(expr.arguments[0]);
             let dep;
             if (param.isConditional()) {
-                param.options.forEach(function (option) {
+                param.options.forEach((option) => {
                     const result = this.applyPluginsBailResult('call require.resolve(Weak):item', expr, option, weak);
                     if (result === undefined) {
                         this.applyPluginsBailResult('call require.resolve(Weak):context', expr, option, weak);
                     }
-                }, this);
+                });
                 dep = new RequireResolveHeaderDependency(expr.callee.range);
                 dep.loc = expr.loc;
                 this.state.current.addDependency(dep);

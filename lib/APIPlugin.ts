@@ -3,13 +3,12 @@
  Author Tobias Koppers @sokra
  */
 import ConstDependency = require('./dependencies/ConstDependency');
-import ParserHelpers = require("./ParserHelpers");
+import { CompilationParams } from '../typings/webpack-types'
+import * as ParserHelpers from './ParserHelpers'
 import NullFactory = require('./NullFactory');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Parser = require('./Parser')
-import { Expression } from 'estree'
-import { CompilationParams } from '../typings/webpack-types'
 
 const REPLACEMENTS = {
     __webpack_require__: '__webpack_require__', // eslint-disable-line camelcase
@@ -39,16 +38,11 @@ class APIPlugin {
 
             params.normalModuleFactory.plugin('parser', function (parser: Parser) {
                 Object.keys(REPLACEMENTS).forEach(function (key) {
-                    parser.plugin(`expression ${key}`, function (expr: Expression) {
-                        const dep = new ConstDependency(REPLACEMENTS[key], expr.range);
-                        dep.loc = expr.loc;
-                        this.state.current.addDependency(dep);
-                        return true;
-                    });
+                    parser.plugin(`expression ${key}`, ParserHelpers.toConstantDependency(REPLACEMENTS[key]));
                     parser.plugin(`evaluate typeof ${key}`, ParserHelpers.evaluateToString(REPLACEMENT_TYPES[key]));
                 });
                 IGNORES.forEach(key => {
-                    parser.plugin(key, () => true);
+                    parser.plugin(key, ParserHelpers.skipTraversal);
                 });
             });
         });

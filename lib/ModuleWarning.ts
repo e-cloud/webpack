@@ -7,11 +7,9 @@ import Module = require('./Module')
 class ModuleWarning extends Error {
     constructor(public module: Module, public warning: string) {
         super();
-        if (Error.hasOwnProperty('captureStackTrace')) {
-            Error.captureStackTrace(this, this.constructor);
-        }
         this.name = 'ModuleWarning';
         this.message = warning;
+        Error.captureStackTrace(this, this.constructor);
     }
 }
 

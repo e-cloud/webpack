@@ -106,23 +106,21 @@ function getReplacer(value: string, allowEmpty?: boolean) {
     };
 }
 
-function replacePathVariables(
-    path: string, data: {
-        hash: string
-        hashWithLength: (length: number) => string
-        chunk: {
-            id: string
-            hash: string
-            renderedHash: string
-            hashWithLength: (length: number) => string
-            name: string
-        }
-        noChunkHash: boolean
-        filename: string
-        basename: string
-        query?: string
-    }
-) {
+function replacePathVariables(path: string, data: {
+                                  hash: string
+                                  hashWithLength: (length: number) => string
+                                  chunk: {
+                                      id: string
+                                      hash: string
+                                      renderedHash: string
+                                      hashWithLength: (length: number) => string
+                                      name: string
+                                  }
+                                  noChunkHash: boolean
+                                  filename: string
+                                  basename: string
+                                  query?: string
+                              }) {
     const chunk = data.chunk;
     const chunkId = chunk && chunk.id;
     const chunkName = chunk && (chunk.name || chunk.id);

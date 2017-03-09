@@ -33,7 +33,7 @@ abstract class DependenciesBlock {
     }
 
     addVariable(name: string, expression: string, dependencies?: Dependency[]) {
-        for (let v of this.variables) {
+        for (const v of this.variables) {
             if (v.name === name && v.expression === expression) {
                 return;
             }
@@ -58,11 +58,9 @@ abstract class DependenciesBlock {
     }
 
     disconnect() {
-        function disconnect(
-            i: {
-                disconnect(): any
-            }
-        ) {
+        function disconnect(i: {
+                                disconnect(): any
+                            }) {
             i.disconnect();
         }
 
@@ -72,11 +70,9 @@ abstract class DependenciesBlock {
     }
 
     unseal() {
-        function unseal(
-            i: {
-                unseal(): any
-            }
-        ) {
+        function unseal(i: {
+                            unseal(): any
+                        }) {
             i.unseal();
         }
 
@@ -84,13 +80,13 @@ abstract class DependenciesBlock {
     }
 
     hasDependencies(filter: DependencyFilter): boolean {
-        if(filter) {
-            if(this.dependencies.some(filter)) return true;
+        if (filter) {
+            if (this.dependencies.some(filter)) return true;
         } else {
-            if(this.dependencies.length > 0) return true;
+            if (this.dependencies.length > 0) return true;
         }
 
-        return this.blocks.concat(this.variables).some(function(item: IHasDependencies) {
+        return this.blocks.concat(this.variables).some(function (item: IHasDependencies) {
             return item.hasDependencies(filter);
         });
     }

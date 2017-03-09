@@ -5,18 +5,13 @@
 import NullDependency = require('./NullDependency');
 import RequestShortener = require('../RequestShortener')
 import { ReplaceSource } from 'webpack-sources'
-import { WebpackOutputOptions, SourceRange } from '../../typings/webpack-types'
+import { SourceRange, WebpackOutputOptions } from '../../typings/webpack-types'
 
 class Template {
-    apply(
-        dep: RequireHeaderDependency, source: ReplaceSource, outputOptions: WebpackOutputOptions,
-        requestShortener: RequestShortener
+    apply(dep: RequireHeaderDependency, source: ReplaceSource, outputOptions: WebpackOutputOptions,
+          requestShortener: RequestShortener
     ) {
         source.replace(dep.range[0], dep.range[1] - 1, '__webpack_require__');
-    }
-
-    applyAsTemplateArgument(name: string, dep: RequireHeaderDependency, source: ReplaceSource) {
-        source.replace(dep.range[0], dep.range[1] - 1, 'require');
     }
 }
 

@@ -11,14 +11,11 @@ class ModuleBuildError extends Error {
 
     constructor(public module: Module, public err: Error & { hideStack?: boolean }) {
         super();
-        if (Error.hasOwnProperty('captureStackTrace')) {
-            Error.captureStackTrace(this, this.constructor);
-        }
         this.name = 'ModuleBuildError';
         this.message = 'Module build failed: ';
         if (err !== null && typeof err === 'object') {
             if (typeof err.stack === 'string' && err.stack) {
-                let stack = err.stack.split('\n');
+                const stack = err.stack.split('\n');
                 for (let i = 0; i < stack.length; i++) {
                     if (stack[i].includes(loaderFlag)) {
                         stack.length = i;
@@ -45,6 +42,7 @@ class ModuleBuildError extends Error {
                 this.message += err;
             }
         }
+        Error.captureStackTrace(this, this.constructor);
     }
 }
 

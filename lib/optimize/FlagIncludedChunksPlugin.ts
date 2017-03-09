@@ -12,13 +12,15 @@ class FlagIncludedChunksPlugin {
             compilation.plugin('optimize-chunk-ids', function (chunks: Chunk[]) {
                 chunks.forEach(chunkA => {
                     chunks.forEach(chunkB => {
-                        if (chunkA === chunkB) {
-                            return;
-                        }
+                        // as we iterate the same iterables twice
+                        // skip if we find ourselves
+                        if (chunkA === chunkB) return;
+
+                        // instead of swapping A and B just bail
+                        // as we loop twice the current A will be B and B then A
+                        if (chunkA.modules.length < chunkB.modules.length) return;
+
                         // is chunkB in chunkA?
-                        if (chunkA.modules.length < chunkB.modules.length) {
-                            return;
-                        }
                         for (let i = 0; i < chunkB.modules.length; i++) {
                             if (!chunkA.modules.includes(chunkB.modules[i])) {
                                 return;

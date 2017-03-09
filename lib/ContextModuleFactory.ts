@@ -8,9 +8,9 @@ import Tapable = require('tapable');
 import ContextModule = require('./ContextModule');
 import ContextElementDependency = require('./dependencies/ContextElementDependency');
 import ContextDependency = require('./dependencies/ContextDependency')
-import { CMFBeforeResolveResult, ErrCallback, AlternativeModule } from '../typings/webpack-types'
-import { Stats } from 'fs'
 import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
+import { Stats } from 'fs'
+import { AlternativeModule, CMFBeforeResolveResult, ErrCallback } from '../typings/webpack-types'
 import Compiler = require('./Compiler')
 
 class ContextModuleFactory extends Tapable {
@@ -18,12 +18,10 @@ class ContextModuleFactory extends Tapable {
         super();
     }
 
-    create(
-        data: {
-            context: string
-            dependencies: [ContextDependency]
-        }, callback: ErrCallback
-    ) {
+    create(data: {
+               context: string
+               dependencies: [ContextDependency]
+           }, callback: ErrCallback) {
         const module = this;
         const context = data.context;
         const dependencies = data.dependencies;
@@ -126,9 +124,8 @@ class ContextModuleFactory extends Tapable {
         });
     }
 
-    resolveDependencies(
-        fs: AbstractInputFileSystem, resource: string, recursive: boolean, regExp: RegExp,
-        callback: ErrCallback
+    resolveDependencies(fs: AbstractInputFileSystem, resource: string, recursive: boolean, regExp: RegExp,
+                        callback: ErrCallback
     ) {
         if (!regExp || !resource) {
             return callback(null, []);

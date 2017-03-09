@@ -2,8 +2,8 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { RawSource, Source } from 'webpack-sources'
 import { Hash } from 'crypto'
+import { RawSource, Source } from 'webpack-sources'
 import { FilenameTemplate } from '../typings/webpack-types'
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
 import ModuleTemplate = require('./ModuleTemplate')

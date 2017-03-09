@@ -2,9 +2,9 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import * as ESTree from 'estree'
-import { PlainObject, SourceRange, ParserState } from '../typings/webpack-types'
 import acorn from 'acorn-dynamic-import'
+import * as ESTree from 'estree'
+import { ParserState, PlainObject, SourceRange } from '../typings/webpack-types'
 import acornNS = require('acorn')
 import Tapable = require('tapable');
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
@@ -266,7 +266,7 @@ class Parser extends Tapable {
                 }
                 if (expr.argument.type === 'MemberExpression') {
                     let expression: ESTree.Expression = expr.argument;
-                    let exprName: string[] = [];
+                    const exprName: string[] = [];
                     while (expression.type === 'MemberExpression' && !expression.computed) {
                         exprName.unshift(this.scope.renames[`$${(<ESTree.Identifier>expression.property).name}`] || (<ESTree.Identifier>expression.property).name);
                         expression = expression.object as ESTree.Expression;
@@ -335,7 +335,7 @@ class Parser extends Tapable {
         });
         this.plugin('evaluate MemberExpression', function (expression: ESTree.MemberExpression) {
             let expr: ESTree.Expression = expression;
-            let exprName = [];
+            const exprName = [];
             while (expr.type === 'MemberExpression' && expr.property.type === (expr.computed
                 ? 'Literal'
                 : 'Identifier')) {
@@ -381,8 +381,8 @@ class Parser extends Tapable {
             if (expr.arguments.length !== 2) {
                 return;
             }
-            let arg1 = this.evaluateExpression(expr.arguments[0]);
-            let arg2 = this.evaluateExpression(expr.arguments[1]);
+            const arg1 = this.evaluateExpression(expr.arguments[0]);
+            const arg2 = this.evaluateExpression(expr.arguments[1]);
             if (!arg1.isString() && !arg1.isRegExp()) {
                 return;
             }
@@ -436,9 +436,8 @@ class Parser extends Tapable {
              * @param {any[]} expressions expressions
              * @return {BasicEvaluatedExpression[]} Simplified template
              */
-            function getSimplifiedTemplateResult(
-                kind: string, quasis: ESTree.TemplateElement[],
-                expressions: ESTree.Expression[]
+            function getSimplifiedTemplateResult(kind: string, quasis: ESTree.TemplateElement[],
+                                                 expressions: ESTree.Expression[]
             ) {
                 const parts = [];
 
@@ -535,9 +534,7 @@ class Parser extends Tapable {
             return res;
         });
         this.plugin('evaluate ArrayExpression', function (expr: ESTree.ArrayExpression) {
-            const items = expr.elements.map(function (element) {
-                return element !== null && this.evaluateExpression(element);
-            }, this);
+            const items = expr.elements.map((element) => element !== null && this.evaluateExpression(element));
             if (!items.every(Boolean)) {
                 return;
             }
@@ -561,11 +558,11 @@ class Parser extends Tapable {
             this.walkExpression(classy.superClass);
         }
         if (classy.body && classy.body.type === 'ClassBody') {
-            classy.body.body.forEach(function (methodDefinition) {
+            classy.body.body.forEach((methodDefinition) => {
                 if (methodDefinition.type === 'MethodDefinition') {
                     this.walkMethodDefinition(methodDefinition);
                 }
-            }, this);
+            });
         }
     }
 
@@ -579,16 +576,20 @@ class Parser extends Tapable {
     }
 
     walkStatements(statements: ESTree.Node[]) {
-        statements.forEach(function (statement) {
-            if (this.isHoistedStatement(statement)) {
-                this.walkStatement(statement);
+        const lenA = statements.length;
+        for (let indexA = 0; indexA < lenA; indexA++) {
+            const statementA = statements[indexA];
+            if (this.isHoistedStatement(statementA)) {
+                this.walkStatement(statementA);
             }
-        }, this);
-        statements.forEach(function (statement) {
-            if (!this.isHoistedStatement(statement)) {
-                this.walkStatement(statement);
+        }
+        const lenB = statements.length;
+        for (let indexB = 0; indexB < lenB; indexB++) {
+            const statementB = statements[indexB];
+            if (!this.isHoistedStatement(statementB)) {
+                this.walkStatement(statementB);
             }
-        }, this);
+        }
     }
 
     isHoistedStatement(statement: ESTree.ModuleDeclaration) {
@@ -729,7 +730,7 @@ class Parser extends Tapable {
     walkImportDeclaration(statement: ESTree.ImportDeclaration) {
         const source = statement.source.value;
         this.applyPluginsBailResult('import', statement, source);
-        statement.specifiers.forEach(function (specifier) {
+        statement.specifiers.forEach((specifier) => {
             const name = specifier.local.name;
             this.scope.renames[`$${name}`] = undefined;
             this.scope.definitions.push(name);
@@ -744,18 +745,19 @@ class Parser extends Tapable {
                     this.applyPluginsBailResult('import specifier', statement, source, null, name);
                     break;
             }
-        }, this);
+        });
     }
 
     walkExportNamedDeclaration(statement: ESTree.ExportNamedDeclaration) {
         let source: ESTree.Literal
+
         if (statement.source) {
             source = statement.source.value;
             this.applyPluginsBailResult('export import', statement, source);
-        }
-        else {
+        } else {
             this.applyPluginsBailResult1('export', statement);
         }
+
         if (statement.declaration) {
             if (/Expression$/.test(statement.declaration.type)) {
                 throw new Error('Doesn\'t occur?');
@@ -765,26 +767,28 @@ class Parser extends Tapable {
                     const pos = this.scope.definitions.length;
                     this.walkStatement(statement.declaration);
                     const newDefs = this.scope.definitions.slice(pos);
-                    newDefs.reverse().forEach(function (def, idx) {
-                        this.applyPluginsBailResult('export specifier', statement, def, def, idx);
-                    }, this);
+                    for (let index = newDefs.length - 1; index >= 0; index--) {
+                        const def = newDefs[index];
+                        this.applyPluginsBailResult('export specifier', statement, def, def, index);
+                    }
                 }
             }
         }
+
         if (statement.specifiers) {
-            statement.specifiers.forEach(function (specifier, idx) {
+            for (let specifierIndex = 0; specifierIndex < statement.specifiers.length; specifierIndex++) {
+                const specifier = statement.specifiers[specifierIndex];
                 switch (specifier.type) {
                     case 'ExportSpecifier':
                         const name = specifier.exported.name;
                         if (source) {
-                            this.applyPluginsBailResult('export import specifier', statement, source, specifier.local.name, name, idx);
-                        }
-                        else {
-                            this.applyPluginsBailResult('export specifier', statement, specifier.local.name, name, idx);
+                            this.applyPluginsBailResult('export import specifier', statement, source, specifier.local.name, name, specifierIndex);
+                        } else {
+                            this.applyPluginsBailResult('export specifier', statement, specifier.local.name, name, specifierIndex);
                         }
                         break;
                 }
-            }, this);
+            }
         }
     }
 
@@ -795,9 +799,11 @@ class Parser extends Tapable {
                 const pos = this.scope.definitions.length;
                 this.walkStatement(statement.declaration);
                 const newDefs = this.scope.definitions.slice(pos);
-                newDefs.forEach(function (def) {
+                const len = newDefs.length;
+                for (let index = 0; index < len; index++) {
+                    const def = newDefs[index];
                     this.applyPluginsBailResult('export specifier', statement, def, 'default');
-                }, this);
+                }
             }
         }
         else {
@@ -827,19 +833,18 @@ class Parser extends Tapable {
     }
 
     walkSwitchCases(switchCases: ESTree.SwitchCase[]) {
-        switchCases.forEach(function (switchCase) {
+        const len = switchCases.length;
+        for (let index = 0; index < len; index++) {
+            const switchCase = switchCases[index];
+
             if (switchCase.test) {
                 this.walkExpression(switchCase.test);
             }
             this.walkStatements(switchCase.consequent);
-        }, this);
+        }
     }
 
-    walkCatchClause(
-        catchClause: ESTree.CatchClause & {
-            guard?: ESTree.Expression
-        }
-    ) {
+    walkCatchClause(catchClause: ESTree.CatchClause & { guard?: ESTree.Expression }) {
         if (catchClause.guard) {
             this.walkExpression(catchClause.guard);
         }
@@ -849,7 +854,7 @@ class Parser extends Tapable {
     }
 
     walkVariableDeclarators(declarators: ESTree.VariableDeclarator[]) {
-        declarators.forEach(function (declarator) {
+        declarators.forEach((declarator) => {
             switch (declarator.type) {
                 case 'VariableDeclarator':
                     const renameIdentifier = declarator.init && this.getRenameIdentifier(declarator.init);
@@ -864,39 +869,73 @@ class Parser extends Tapable {
                         }
                     }
                     else {
+                        this.walkPattern(declarator.id);
                         this.enterPattern(declarator.id, (name: string, decl: ESTree.Pattern) => {
                             if (!this.applyPluginsBailResult1(`var ${name}`, decl)) {
                                 this.scope.renames[`$${name}`] = undefined;
                                 this.scope.definitions.push(name);
                             }
                         });
-                        this.walkExpression(declarator.id);
                         if (declarator.init) {
                             this.walkExpression(declarator.init);
                         }
                     }
                     break;
             }
-        }, this);
+        });
+    }
+
+    walkPattern(pattern: ESTree.Pattern) {
+        if (pattern.type === 'Identifier') {
+            return;
+        }
+        if (this[`walk${pattern.type}`]) {
+            this[`walk${pattern.type}`](pattern);
+        }
+    }
+
+    walkObjectPattern(pattern: ESTree.ObjectPattern) {
+        const len = pattern.properties.length;
+        for (let i = 0; i < len; i++) {
+            const prop = pattern.properties[i];
+            if (prop) {
+                if (prop.computed) {
+                    this.walkExpression(prop.key);
+                }
+                if (prop.value) {
+                    this.walkPattern(prop.value);
+                }
+            }
+        }
+    }
+
+    walkArrayPattern(pattern: ESTree.ArrayPattern) {
+        const len = pattern.elements.length;
+        for (let i = 0; i < len; i++) {
+            const element = pattern.elements[i];
+            if (element) {
+                this.walkPattern(element);
+            }
+        }
+    }
+
+    walkRestElement(pattern: ESTree.RestElement) {
+        this.walkPattern(pattern.argument);
     }
 
     walkExpressions(expressions: ESTree.Node[]) {
-        expressions.forEach(function (expression) {
+        const len = expressions.length;
+        for (let expressionsIndex = 0; expressionsIndex < len; expressionsIndex++) {
+            const expression = expressions[expressionsIndex];
             if (expression) {
                 this.walkExpression(expression);
             }
-        }, this);
+        }
     }
 
     walkExpression(expression: ESTree.Node) {
         if (this[`walk${expression.type}`]) {
             return this[`walk${expression.type}`](expression);
-        }
-    }
-
-    walkArrayExpression(expression: ESTree.ArrayExpression) {
-        if (expression.elements) {
-            this.walkExpressions(expression.elements);
         }
     }
 
@@ -907,6 +946,12 @@ class Parser extends Tapable {
         }
     }
 
+    walkArrayExpression(expression: ESTree.ArrayExpression) {
+        if (expression.elements) {
+            this.walkExpressions(expression.elements);
+        }
+    }
+
     walkSpreadElement(expression: ESTree.SpreadElement) {
         if (expression.argument) {
             this.walkExpression(expression.argument);
@@ -914,7 +959,9 @@ class Parser extends Tapable {
     }
 
     walkObjectExpression(expression: ESTree.ObjectExpression) {
-        expression.properties.forEach(function (prop) {
+        const len = expression.properties.length;
+        for (let propIndex = 0; propIndex < len; propIndex++) {
+            const prop = expression.properties[propIndex];
             if (prop.computed) {
                 this.walkExpression(prop.key);
             }
@@ -925,7 +972,7 @@ class Parser extends Tapable {
             if (prop.shorthand) {
                 this.scope.inShorthand = false;
             }
-        }, this);
+        }
     }
 
     walkFunctionExpression(expression: ESTree.FunctionExpression) {
@@ -963,7 +1010,7 @@ class Parser extends Tapable {
     walkUnaryExpression(expression: ESTree.UnaryExpression) {
         if (expression.operator === 'typeof') {
             let expr: ESTree.Expression = expression.argument;
-            let exprName = [];
+            const exprName = [];
             while (expr.type === 'MemberExpression'
             && expr.property.type === (expr.computed ? 'Literal' : 'Identifier')) {
                 exprName.unshift((<ESTree.Identifier>expr.property).name || (<ESTree.Literal>expr.property).value);
@@ -1065,10 +1112,10 @@ class Parser extends Tapable {
     walkCallExpression(expression: ESTree.CallExpression) {
         function walkIIFE(
             functionExpression: ESTree.FunctionExpression,
-            args: (ESTree.Expression | ESTree.SpreadElement)[]
+            options: (ESTree.Expression | ESTree.SpreadElement)[]
         ) {
             const params = functionExpression.params;
-            args = args.map(function (arg) {
+            const args: string[] = options.map((arg) => {
                 const renameIdentifier = this.getRenameIdentifier(arg);
                 if (renameIdentifier && this.applyPluginsBailResult1(`can-rename ${renameIdentifier}`, arg)) {
                     if (!this.applyPluginsBailResult1(`rename ${renameIdentifier}`, arg)) {
@@ -1076,17 +1123,18 @@ class Parser extends Tapable {
                     }
                 }
                 this.walkExpression(arg);
-            }, this);
+            });
             this.inScope(params.filter((identifier, idx) => !args[idx]), () => {
-                args.forEach(function (arg, idx) {
-                    if (!arg) {
-                        return;
+                for (let i = 0; i < args.length; i++) {
+                    const param = args[i];
+                    if (!param) {
+                        continue;
                     }
-                    if (!params[idx] || params[idx].type !== 'Identifier') {
-                        return;
+                    if (!params[i] || params[i].type !== 'Identifier') {
+                        continue;
                     }
-                    this.scope.renames[`$${(<ESTree.Identifier>params[idx]).name}`] = arg;
-                }, this);
+                    this.scope.renames[`$${params[i].name}`] = param;
+                }
                 if (functionExpression.body.type === 'BlockStatement') {
                     this.walkStatement(functionExpression.body);
                 }
@@ -1175,32 +1223,35 @@ class Parser extends Tapable {
 
     inScope(params: ESTree.Pattern[], fn: Function) {
         const oldScope = this.scope;
-        const self = this;
         this.scope = {
             inTry: false,
             inShorthand: false,
             definitions: oldScope.definitions.slice(),
             renames: Object.create(oldScope.renames)
         };
-        params.forEach(param => {
+
+        const len = params.length;
+        for (let paramIndex = 0; paramIndex < len; paramIndex++) {
+            const param = params[paramIndex];
+
             if (typeof param !== 'string') {
-                param = self.enterPattern(param, param => {
-                    self.scope.renames[`$${param}`] = undefined;
-                    self.scope.definitions.push(param);
+                this.enterPattern(param, (param) => {
+                    this.scope.renames[`$${param}`] = undefined;
+                    this.scope.definitions.push(param);
                 });
+            } else {
+                this.scope.renames[`$${param}`] = undefined;
+                this.scope.definitions.push(param);
             }
-            else {
-                self.scope.renames[`$${param}`] = undefined;
-                self.scope.definitions.push(param);
-            }
-        });
+        }
+
         fn();
-        self.scope = oldScope;
+        this.scope = oldScope;
     }
 
     enterPattern(pattern: ESTree.Pattern, onIdent: IdentCallback) {
         if (pattern != null && this[`enter${pattern.type}`]) {
-            return this[`enter${pattern.type}`](pattern, onIdent);
+            this[`enter${pattern.type}`](pattern, onIdent);
         }
     }
 
@@ -1209,15 +1260,19 @@ class Parser extends Tapable {
     }
 
     enterObjectPattern(pattern: ESTree.ObjectPattern, onIdent: IdentCallback) {
-        pattern.properties.forEach(function (property) {
-            this.enterPattern(property.value, onIdent);
-        }, this);
+        const len = pattern.properties.length;
+        for (let propIndex = 0; propIndex < len; propIndex++) {
+            const prop = pattern.properties[propIndex];
+            this.enterPattern(prop.value, onIdent);
+        }
     }
 
     enterArrayPattern(pattern: ESTree.ArrayPattern, onIdent: IdentCallback) {
-        pattern.elements.forEach(function (pattern) {
-            this.enterPattern(pattern, onIdent);
-        }, this);
+        const len = pattern.elements.length;
+        for (let elementIndex = 0; elementIndex < len; elementIndex++) {
+            const element = pattern.elements[elementIndex];
+            this.enterPattern(element, onIdent);
+        }
     }
 
     enterRestElement(pattern: ESTree.RestElement, onIdent: IdentCallback) {
@@ -1325,7 +1380,8 @@ class Parser extends Tapable {
     parse(source: string, initialState: ParserState) {
         let ast: ESTree.Program;
         const comments: any[] = [];
-        for (let i = 0; i < POSSIBLE_AST_OPTIONS.length; i++) {
+        const len = POSSIBLE_AST_OPTIONS.length;
+        for (let i = 0; i < len; i++) {
             if (!ast) {
                 try {
                     comments.length = 0;
@@ -1419,9 +1475,9 @@ Parser.prototype.walkBinaryExpression = Parser.prototype.walkLogicalExpression =
             case 'ArrayExpression':
                 const arr: CalculatedStringArrayParseResult[] = [];
                 if (expression.elements) {
-                    expression.elements.forEach(function (expr) {
+                    expression.elements.forEach((expr) => {
                         arr.push(this[fn](expr));
-                    }, this);
+                    });
                 }
                 return arr;
         }
