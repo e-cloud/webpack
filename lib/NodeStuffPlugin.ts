@@ -4,7 +4,6 @@
  */
 import path = require('path');
 import ConstDependency = require('./dependencies/ConstDependency');
-import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 import NullFactory = require('./NullFactory');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')

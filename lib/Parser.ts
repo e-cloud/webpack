@@ -68,11 +68,11 @@ class Parser extends Tapable {
             const exprValue = expr.value
             switch (typeof exprValue) {
                 case 'number':
-                    return new BasicEvaluatedExpression().setNumber(exprValue).setRange(expr.range);
+                    return new BasicEvaluatedExpression().setNumber(<number>exprValue).setRange(expr.range);
                 case 'string':
-                    return new BasicEvaluatedExpression().setString(exprValue).setRange(expr.range);
+                    return new BasicEvaluatedExpression().setString(<string>exprValue).setRange(expr.range);
                 case 'boolean':
-                    return new BasicEvaluatedExpression().setBoolean(exprValue).setRange(expr.range);
+                    return new BasicEvaluatedExpression().setBoolean(<boolean>exprValue).setRange(expr.range);
             }
             if (expr.value === null) {
                 return new BasicEvaluatedExpression().setNull().setRange(expr.range);
@@ -592,7 +592,7 @@ class Parser extends Tapable {
         }
     }
 
-    isHoistedStatement(statement: ESTree.ModuleDeclaration) {
+    isHoistedStatement(statement: ESTree.Node) {
         switch (statement.type) {
             case 'ImportDeclaration':
             case 'ExportAllDeclaration':
@@ -749,7 +749,7 @@ class Parser extends Tapable {
     }
 
     walkExportNamedDeclaration(statement: ESTree.ExportNamedDeclaration) {
-        let source: ESTree.Literal
+        let source: string | boolean | number | null | RegExp
 
         if (statement.source) {
             source = statement.source.value;

@@ -12,9 +12,11 @@ class FunctionModuleTemplatePlugin {
     apply(moduleTemplate: ModuleTemplate) {
         moduleTemplate.plugin('render', function (moduleSource: Source, module: NormalModule) {
             const source = new ConcatSource();
+            // todo: to be remove
             const defaultArguments = [module.moduleArgument || 'module', module.exportsArgument || 'exports'];
 
             if ((module.arguments && module.arguments.length !== 0) || module.hasDependencies(
+                    // todo: to be remove
                     d => d.requireWebpackRequire !== false)) {
                 defaultArguments.push('__webpack_require__');
             }

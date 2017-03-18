@@ -8,7 +8,6 @@ import { SourceLocation } from 'estree'
 import { SourceRange } from '../../typings/webpack-types'
 
 class ModuleHotAcceptDependency extends ModuleDependency {
-    type: string
     weak: boolean
     loc: SourceLocation & {
         index?: number

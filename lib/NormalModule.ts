@@ -18,6 +18,7 @@ import {
 import {
     ErrCallback,
     LoaderContext,
+    NoParseRule,
     TimeStampMap,
     WebpackOptions,
     WebpackOutputOptions
@@ -36,6 +37,9 @@ import DependenciesBlock = require('./DependenciesBlock')
 import Parser = require('./Parser')
 import Resolver = require('enhanced-resolve/lib/Resolver')
 import NativeModule = require('module')
+import ImportDependenciesBlock = require('./dependencies/ImportDependenciesBlock')
+import RequireEnsureDependenciesBlock = require('./dependencies/RequireEnsureDependenciesBlock')
+import AMDRequireDependenciesBlock = require('./dependencies/AMDRequireDependenciesBlock')
 
 function asString(buf: string | Buffer): string {
     if (Buffer.isBuffer(buf)) {
@@ -248,7 +252,7 @@ class NormalModule extends Module {
     // check if module should not be parsed
     // returns "true" if the module should !not! be parsed
     // returns "false" if the module !must! be parsed
-    shouldPreventParsing(noParseRule: false | RegExp, request: string) {
+    shouldPreventParsing(noParseRule: false | NoParseRule, request: string) {
         // if no noParseRule exists, return false
         // the module !must! be parsed.
         if (!noParseRule) {
@@ -470,10 +474,12 @@ class NormalModule extends Module {
             // reverse the ends first before joining them, as the last added must be the inner most
             const varEndCode = functionWrapperEnds.reverse().join('');
 
+            type AsyncBlock = ImportDependenciesBlock | RequireEnsureDependenciesBlock | AMDRequireDependenciesBlock
+
             // if we have anything, add it to the source
             if (varStartCode && varEndCode) {
-                const start = block.range ? block.range[0] : -10;
-                const end = block.range ? block.range[1] : (this._source.size() + 1);
+                const start = (<AsyncBlock>block).range ? (<AsyncBlock>block).range[0] : -10;
+                const end = (<AsyncBlock>block).range ? (<AsyncBlock>block).range[1] : (this._source.size() + 1);
                 source.insert(start + 0.5, varStartCode);
                 source.insert(end + 0.5, '\n/* WEBPACK VAR INJECTION */' + varEndCode);
             }

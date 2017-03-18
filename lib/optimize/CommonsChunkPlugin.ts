@@ -6,6 +6,7 @@ import Chunk = require('../Chunk')
 import Module = require('../Module')
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
+import ExternalModule = require('../ExternalModule')
 
 let nextIdent = 0;
 
@@ -318,7 +319,7 @@ Take a look at the "name"/"names" or async/children option.`);
         // filter by minChunks
         const moduleFilterCount = this.getModuleFilter(minChunks, targetChunk, usedChunks.length);
         // filter by condition
-        const moduleFilterCondition = (module: Module, chunk: Chunk) => {
+        const moduleFilterCondition = (module: ExternalModule, chunk: Chunk) => {
             if (!module.chunkCondition) {
                 return true;
             }

@@ -58,13 +58,14 @@ declare interface Rule {
     // TODO: Type this from RuleSet.ts
 }
 
+declare type NoParseRule = RegExp | RegExp[] | string[] | string
+
 declare interface ModuleOptions {
     exprContextCritical?: boolean;
     exprContextRecursive?: boolean;
     exprContextRegExp?: RegExp;
     exprContextRequest?: string;
-    /** A RegExp or an array of RegExps. Don’t parse files matching. */
-    noParse?: RegExp | RegExp[] | string[] | string;
+    noParse?: NoParseRule;
     rules: Rule[];
     loaders?: Rule[];
     strictExportPresence?: boolean;

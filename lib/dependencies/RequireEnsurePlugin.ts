@@ -4,7 +4,6 @@
  */
 import RequireEnsureItemDependency = require('./RequireEnsureItemDependency');
 import RequireEnsureDependency = require('./RequireEnsureDependency');
-import ConstDependency = require('./ConstDependency');
 import NullFactory = require('../NullFactory');
 import RequireEnsureDependenciesBlockParserPlugin = require('./RequireEnsureDependenciesBlockParserPlugin');
 import Compiler = require('../Compiler')

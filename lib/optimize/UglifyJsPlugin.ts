@@ -200,12 +200,13 @@ class UglifyJsPlugin {
                             const commentsSource = new RawSource(extractedComments.join('\n\n') + '\n');
                             if (commentsFile in compilation.assets) {
                                 // commentsFile already exists, append new comments...
-                                if (compilation.assets[commentsFile] instanceof ConcatSource) {
-                                    compilation.assets[commentsFile].add('\n');
-                                    compilation.assets[commentsFile].add(commentsSource);
+                                const targetAsset = compilation.assets[commentsFile]
+                                if (targetAsset instanceof ConcatSource) {
+                                    targetAsset.add('\n');
+                                    targetAsset.add(commentsSource);
                                 } else {
                                     compilation.assets[commentsFile] = new ConcatSource(
-                                        compilation.assets[commentsFile], '\n', commentsSource
+                                        targetAsset, '\n', commentsSource
                                     );
                                 }
                             } else {
