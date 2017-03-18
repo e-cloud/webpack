@@ -32,8 +32,7 @@ class DllEntryPlugin {
                         dep.loc = `${this.name}:${idx}`;
                         return dep;
                     }),
-                    this.name,
-                    this.type
+                    this.name
                 ),
                 this.name,
                 callback

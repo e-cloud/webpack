@@ -63,11 +63,8 @@ abstract class Dependency {
     }
 
     static compare(a: Dependency, b: Dependency) {
-        return Dependency.compareLocations(a.loc, b.loc);
+        return compareLocations(a.loc, b.loc);
     }
-
-    // todo: this might be useless
-    static compareLocations = compareLocations
 }
 
 export = Dependency;

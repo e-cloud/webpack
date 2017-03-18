@@ -16,7 +16,7 @@ class ExternalModule extends Module {
     optional: boolean
     useSourceMap: boolean
 
-    constructor(public request: ExternalsModuleObject | string[] | string, public type: string) {
+    constructor(public request: ExternalsModuleObject | string, public type: string) {
         super();
         this.built = false;
         this.external = true;

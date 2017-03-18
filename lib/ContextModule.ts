@@ -168,6 +168,7 @@ class ContextModule extends Module {
             // if we are async however create a new async dependency block
             // and add that block to this context
             dependencies.forEach(dep => {
+                // todo: here indicate all deps' loc are string or sourcelocation
                 const block = new AsyncDependenciesBlock(null, dep.module, dep.loc);
                 block.addDependency(dep);
                 this.addBlock(block);

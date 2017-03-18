@@ -142,7 +142,7 @@ class AMDRequireDependenciesBlockParserPlugin {
                 if (param.string === 'require') {
                     dep = new ConstDependency('__webpack_require__', param.range);
                 } else if (param.string === 'module') {
-                    dep = new ConstDependency(this.state.module.moduleArgument || 'module', param.range);
+                    dep = new ConstDependency('module', param.range);
                 } else if (param.string === 'exports') {
                     dep = new ConstDependency(this.state.module.exportsArgument || 'exports', param.range);
                 }

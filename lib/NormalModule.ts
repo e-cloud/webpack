@@ -63,7 +63,6 @@ class NormalModule extends Module {
     error: Error
     fileDependencies: string[]
     lineToLine: boolean
-    templateModules: Module[]
     useSourceMap: boolean
 
     constructor(

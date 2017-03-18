@@ -76,8 +76,8 @@ export function createFilename(
         shortIdentifier = module.readableIdentifier(requestShortener);
         identifier = requestShortener.shorten(module.identifier());
         moduleId = module.id;
-        // todo: no resourcePath on module
-        absoluteResourcePath = module.resourcePath || module.identifier().split('!').pop();
+
+        absoluteResourcePath = module.identifier().split('!').pop();
         hash = getHash(identifier);
     }
     const resource = shortIdentifier.split('!').pop();

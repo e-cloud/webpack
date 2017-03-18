@@ -2,7 +2,6 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Jason Anderson @diurnalist
  */
-import Template = require('./Template');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Chunk = require('./Chunk')
@@ -21,18 +20,7 @@ const REGEXP_FILEBASE = /\[filebase\]/gi;
 // We use a normal RegExp instead of .test
 const REGEXP_HASH_FOR_TEST = new RegExp(REGEXP_HASH.source, 'i');
 const REGEXP_CHUNKHASH_FOR_TEST = new RegExp(REGEXP_CHUNKHASH.source, 'i');
-
 const REGEXP_NAME_FOR_TEST = new RegExp(REGEXP_NAME.source, 'i');
-
-// Backwards compatibility; expose regexps on Template object
-// todo: remove these code
-Template.REGEXP_HASH = REGEXP_HASH;
-Template.REGEXP_CHUNKHASH = REGEXP_CHUNKHASH;
-Template.REGEXP_NAME = REGEXP_NAME;
-Template.REGEXP_ID = REGEXP_ID;
-Template.REGEXP_FILE = REGEXP_FILE;
-Template.REGEXP_QUERY = REGEXP_QUERY;
-Template.REGEXP_FILEBASE = REGEXP_FILEBASE;
 
 class TemplatedPathPlugin {
     apply(compiler: Compiler) {

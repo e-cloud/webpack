@@ -15,9 +15,8 @@ class ChunkTemplate extends Template {
     }
 
     render(chunk: Chunk, moduleTemplate: ModuleTemplate, dependencyTemplates: Map<Function, any>) {
-        // todo: modules should be rename, coz it isn't modules but ConcatSource
-        const modules = this.renderChunkModules(chunk, moduleTemplate, dependencyTemplates);
-        const core = this.applyPluginsWaterfall('modules', modules, chunk, moduleTemplate, dependencyTemplates);
+        const moduleSources = this.renderChunkModules(chunk, moduleTemplate, dependencyTemplates);
+        const core = this.applyPluginsWaterfall('modules', moduleSources, chunk, moduleTemplate, dependencyTemplates);
         let source = this.applyPluginsWaterfall('render', core, chunk, moduleTemplate, dependencyTemplates);
         if (chunk.hasEntryModule()) {
             source = this.applyPluginsWaterfall('render-with-entry', source, chunk);

@@ -37,9 +37,8 @@ class SourceMapDevToolPlugin {
             throw new Error('SourceMapDevToolPlugin only takes one argument (pass an options object)');
         }
         if (typeof options === 'string') {
-            // todo: here may be an error, no usage of options.sourceMapFilename, dead code
             options = {
-                sourceMapFilename: options
+                filename: options
             } as SourceMapDevToolPlugin.Option;
         }
         if (!options) {

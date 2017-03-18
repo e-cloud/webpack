@@ -498,8 +498,7 @@ class Compiler extends Tapable {
                 }
 
                 try {
-                    // todo: here has hidden to string with 'utf-8'
-                    self.records = JSON.parse(content);
+                    self.records = JSON.parse(content.toString('utf8'));
                 } catch (e) {
                     e.message = `Cannot parse records: ${e.message}`;
                     return callback(e);

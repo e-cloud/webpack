@@ -38,6 +38,20 @@ class MultiModule extends Module {
         return callback();
     }
 
+    needRebuild() {
+        return false;
+    }
+
+    size() {
+        return 16 + this.dependencies.length * 12;
+    }
+
+    updateHash(hash: Hash) {
+        hash.update('multi module');
+        hash.update(this.name || '');
+        super.updateHash(hash);
+    }
+
     source(dependencyTemplates: Map<Function, any>, outputOptions: WebpackOutputOptions) {
         const str: string[] = [];
         this.dependencies.forEach((dep, idx) => {
@@ -60,20 +74,6 @@ class MultiModule extends Module {
             str.push(';\n');
         });
         return new RawSource(str.join(''));
-    }
-
-    needRebuild() {
-        return false;
-    }
-
-    size() {
-        return 16 + this.dependencies.length * 12;
-    }
-
-    updateHash(hash: Hash) {
-        hash.update('multi module');
-        hash.update(this.name || '');
-        super.updateHash(hash);
     }
 }
 

@@ -31,7 +31,6 @@ class LimitChunkCountPlugin {
                 }
 
                 if (chunks.length > maxChunks) {
-                    // todo: the form of combinations is too flexible, unable to attach a type system
                     const sortedExtendedPairCombinations = chunks.reduce((combinations, a, idx) => {
                             // create combination pairs
                             for (let i = 0; i < idx; i++) {

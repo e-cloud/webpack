@@ -262,7 +262,6 @@ function byId(a: any, b: any) {
     return a.id - b.id;
 }
 
-// todo: why?
 Module.prototype.identifier = null;
 Module.prototype.readableIdentifier = null;
 Module.prototype.build = null;

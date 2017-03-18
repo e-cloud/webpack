@@ -416,12 +416,7 @@ class Stats {
                             type: reason.dependency.type,
                             userRequest: reason.dependency.userRequest
                         };
-                        const dep = reason.dependency;
-                        // todo: only NormalModule has templateModules but it's not Dependency, may be reason.module?
-                        if (dep.templateModules) {
-                            obj.templateModules = dep.templateModules.map(module => module.id);
-                        }
-                        const locInfo = formatLocation(dep.loc);
+                        const locInfo = formatLocation(reason.dependency.loc);
                         if (locInfo) {
                             obj.loc = locInfo;
                         }
@@ -807,10 +802,6 @@ class Stats {
                     colors.normal(reason.type);
                     colors.normal(' ');
                     colors.cyan(reason.userRequest);
-                    // todo: dead code
-                    if (reason.templateModules) {
-                        colors.cyan(reason.templateModules.join(' '));
-                    }
                     colors.normal(' [');
                     colors.normal(reason.moduleId);
                     colors.normal('] ');
@@ -826,10 +817,9 @@ class Stats {
                 colors.normal(prefix);
                 let sum = 0;
                 const path: StatsModule[] = [];
-                let current = module;
                 // todo: as module is a StatsModule, current.issuer is a string, this loop is useless
-                while (current.issuer) {
-                    path.unshift(current = current.issuer);
+                if (module.issuer) {
+                    path.unshift(module.issuer);
                 }
                 path.forEach(module => {
                     colors.normal('[');

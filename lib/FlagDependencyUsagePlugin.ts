@@ -57,11 +57,11 @@ class FlagDependencyUsagePlugin {
 
                 function processDependenciesBlock(depBlock: DependenciesBlock, usedExports: boolean) {
                     depBlock.dependencies.forEach(dep => {
-                        processDependency(dep, usedExports);
+                        processDependency(dep);
                     });
                     depBlock.variables.forEach(variable => {
                         variable.dependencies.forEach(dep => {
-                            processDependency(dep, usedExports);
+                            processDependency(dep);
                         });
                     });
                     depBlock.blocks.forEach(block => {
@@ -69,8 +69,7 @@ class FlagDependencyUsagePlugin {
                     });
                 }
 
-                // todo: usedExports is uesless
-                function processDependency(dep: Dependency, usedExports: boolean) {
+                function processDependency(dep: Dependency) {
                     const reference = dep.getReference && dep.getReference();
                     if (!reference) {
                         return;

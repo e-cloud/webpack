@@ -26,8 +26,7 @@ class SetVarMainTemplatePlugin {
                 return new ConcatSource(prefix, source);
             }
         });
-        mainTemplate.plugin('global-hash-paths', function (paths: string[]) {
-            // todo: this is no varExpression in MainTemplate, may refer wrongly, dead code
+        mainTemplate.plugin('global-hash-paths', (paths: string[]) => {
             if (this.varExpression) {
                 paths.push(this.varExpression);
             }

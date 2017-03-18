@@ -26,8 +26,7 @@ class HarmonyExportDependencyParserPlugin {
             dep.loc = Object.create(statement.loc);
             dep.loc.index = -1;
             this.state.current.addDependency(dep);
-            // todo: typo
-            this.state.lastHarmoryImport = dep;
+            this.state.lastHarmonyImport = dep;
             return true;
         })
 
@@ -68,8 +67,7 @@ class HarmonyExportDependencyParserPlugin {
         parser.plugin('export import specifier', function (this: Parser, statement: Statement, source: string,
                                                            id: string, name: string, idx: number
         ) {
-            // todo: here has typo
-            const dep = new HarmonyExportImportedSpecifierDependency(this.state.module, this.state.lastHarmoryImport, HarmonyModulesHelpers.getModuleVar(this.state, source), id, name);
+            const dep = new HarmonyExportImportedSpecifierDependency(this.state.module, this.state.lastHarmonyImport, HarmonyModulesHelpers.getModuleVar(this.state, source), id, name);
             dep.loc = Object.create(statement.loc);
             dep.loc.index = idx;
             this.state.current.addDependency(dep);

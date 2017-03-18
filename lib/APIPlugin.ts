@@ -27,9 +27,6 @@ const REPLACEMENT_TYPES = {
     __webpack_nonce__: 'string' // eslint-disable-line camelcase
 };
 
-// todo: this may be useless
-const IGNORES = [];
-
 class APIPlugin {
     apply(compiler: Compiler) {
         compiler.plugin('compilation', function (compilation: Compilation, params: CompilationParams) {
@@ -40,9 +37,6 @@ class APIPlugin {
                 Object.keys(REPLACEMENTS).forEach(function (key) {
                     parser.plugin(`expression ${key}`, ParserHelpers.toConstantDependency(REPLACEMENTS[key]));
                     parser.plugin(`evaluate typeof ${key}`, ParserHelpers.evaluateToString(REPLACEMENT_TYPES[key]));
-                });
-                IGNORES.forEach(key => {
-                    parser.plugin(key, ParserHelpers.skipTraversal);
                 });
             });
         });

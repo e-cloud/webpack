@@ -34,8 +34,6 @@ class Chunk {
     recorded: boolean
     rendered: boolean
     renderedHash: string
-    // todo: there is no assignment of removedModules
-    removedModules: number[]
 
     constructor(public name: string, module: Module, loc: SourceLocation) {
         this.id = null;

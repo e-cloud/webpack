@@ -26,7 +26,7 @@ class HotUpdateChunkTemplate extends Template {
             id,
             modules,
             removedModules
-        } as Chunk, moduleTemplate, dependencyTemplates);
+        }, moduleTemplate, dependencyTemplates);
         const core = this.applyPluginsWaterfall('modules', modulesSource, modules, removedModules, moduleTemplate, dependencyTemplates);
         const source = this.applyPluginsWaterfall('render', core, modules, removedModules, hash, id, moduleTemplate, dependencyTemplates);
         return source;
