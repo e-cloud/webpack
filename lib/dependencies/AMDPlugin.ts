@@ -59,11 +59,10 @@ class AMDPlugin {
                     return;
                 }
 
-                function setExpressionToModule(expr: string, module: string) {
-                    parser.plugin(`expression ${expr}`, function (expr: Expression) {
+                function setExpressionToModule(outerExpr: string, module: string) {
+                    parser.plugin(`expression ${outerExpr}`, function (expr: Expression) {
                         const dep = new AMDRequireItemDependency(module, expr.range);
-                        // todo: the expr below is refer to expr of setExpressionToModule
-                        dep.userRequest = expr;
+                        dep.userRequest = outerExpr;
                         dep.loc = expr.loc;
                         this.state.current.addDependency(dep);
                         return true;

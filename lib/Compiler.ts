@@ -26,9 +26,11 @@ import Stats = require('./Stats')
 import NodeOutputFileSystem = require('./node/NodeOutputFileSystem')
 
 class Watching {
+    closed: boolean
     error: Error
     handler: WatchCallback<Stats>
     invalid: boolean
+    pausedWatcher: Watcher
     running: boolean
     startTime: number
     stats: Stats
@@ -41,6 +43,7 @@ class Watching {
         this.error = null;
         this.stats = null;
         this.handler = handler;
+        this.closed = false;
         if (typeof watchOptions === 'number') {
             this.watchOptions = {
                 aggregateTimeout: watchOptions
@@ -140,12 +143,13 @@ class Watching {
             this.compiler.applyPlugins('failed', this.error);
         }
         this.handler(this.error, this.stats);
-        if (!this.error) {
+        if (!this.error && !this.closed) {
             this.watch(compilation.fileDependencies, compilation.contextDependencies, compilation.missingDependencies);
         }
     }
 
     watch(files: string[], dirs: string[], missing: string[]) {
+        this.pausedWatcher = null;
         this.watcher = this.compiler.watchFileSystem.watch(
             files,
             dirs,
@@ -155,6 +159,7 @@ class Watching {
             (err: Error, filesModified: string[], contextModified: string[], missingModified: string[],
              fileTimestamps: TimeStampMap, contextTimestamps: TimeStampMap
             ) => {
+                this.pausedWatcher = this.watcher;
                 this.watcher = null;
                 if (err) {
                     return this.handler(err);
@@ -172,6 +177,7 @@ class Watching {
 
     invalidate() {
         if (this.watcher) {
+            this.pausedWatcher = this.watcher;
             this.watcher.pause();
             this.watcher = null;
         }
@@ -190,9 +196,14 @@ class Watching {
             };
         }
 
+        this.closed = true;
         if (this.watcher) {
             this.watcher.close();
             this.watcher = null;
+        }
+        if (this.pausedWatcher) {
+            this.pausedWatcher.close();
+            this.pausedWatcher = null;
         }
         if (this.running) {
             this.invalid = true;

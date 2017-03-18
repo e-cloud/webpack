@@ -56,7 +56,8 @@ class NodeWatchFileSystem {
             this.watcher.once('change', callbackUndelayed);
         }
 
-        this.watcher.once('aggregated', (changes: string[]) => {
+        this.watcher.once('aggregated', (changes: string[], removals: string[]) => {
+            changes = changes.concat(removals);
             if (this.inputFileSystem && this.inputFileSystem.purge) {
                 this.inputFileSystem.purge(changes);
             }
@@ -78,10 +79,15 @@ class NodeWatchFileSystem {
         }
         return {
             close: () => {
-                this.watcher.close();
+                if (this.watcher) {
+                    this.watcher.close();
+                    this.watcher = null;
+                }
             },
             pause: () => {
-                this.watcher.pause();
+                if (this.watcher) {
+                    this.watcher.pause();
+                }
             }
         };
     }

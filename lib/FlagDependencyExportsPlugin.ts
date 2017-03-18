@@ -16,16 +16,22 @@ class FlagDependencyExportsPlugin {
 
                 let module: Module;
                 let moduleWithExports;
+                let moduleProvidedExports: Set<any>;
                 const queue = modules.filter(m => !m.providedExports);
                 for (let i = 0; i < queue.length; i++) {
                     module = queue[i];
 
                     if (module.providedExports !== true) {
                         moduleWithExports = false;
+                        moduleProvidedExports = Array.isArray(module.providedExports)
+                            ? new Set(module.providedExports)
+                            : new Set();
                         processDependenciesBlock(module);
                         if (!moduleWithExports) {
                             module.providedExports = true;
                             notifyDependencies();
+                        } else if (module.providedExports !== true) {
+                            module.providedExports = Array.from(moduleProvidedExports);
                         }
                     }
                 }
@@ -71,13 +77,7 @@ class FlagDependencyExportsPlugin {
                             changed = true;
                         }
                         else if (Array.isArray(exports)) {
-                            if (Array.isArray(module.providedExports)) {
-                                changed = addToSet(module.providedExports, exports);
-                            }
-                            else {
-                                module.providedExports = exports.slice();
-                                changed = true;
-                            }
+                            changed = addToSet(moduleProvidedExports, exports);
                         }
                     }
                     if (changed) {
@@ -93,11 +93,11 @@ class FlagDependencyExportsPlugin {
                 }
             });
 
-            function addToSet(a: any[], b: any[]) {
+            function addToSet(a: Set<any>, b: any[]) {
                 let changed = false;
                 b.forEach(item => {
-                    if (!a.includes(item)) {
-                        a.push(item);
+                    if (!a.has(item)) {
+                        a.add(item);
                         changed = true;
                     }
                 });
