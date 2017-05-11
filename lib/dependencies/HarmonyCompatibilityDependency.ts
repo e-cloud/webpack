@@ -4,7 +4,7 @@
  */
 import NullDependency = require('./NullDependency');
 import Module = require('../Module')
-import { ReplaceSource } from 'webpack-sources'
+import { ReplaceSource } from 'webpack-sources';
 
 class Template {
     apply(
@@ -15,7 +15,7 @@ class Template {
         if (usedExports && !Array.isArray(usedExports)) {
             const exportName = dep.originModule.exportsArgument || 'exports';
             const content = `Object.defineProperty(${exportName}, \"__esModule\", { value: true });\n`;
-            source.insert(-1, content);
+            source.insert(-10, content);
         }
 
     }
@@ -30,7 +30,7 @@ class HarmonyCompatibilityDependency extends NullDependency {
         return 'harmony export header';
     }
 
-    static Template = Template
+    static Template = Template;
 }
 
 export = HarmonyCompatibilityDependency;

@@ -3,8 +3,9 @@
  Author Tobias Koppers @sokra
  */
 import Module = require('./Module')
+import WebpackError = require('./WebpackError');
 
-class UnsupportedFeatureWarning extends Error {
+class UnsupportedFeatureWarning extends WebpackError {
     origin: Module
     name = 'UnsupportedFeatureWarning'
 

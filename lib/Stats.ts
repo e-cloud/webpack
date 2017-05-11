@@ -4,11 +4,12 @@
  */
 import RequestShortener = require('./RequestShortener');
 import Compilation = require('./Compilation')
-import { StatsOptions, WebpackError } from '../typings/webpack-types'
-import { formatSize } from './SizeFormatHelpers'
+import { StatsOptions } from '../typings/webpack-types';
+import { formatSize } from './SizeFormatHelpers';
 import Module = require('./Module')
 import NormalModule = require('./NormalModule')
 import formatLocation = require('./formatLocation');
+import WebpackError = require('./WebpackError');
 
 interface Colors {
     bold(str: string | number): void
@@ -125,14 +126,42 @@ function optionOrFallback(v: any, def: any) {
 }
 
 class Stats {
-    compilation: Compilation
-    endTime: number
-    hash: string
-    startTime: number
+    compilation: Compilation;
+    endTime: number;
+    hash: string;
+    startTime: number;
 
     constructor(compilation: Compilation) {
         this.compilation = compilation;
         this.hash = compilation.hash;
+    }
+
+    static filterWarnings(warnings, warningsFilter) {
+        // we dont have anything to filter so all warnings can be shown
+        if (!warningsFilter) {
+            return warnings;
+        }
+
+        // create a chain of filters
+        // if they return "true" a warning should be surpressed
+        const normalizedWarningsFilters = [].concat(warningsFilter).map(filter => {
+            if (typeof filter === 'string') {
+                return warning => warning.indexOf(filter) > -1;
+            }
+
+            if (filter instanceof RegExp) {
+                return warning => filter.test(warning);
+            }
+
+            if (typeof filter === 'function') {
+                return filter;
+            }
+
+            throw new Error(`Can only filter warnings with Strings or RegExps. (Given: ${filter})`);
+        });
+        return warnings.filter(warning => {
+            return !normalizedWarningsFilters.some(check => check(warning));
+        });
     }
 
     hasWarnings() {
@@ -187,9 +216,11 @@ class Stats {
         const showProvidedExports = optionOrFallback(options.providedExports, !forToString);
         const showChildren = optionOrFallback(options.children, true);
         const showSource = optionOrFallback(options.source, !forToString);
+        const showModuleTrace = optionOrFallback(options.moduleTrace, true);
         const showErrors = optionOrFallback(options.errors, true);
         const showErrorDetails = optionOrFallback(options.errorDetails, !forToString);
         const showWarnings = optionOrFallback(options.warnings, true);
+        const warningsFilter = optionOrFallback(options.warningsFilter, null);
         const showPublicPath = optionOrFallback(options.publicPath, !forToString);
         const excludeModules = [].concat(optionOrFallback(options.exclude, [])).map(str => {
             if (typeof str !== 'string') {
@@ -220,10 +251,18 @@ class Stats {
         }
 
         const sortByFieldAndOrder = (fieldKey: string, a: object, b: object) => {
-            if (a[fieldKey] === null && b[fieldKey] === null) return 0;
-            if (a[fieldKey] === null) return 1;
-            if (b[fieldKey] === null) return -1;
-            if (a[fieldKey] === b[fieldKey]) return 0;
+            if (a[fieldKey] === null && b[fieldKey] === null) {
+                return 0;
+            }
+            if (a[fieldKey] === null) {
+                return 1;
+            }
+            if (b[fieldKey] === null) {
+                return -1;
+            }
+            if (a[fieldKey] === b[fieldKey]) {
+                return 0;
+            }
             return a[fieldKey] < b[fieldKey] ? -1 : 1;
         };
 
@@ -245,7 +284,7 @@ class Stats {
             let text = '';
             const err: WebpackError = typeof e === 'string' ? {
                 message: e
-            } : e;
+            } as any : e;
             if (err.chunk) {
                 text += `chunk ${err.chunk.name || err.chunk.id}${err.chunk.hasRuntime()
                     ? ' [entry]'
@@ -266,7 +305,7 @@ class Stats {
             if (showErrorDetails && err.missing) {
                 text += err.missing.map(item => `\n[${item}]`).join('');
             }
-            if (err.dependencies && err.origin) {
+            if (showModuleTrace && err.dependencies && err.origin) {
                 text += `\n @ ${err.origin.readableIdentifier(requestShortener)}`;
                 err.dependencies.forEach(dep => {
                     if (!dep.loc) {
@@ -279,7 +318,7 @@ class Stats {
                     if (!locInfo) {
                         return;
                     }
-                    text += ` ${locInfo}`
+                    text += ` ${locInfo}`;
                 });
                 let current = err.origin;
                 while (current.issuer) {
@@ -292,7 +331,7 @@ class Stats {
 
         const obj: StatsJson = {
             errors: compilation.errors.map(formatError),
-            warnings: compilation.warnings.map(formatError)
+            warnings: Stats.filterWarnings(compilation.warnings.map(formatError), warningsFilter)
         } as any;
 
         // We just hint other renderers since actually omitting
@@ -1002,7 +1041,7 @@ class Stats {
         }
 
         while (buffer[buffer.length - 1] === '\n') {
-            buffer.pop()
+            buffer.pop();
         }
 
         return buffer.join('');

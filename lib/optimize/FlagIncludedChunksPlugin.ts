@@ -20,6 +20,8 @@ class FlagIncludedChunksPlugin {
                         // as we loop twice the current A will be B and B then A
                         if (chunkA.modules.length < chunkB.modules.length) return;
 
+                        if (chunkB.modules.length === 0) return;
+
                         // is chunkB in chunkA?
                         for (let i = 0; i < chunkB.modules.length; i++) {
                             if (!chunkA.modules.includes(chunkB.modules[i])) {

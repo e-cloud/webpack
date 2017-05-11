@@ -2,15 +2,26 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import acorn from 'acorn-dynamic-import'
-import * as ESTree from 'estree'
-import { ParserState, PlainObject, SourceRange } from '../typings/webpack-types'
+import acorn from 'acorn-dynamic-import';
+import * as ESTree from 'estree';
+import { ParserState, PlainObject, SourceRange } from '../typings/webpack-types';
 import acornNS = require('acorn')
 import Tapable = require('tapable');
+import json5 = require('json5');
 import BasicEvaluatedExpression = require('./BasicEvaluatedExpression');
 
 interface IdentCallback {
     (name: string, decl: ESTree.Pattern): void
+}
+
+function joinRanges(startRange: SourceRange, endRange: SourceRange): SourceRange {
+    if (!endRange) {
+        return startRange;
+    }
+    if (!startRange) {
+        return endRange;
+    }
+    return [startRange[0], endRange[1]];
 }
 
 const POSSIBLE_AST_OPTIONS = [
@@ -40,11 +51,11 @@ interface ParserScope {
     renames: Dictionary<string>
 }
 
-//noinspection JSUnusedGlobalSymbols,JSMethodCanBeStatic
 class Parser extends Tapable {
-    options: PlainObject
-    scope: ParserScope
-    state: ParserState
+    options: PlainObject;
+    scope: ParserScope;
+    state: ParserState;
+    comments: string[]
 
     // there is no usage of options
     constructor(options: any) {
@@ -54,18 +65,8 @@ class Parser extends Tapable {
     }
 
     initializeEvaluating() {
-        function joinRanges(startRange: SourceRange, endRange: SourceRange): SourceRange {
-            if (!endRange) {
-                return startRange;
-            }
-            if (!startRange) {
-                return endRange;
-            }
-            return [startRange[0], endRange[1]];
-        }
-
         this.plugin('evaluate Literal', function (expr: ESTree.Literal) {
-            const exprValue = expr.value
+            const exprValue = expr.value;
             switch (typeof exprValue) {
                 case 'number':
                     return new BasicEvaluatedExpression().setNumber(<number>exprValue).setRange(expr.range);
@@ -129,8 +130,20 @@ class Parser extends Tapable {
                         res.setString(left.string + right.number);
                     }
                     else if (right.isWrapped() && right.prefix && right.prefix.isString()) {
-                        res.setWrapped(new BasicEvaluatedExpression().setString(left.string + right.prefix.string)
-                            .setRange(joinRanges(left.range, right.prefix.range)), right.postfix);
+                        res.setWrapped(
+                            new BasicEvaluatedExpression()
+                                .setString(left.string + right.prefix.string)
+                                .setRange(joinRanges(left.range, right.prefix.range)),
+                            right.postfix
+                        );
+                    }
+                    else if (right.isWrapped()) {
+                        res.setWrapped(
+                            new BasicEvaluatedExpression()
+                                .setString(left.string)
+                                .setRange(left.range),
+                            right.postfix
+                        );
                     }
                     else {
                         res.setWrapped(left, null);
@@ -253,8 +266,8 @@ class Parser extends Tapable {
         });
         this.plugin('evaluate UnaryExpression', function (expr: ESTree.UnaryExpression) {
             if (expr.operator === 'typeof') {
-                let res: BasicEvaluatedExpression
-                let name: string
+                let res: BasicEvaluatedExpression;
+                let name: string;
                 if (expr.argument.type === 'Identifier') {
                     name = this.scope.renames[`$${expr.argument.name}`] || expr.argument.name;
                     if (!this.scope.definitions.includes(name)) {
@@ -318,7 +331,7 @@ class Parser extends Tapable {
         });
         this.plugin('evaluate typeof undefined', function (expr: ESTree.UnaryExpression) {
             return new BasicEvaluatedExpression().setString('undefined')
-                .setRange(expr.range)
+                .setRange(expr.range);
         });
         this.plugin('evaluate Identifier', function (expr: ESTree.Identifier) {
             const name = this.scope.renames[`$${expr.name}`] || expr.name;
@@ -436,8 +449,10 @@ class Parser extends Tapable {
              * @param {any[]} expressions expressions
              * @return {BasicEvaluatedExpression[]} Simplified template
              */
-            function getSimplifiedTemplateResult(kind: string, quasis: ESTree.TemplateElement[],
-                                                 expressions: ESTree.Expression[]
+            function getSimplifiedTemplateResult(
+                kind: string,
+                quasis: ESTree.TemplateElement[],
+                expressions: ESTree.Expression[]
             ) {
                 const parts = [];
 
@@ -457,7 +472,7 @@ class Parser extends Tapable {
 
                         prevExpr.setString(prevExpr.string + (expr.isString()
                                 ? expr.string
-                                : expr.number) + lastExpr.string)
+                                : expr.number) + lastExpr.string);
                         prevExpr.setRange([prevExpr.range[0], lastExpr.range[1]]);
                         parts.pop();
                     }
@@ -575,49 +590,59 @@ class Parser extends Tapable {
         }
     }
 
-    walkStatements(statements: ESTree.Node[]) {
-        const lenA = statements.length;
-        for (let indexA = 0; indexA < lenA; indexA++) {
-            const statementA = statements[indexA];
-            if (this.isHoistedStatement(statementA)) {
-                this.walkStatement(statementA);
-            }
-        }
-        const lenB = statements.length;
-        for (let indexB = 0; indexB < lenB; indexB++) {
-            const statementB = statements[indexB];
-            if (!this.isHoistedStatement(statementB)) {
-                this.walkStatement(statementB);
-            }
+    // Prewalking iterates the scope for variable declarations
+    prewalkStatements(statements: ESTree.Node[]) {
+        const len = statements.length;
+        for (let index = 0; index < len; index++) {
+            const statement = statements[index];
+            this.prewalkStatement(statement);
         }
     }
 
-    isHoistedStatement(statement: ESTree.Node) {
-        switch (statement.type) {
-            case 'ImportDeclaration':
-            case 'ExportAllDeclaration':
-            case 'ExportNamedDeclaration':
-                return true;
+    // Walking iterates the statements and expressions and processes them
+    walkStatements(statements: ESTree.Node[]) {
+        const len = statements.length;
+        for (let index = 0; index < len; index++) {
+            const statement = statements[index];
+            this.walkStatement(statement);
         }
-        return false;
+    }
+
+    prewalkStatement(statement: ESTree.Node) {
+        const handler = this[`prewalk${statement.type}`];
+        if (handler) {
+            handler.call(this, statement);
+        }
     }
 
     walkStatement(statement: ESTree.Node) {
         if (this.applyPluginsBailResult1('statement', statement) !== undefined) {
             return;
         }
-        if (this[`walk${statement.type}`]) {
-            this[`walk${statement.type}`](statement);
+        const handler = this[`walk${statement.type}`];
+        if (handler) {
+            handler.call(this, statement);
         }
     }
 
     // Real Statements
+    prewalkBlockStatement(statement: ESTree.BlockStatement) {
+        this.prewalkStatements(statement.body);
+    }
+
     walkBlockStatement(statement: ESTree.BlockStatement) {
         this.walkStatements(statement.body);
     }
 
     walkExpressionStatement(statement: ESTree.ExpressionStatement) {
         this.walkExpression(statement.expression);
+    }
+
+    prewalkIfStatement(statement: ESTree.IfStatement) {
+        this.prewalkStatement(statement.consequent);
+        if (statement.alternate) {
+            this.prewalkStatement(statement.alternate);
+        }
     }
 
     walkIfStatement(statement: ESTree.IfStatement) {
@@ -628,8 +653,7 @@ class Parser extends Tapable {
             if (statement.alternate) {
                 this.walkStatement(statement.alternate);
             }
-        }
-        else {
+        } else {
             if (result) {
                 this.walkStatement(statement.consequent);
             }
@@ -639,6 +663,10 @@ class Parser extends Tapable {
         }
     }
 
+    prewalkLabeledStatement(statement: ESTree.LabeledStatement) {
+        this.prewalkStatement(statement.body);
+    }
+
     walkLabeledStatement(statement: ESTree.LabeledStatement) {
         const result = this.applyPluginsBailResult1(`label ${statement.label.name}`, statement);
         if (result !== true) {
@@ -646,14 +674,40 @@ class Parser extends Tapable {
         }
     }
 
+    prewalkWithStatement(statement: ESTree.WithStatement) {
+        this.prewalkStatement(statement.body);
+    }
+
     walkWithStatement(statement: ESTree.WithStatement) {
         this.walkExpression(statement.object);
         this.walkStatement(statement.body);
     }
 
+    prewalkSwitchStatement(statement: ESTree.SwitchStatement) {
+        this.prewalkSwitchCases(statement.cases);
+    }
+
     walkSwitchStatement(statement: ESTree.SwitchStatement) {
         this.walkExpression(statement.discriminant);
         this.walkSwitchCases(statement.cases);
+    }
+
+    walkTerminatingStatement(statement: ESTree.Node) {
+        if (statement.argument) {
+            this.walkExpression(statement.argument);
+        }
+    }
+
+    walkReturnStatement(statement: ESTree.Node) {
+        this.walkTerminatingStatement(statement);
+    }
+
+    walkThrowStatement(statement: ESTree.Node) {
+        this.walkTerminatingStatement(statement);
+    }
+
+    prewalkTryStatement(statement: ESTree.TryStatement) {
+        this.prewalkStatement(statement.block);
     }
 
     walkTryStatement(statement: ESTree.TryStatement) {
@@ -671,6 +725,33 @@ class Parser extends Tapable {
         if (statement.finalizer) {
             this.walkStatement(statement.finalizer);
         }
+    }
+
+    prewalkWhileStatement(statement: ESTree.WhileStatement) {
+        this.prewalkStatement(statement.body);
+    }
+
+    walkWhileStatement(statement: ESTree.WhileStatement) {
+        this.walkExpression(statement.test);
+        this.walkStatement(statement.body);
+    }
+
+    prewalkDoWhileStatement(statement: ESTree.DoWhileStatement) {
+        this.prewalkStatement(statement.body);
+    }
+
+    walkDoWhileStatement(statement: ESTree.DoWhileStatement) {
+        this.walkStatement(statement.body);
+        this.walkExpression(statement.test);
+    }
+
+    prewalkForStatement(statement: ESTree.ForStatement) {
+        if (statement.init) {
+            if (statement.init.type === 'VariableDeclaration') {
+                this.prewalkStatement(statement.init);
+            }
+        }
+        this.prewalkStatement(statement.body);
     }
 
     walkForStatement(statement: ESTree.ForStatement) {
@@ -691,6 +772,13 @@ class Parser extends Tapable {
         this.walkStatement(statement.body);
     }
 
+    prewalkForInStatement(statement: ESTree.ForInStatement) {
+        if (statement.left.type === 'VariableDeclaration') {
+            this.prewalkStatement(statement.left);
+        }
+        this.prewalkStatement(statement.body);
+    }
+
     walkForInStatement(statement: ESTree.ForInStatement) {
         if (statement.left.type === 'VariableDeclaration') {
             this.walkStatement(statement.left);
@@ -702,11 +790,17 @@ class Parser extends Tapable {
         this.walkStatement(statement.body);
     }
 
+    prewalkForOfStatement(statement: ESTree.ForOfStatement) {
+        if (statement.left.type === 'VariableDeclaration') {
+            this.prewalkStatement(statement.left);
+        }
+        this.prewalkStatement(statement.body);
+    }
+
     walkForOfStatement(statement: ESTree.ForOfStatement) {
         if (statement.left.type === 'VariableDeclaration') {
             this.walkStatement(statement.left);
-        }
-        else {
+        } else {
             this.walkExpression(statement.left);
         }
         this.walkExpression(statement.right);
@@ -714,11 +808,17 @@ class Parser extends Tapable {
     }
 
     // Declarations
+    prewalkFunctionDeclaration(statement: ESTree.FunctionDeclaration) {
+        if (statement.id) {
+            this.scope.renames[`$${statement.id.name}`] = undefined;
+            this.scope.definitions.push(statement.id.name);
+        }
+    }
+
     walkFunctionDeclaration(statement: ESTree.FunctionDeclaration) {
-        this.scope.renames[`$${statement.id.name}`] = undefined;
-        this.scope.definitions.push(statement.id.name);
         this.inScope(statement.params, () => {
             if (statement.body.type === 'BlockStatement') {
+                this.prewalkStatement(statement.body);
                 this.walkStatement(statement.body);
             }
             else {
@@ -727,7 +827,7 @@ class Parser extends Tapable {
         });
     }
 
-    walkImportDeclaration(statement: ESTree.ImportDeclaration) {
+    prewalkImportDeclaration(statement: ESTree.ImportDeclaration) {
         const source = statement.source.value;
         this.applyPluginsBailResult('import', statement, source);
         statement.specifiers.forEach((specifier) => {
@@ -748,8 +848,8 @@ class Parser extends Tapable {
         });
     }
 
-    walkExportNamedDeclaration(statement: ESTree.ExportNamedDeclaration) {
-        let source: string | boolean | number | null | RegExp
+    prewalkExportNamedDeclaration(statement: ESTree.ExportNamedDeclaration) {
+        let source: string | boolean | number | null | RegExp;
 
         if (statement.source) {
             source = statement.source.value;
@@ -765,7 +865,7 @@ class Parser extends Tapable {
             else {
                 if (!this.applyPluginsBailResult('export declaration', statement, statement.declaration)) {
                     const pos = this.scope.definitions.length;
-                    this.walkStatement(statement.declaration);
+                    this.prewalkStatement(statement.declaration);
                     const newDefs = this.scope.definitions.slice(pos);
                     for (let index = newDefs.length - 1; index >= 0; index--) {
                         const def = newDefs[index];
@@ -792,18 +892,30 @@ class Parser extends Tapable {
         }
     }
 
+    walkExportNamedDeclaration(statement: ESTree.ExportNamedDeclaration) {
+        if (statement.declaration) {
+            this.walkStatement(statement.declaration);
+        }
+    }
+
+    prewalkExportDefaultDeclaration(statement: ESTree.ExportDefaultDeclaration) {
+        if (/Declaration$/.test(statement.declaration.type)) {
+            const pos = this.scope.definitions.length;
+            this.prewalkStatement(statement.declaration);
+            const newDefs = this.scope.definitions.slice(pos);
+            const len = newDefs.length;
+            for (let index = 0; index < len; index++) {
+                const def = newDefs[index];
+                this.applyPluginsBailResult('export specifier', statement, def, 'default');
+            }
+        }
+    }
+
     walkExportDefaultDeclaration(statement: ESTree.ExportDefaultDeclaration) {
         this.applyPluginsBailResult1('export', statement);
         if (/Declaration$/.test(statement.declaration.type)) {
             if (!this.applyPluginsBailResult('export declaration', statement, statement.declaration)) {
-                const pos = this.scope.definitions.length;
                 this.walkStatement(statement.declaration);
-                const newDefs = this.scope.definitions.slice(pos);
-                const len = newDefs.length;
-                for (let index = 0; index < len; index++) {
-                    const def = newDefs[index];
-                    this.applyPluginsBailResult('export specifier', statement, def, 'default');
-                }
             }
         }
         else {
@@ -814,10 +926,16 @@ class Parser extends Tapable {
         }
     }
 
-    walkExportAllDeclaration(statement: ESTree.ExportAllDeclaration) {
+    prewalkExportAllDeclaration(statement: ESTree.ExportAllDeclaration) {
         const source = statement.source.value;
         this.applyPluginsBailResult('export import', statement, source);
         this.applyPluginsBailResult('export import specifier', statement, source, null, null, 0);
+    }
+
+    prewalkVariableDeclaration(statement: ESTree.VariableDeclaration) {
+        if (statement.declarations) {
+            this.prewalkVariableDeclarators(statement.declarations);
+        }
     }
 
     walkVariableDeclaration(statement: ESTree.VariableDeclaration) {
@@ -826,10 +944,23 @@ class Parser extends Tapable {
         }
     }
 
+    prewalkClassDeclaration(statement: ESTree.ClassDeclaration) {
+        if (statement.id) {
+            this.scope.renames[`$${statement.id.name}`] = undefined;
+            this.scope.definitions.push(statement.id.name);
+        }
+    }
+
     walkClassDeclaration(statement: ESTree.ClassDeclaration) {
-        this.scope.renames[`$${statement.id.name}`] = undefined;
-        this.scope.definitions.push(statement.id.name);
         this.walkClass(statement);
+    }
+
+    prewalkSwitchCases(switchCases: ESTree.SwitchCase[]) {
+        const len = switchCases.length;
+        for (let index = 0; index < len; index++) {
+            const switchCase = switchCases[index];
+            this.prewalkStatements(switchCase.consequent);
+        }
     }
 
     walkSwitchCases(switchCases: ESTree.SwitchCase[]) {
@@ -845,15 +976,13 @@ class Parser extends Tapable {
     }
 
     walkCatchClause(catchClause: ESTree.CatchClause & { guard?: ESTree.Expression }) {
-        if (catchClause.guard) {
-            this.walkExpression(catchClause.guard);
-        }
         this.inScope([catchClause.param], () => {
+            this.prewalkStatement(catchClause.body);
             this.walkStatement(catchClause.body);
         });
     }
 
-    walkVariableDeclarators(declarators: ESTree.VariableDeclarator[]) {
+    prewalkVariableDeclarators(declarators: ESTree.VariableDeclarator[]) {
         declarators.forEach((declarator) => {
             switch (declarator.type) {
                 case 'VariableDeclarator':
@@ -869,18 +998,33 @@ class Parser extends Tapable {
                         }
                     }
                     else {
-                        this.walkPattern(declarator.id);
                         this.enterPattern(declarator.id, (name: string, decl: ESTree.Pattern) => {
-                            if (!this.applyPluginsBailResult1(`var ${name}`, decl)) {
-                                this.scope.renames[`$${name}`] = undefined;
-                                this.scope.definitions.push(name);
+                            if (!this.applyPluginsBailResult1(`var-${declarator.kind} ${name}`, decl)) {
+                                if (!this.applyPluginsBailResult1(`var ${name}`, decl)) {
+                                    this.scope.renames[`$${name}`] = undefined;
+                                    this.scope.definitions.push(name);
+                                }
                             }
                         });
+                    }
+                    break;
+            }
+        });
+    }
+
+    walkVariableDeclarators(declarators: ESTree.VariableDeclarator[]) {
+        declarators.forEach(declarator => {
+            switch (declarator.type) {
+                case 'VariableDeclarator': {
+                    const renameIdentifier = declarator.init && this.getRenameIdentifier(declarator.init);
+                    if (!renameIdentifier || declarator.id.type !== 'Identifier' || !this.applyPluginsBailResult1('can-rename ' + renameIdentifier, declarator.init)) {
+                        this.walkPattern(declarator.id);
                         if (declarator.init) {
                             this.walkExpression(declarator.init);
                         }
                     }
                     break;
+                }
             }
         });
     }
@@ -940,7 +1084,7 @@ class Parser extends Tapable {
     }
 
     walkAwaitExpression(expression: ESTree.AwaitExpression) {
-        const argument = expression.argument
+        const argument = expression.argument;
         if (this['walk' + argument.type]) {
             return this['walk' + argument.type](argument);
         }
@@ -978,6 +1122,7 @@ class Parser extends Tapable {
     walkFunctionExpression(expression: ESTree.FunctionExpression) {
         this.inScope(expression.params, () => {
             if (expression.body.type === 'BlockStatement') {
+                this.prewalkStatement(expression.body);
                 this.walkStatement(expression.body);
             }
             else {
@@ -989,9 +1134,9 @@ class Parser extends Tapable {
     walkArrowFunctionExpression(expression: ESTree.ArrowFunctionExpression) {
         this.inScope(expression.params, () => {
             if (expression.body.type === 'BlockStatement') {
+                this.prewalkStatement(expression.body);
                 this.walkStatement(expression.body);
-            }
-            else {
+            } else {
                 this.walkExpression(expression.body);
             }
         });
@@ -1026,6 +1171,19 @@ class Parser extends Tapable {
             }
         }
         this.walkExpression(expression.argument);
+    }
+
+    walkLeftRightExpression(expression: ESTree.BinaryExpression | ESTree.LogicalExpression) {
+        this.walkExpression(expression.left);
+        this.walkExpression(expression.right);
+    }
+
+    walkBinaryExpression(expression: ESTree.BinaryExpression) {
+        this.walkLeftRightExpression(expression);
+    }
+
+    walkLogicalExpression(expression: ESTree.LogicalExpression) {
+        this.walkLeftRightExpression(expression);
     }
 
     walkAssignmentExpression(expression: ESTree.AssignmentExpression) {
@@ -1136,6 +1294,7 @@ class Parser extends Tapable {
                     this.scope.renames[`$${params[i].name}`] = param;
                 }
                 if (functionExpression.body.type === 'BlockStatement') {
+                    this.prewalkStatement(functionExpression.body);
                     this.walkStatement(functionExpression.body);
                 }
                 else {
@@ -1250,7 +1409,7 @@ class Parser extends Tapable {
     }
 
     enterPattern(pattern: ESTree.Pattern, onIdent: IdentCallback) {
-        if (pattern != null && this[`enter${pattern.type}`]) {
+        if (pattern && this[`enter${pattern.type}`]) {
             this[`enter${pattern.type}`](pattern, onIdent);
         }
     }
@@ -1377,6 +1536,34 @@ class Parser extends Tapable {
         };
     }
 
+    parseStringArray(expression: ESTree.Expression) {
+        if (expression.type !== 'ArrayExpression') {
+            return [this.parseString(expression)];
+        }
+
+        const arr: CalculatedStringArrayParseResult[] = [];
+        if (expression.elements) {
+            expression.elements.forEach(function (expr) {
+                arr.push(this.parseString(expr));
+            }, this);
+        }
+        return arr;
+    }
+
+    parseCalculatedStringArray(expression: ESTree.Expression) {
+        if (expression.type !== 'ArrayExpression') {
+            return [this.parseCalculatedString(expression)];
+        }
+
+        const arr: CalculatedStringArrayParseResult[] = [];
+        if (expression.elements) {
+            expression.elements.forEach(function (expr) {
+                arr.push(this.parseCalculatedString(expr));
+            }, this);
+        }
+        return arr;
+    }
+
     parse(source: string, initialState: ParserState) {
         let ast: ESTree.Program;
         const comments: any[] = [];
@@ -1410,17 +1597,21 @@ class Parser extends Tapable {
         }
         const oldScope = this.scope;
         const oldState = this.state;
+        const oldComments = this.comments;
         this.scope = <ParserScope>{
             inTry: false,
             definitions: [],
             renames: {}
         };
         const state = this.state = initialState || {} as any;
+        this.comments = comments;
         if (this.applyPluginsBailResult('program', ast, comments) === undefined) {
+            this.prewalkStatements(ast.body);
             this.walkStatements(ast.body);
         }
         this.scope = oldScope;
         this.state = oldState;
+        this.comments = oldComments;
         return state;
     }
 
@@ -1442,48 +1633,26 @@ class Parser extends Tapable {
         }
         return this.evaluateExpression((ast.body[0] as ESTree.ExpressionStatement).expression);
     }
-}
 
-Parser.prototype.walkReturnStatement = Parser.prototype.walkThrowStatement = function walkArgumentStatement(
-    this: Parser,
-    statement: ESTree.ReturnStatement | ESTree.ThrowStatement
-) {
-    if (statement.argument) {
-        this.walkExpression(statement.argument);
+    getComments(range: SourceRange) {
+        return this.comments.filter(comment => comment.range[0] >= range[0] && comment.range[1] <= range[1]);
     }
-};
 
-Parser.prototype.walkWhileStatement = Parser.prototype.walkDoWhileStatement = function walkLoopStatement(
-    this: Parser,
-    statement: ESTree.WhileStatement | ESTree.DoWhileStatement
-) {
-    this.walkExpression(statement.test);
-    this.walkStatement(statement.body);
-};
-
-Parser.prototype.walkBinaryExpression = Parser.prototype.walkLogicalExpression = function walkLeftRightExpression(
-    this: Parser,
-    expression: ESTree.BinaryExpression | ESTree.LogicalExpression
-) {
-    this.walkExpression(expression.left);
-    this.walkExpression(expression.right);
-};
-
-['parseString', 'parseCalculatedString'].forEach(fn => {
-    Parser.prototype[`${fn}Array`] = function parseXXXArray(this: Parser, expression: ESTree.Expression) {
-        switch (expression.type) {
-            case 'ArrayExpression':
-                const arr: CalculatedStringArrayParseResult[] = [];
-                if (expression.elements) {
-                    expression.elements.forEach((expr) => {
-                        arr.push(this[fn](expr));
-                    });
-                }
-                return arr;
+    getCommentOptions(range: SourceRange) {
+        const comments = this.getComments(range);
+        if (comments.length === 0) {
+            return null;
         }
-        return [this[fn](expression)];
-    };
-});
+        const options = comments.map(comment => {
+            try {
+                return json5.parse(`{${comment.value}}`);
+            } catch (e) {
+                return {};
+            }
+        });
+        return options.reduce((o, i) => Object.assign(o, i), {});
+    }
+}
 
 interface CalculatedStringArrayParseResult {
     value: string

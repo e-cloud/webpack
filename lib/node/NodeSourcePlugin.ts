@@ -7,7 +7,7 @@ import AliasPlugin = require('enhanced-resolve/lib/AliasPlugin');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Parser = require('../Parser')
-import { CompilationParams, NodeOption, ParserOptions } from '../../typings/webpack-types'
+import { CompilationParams, NodeOption, ParserOptions } from '../../typings/webpack-types';
 import ParserHelpers = require('../ParserHelpers');
 
 class NodeSourcePlugin {
@@ -85,11 +85,13 @@ class NodeSourcePlugin {
         compiler.plugin('after-resolvers', function (compiler: Compiler) {
             Object.keys(nodeLibsBrowser).forEach(lib => {
                 if (options[lib] !== false) {
-                    compiler.resolvers.normal.apply(new AliasPlugin('described-resolve', {
-                        name: lib,
-                        onlyModule: true,
-                        alias: getPathToModule(lib, options[lib])
-                    }, 'resolve'));
+                    compiler.resolvers.normal.apply(
+                        new AliasPlugin('described-resolve', {
+                            name: lib,
+                            onlyModule: true,
+                            alias: getPathToModule(lib, options[lib])
+                        }, 'resolve')
+                    );
                 }
             });
         });

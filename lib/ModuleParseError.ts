@@ -4,8 +4,9 @@
  */
 import NormalModule = require('./NormalModule')
 import { Position } from 'estree'
+import WebpackError = require('./WebpackError');
 
-class ModuleParseError extends Error {
+class ModuleParseError extends WebpackError {
     constructor(public module: NormalModule, source: string, public err: Error & { loc?: Position }) {
         super();
         this.name = 'ModuleParseError';

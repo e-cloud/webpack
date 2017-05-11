@@ -3,9 +3,10 @@
  Author Tobias Koppers @sokra
  */
 import path = require('path');
-import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
-import { OriginalSource, RawSource } from 'webpack-sources'
-import { ErrCallback, TimeStampMap, WebpackOptions } from '../typings/webpack-types'
+import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types';
+import { OriginalSource, RawSource } from 'webpack-sources';
+import { ErrCallback, TimeStampMap, WebpackOptions, WebpackOutputOptions } from '../typings/webpack-types';
+import { getDepBlockPromise } from './dependencies/DepBlockHelpers';
 import Module = require('./Module');
 import AsyncDependenciesBlock = require('./AsyncDependenciesBlock');
 import ModuleDependency = require('./dependencies/ModuleDependency');
@@ -14,14 +15,15 @@ import Compilation = require('./Compilation')
 import Resolver = require('enhanced-resolve/lib/Resolver')
 import Dependency = require('./Dependency')
 import DependenciesBlock = require('./DependenciesBlock')
+import Template = require('./Template');
 
 class ContextModule extends Module {
-    async: boolean
-    builtTime: number
-    cacheable: boolean
-    contextDependencies: string[]
-    dependencies: ModuleDependency[]
-    useSourceMap: boolean
+    async: string;
+    builtTime: number;
+    cacheable: boolean;
+    contextDependencies: string[];
+    dependencies: ModuleDependency[];
+    useSourceMap: boolean;
 
     constructor(
         public resolveDependencies: (
@@ -35,10 +37,11 @@ class ContextModule extends Module {
         public recursive: boolean,
         public regExp: RegExp,
         public addon: string,
-        isAsync: boolean
+        asyncMode: string,
+        public chunkName: string
     ) {
         super();
-        this.async = !!isAsync;
+        this.async = asyncMode;
         this.cacheable = true;
         this.contextDependencies = [context];
         this.built = false;
@@ -68,7 +71,7 @@ class ContextModule extends Module {
     identifier() {
         let identifier = this.context;
         if (this.async) {
-            identifier += ' async';
+            identifier += ` ${this.async}`;
         }
         if (!this.recursive) {
             identifier += ' nonrecursive';
@@ -86,7 +89,7 @@ class ContextModule extends Module {
     readableIdentifier(requestShortener: RequestShortener) {
         let identifier = requestShortener.shorten(this.context);
         if (this.async) {
-            identifier += ' async';
+            identifier += ` ${this.async}`;
         }
         if (!this.recursive) {
             identifier += ' nonrecursive';
@@ -104,7 +107,7 @@ class ContextModule extends Module {
     libIdent(options: { context: string }) {
         let identifier = this.contextify(options.context, this.context);
         if (this.async) {
-            identifier += ' async';
+            identifier += ` ${this.async}`;
         }
         if (this.recursive) {
             identifier += ' recursive';
@@ -141,47 +144,74 @@ class ContextModule extends Module {
         callback: ErrCallback
     ) {
         this.built = true;
-        this.builtTime = new Date().getTime();
+        this.builtTime = Date.now();
         this.resolveDependencies(fs, this.context, this.recursive, this.regExp, (err, dependencies) => {
-            if (err) return callback(err);
+            if (err) {
+                return callback(err);
+            }
 
+            // Reset children
+            this.dependencies = [];
+            this.blocks = [];
+
+            // abort if something failed
+            // this will create an empty context
             if (!dependencies) {
-                this.dependencies = [];
                 callback();
                 return;
             }
 
-            // enhance dependencies
+            // enhance dependencies with meta info
             dependencies.forEach(dep => {
                 dep.loc = dep.userRequest;
                 dep.request = this.addon + dep.request;
             });
 
-            // if these we are not a async context
-            // add dependencies and continue
-            if (!this.async) {
-                this.dependencies = dependencies;
-                callback();
-                return;
-            }
+            if (!this.async || this.async === 'eager') {
 
-            // if we are async however create a new async dependency block
-            // and add that block to this context
-            dependencies.forEach(dep => {
-                // todo: here indicate all deps' loc are string or sourcelocation
-                const block = new AsyncDependenciesBlock(null, dep.module, dep.loc);
-                block.addDependency(dep);
-                this.addBlock(block);
-            });
+                // if we have an sync or eager context
+                // just add all dependencies and continue
+                this.dependencies = dependencies;
+
+            } else if (this.async === 'lazy-once') {
+
+                // for the lazy-once mode create a new async dependency block
+                // and add that block to this context
+                if (dependencies.length > 0) {
+                    const block = new AsyncDependenciesBlock(this.chunkName, this);
+                    dependencies.forEach(dep => {
+                        block.addDependency(dep);
+                    });
+                    this.addBlock(block);
+                }
+
+            } else {
+
+                // if we are lazy create a new async dependency block per dependency
+                // and add all blocks to this context
+                dependencies.forEach((dep, idx) => {
+                    let chunkName = this.chunkName;
+                    if (chunkName) {
+                        if (!/\[(index|request)\]/.test(chunkName)) {
+                            chunkName += '[index]';
+                        }
+                        chunkName = chunkName.replace(/\[index\]/g, idx);
+                        chunkName = chunkName.replace(/\[request\]/g, Template.toPath(dep.userRequest));
+                    }
+                    const block = new AsyncDependenciesBlock(chunkName, dep.module, dep.loc);
+                    block.addDependency(dep);
+                    this.addBlock(block);
+                });
+            }
             callback();
         });
     }
 
-    getSourceWithDependencies(dependencies: Dependency[], id: number) {
+    getUserRequestMap(dependencies: Dependency[]) {
         // if we filter first we get a new array
         // therefor we dont need to create a clone of dependencies explicitly
         // therefore the order of this is !important!
-        const map = dependencies
+        return dependencies
             .filter(dependency => dependency.module)
             .sort((a, b) => {
                 if (a.userRequest === b.userRequest) {
@@ -192,6 +222,10 @@ class ContextModule extends Module {
                 map[dep.userRequest] = dep.module.id;
                 return map;
             }, Object.create(null));
+    }
+
+    getSyncSource(dependencies: Dependency[], id: number) {
+        const map = this.getUserRequestMap(dependencies);
         return `var map = ${JSON.stringify(map, null, '\t')};
 function webpackContext(req) {
 	return __webpack_require__(webpackContextResolve(req));
@@ -210,7 +244,59 @@ module.exports = webpackContext;
 webpackContext.id = ${JSON.stringify(id)};`;
     }
 
-    getSourceWithBlocks(blocks: DependenciesBlock[], id: number) {
+    getEagerSource(dependencies: Dependency[], id: number) {
+        const map = this.getUserRequestMap(dependencies);
+        return `var map = ${JSON.stringify(map, null, '\t')}; 
+function webpackAsyncContext(req) { 
+  return webpackAsyncContextResolve(req).then(__webpack_require__); 
+}; 
+function webpackAsyncContextResolve(req) { 
+  return new Promise(function(resolve, reject) { 
+    var id = map[req]; 
+    if(!(id + 1)) // check for number or string 
+      reject(new Error("Cannot find module '" + req + "'.")); 
+    else 
+      resolve(id); 
+  }); 
+}; 
+webpackAsyncContext.keys = function webpackAsyncContextKeys() { 
+  return Object.keys(map); 
+}; 
+webpackAsyncContext.resolve = webpackAsyncContextResolve; 
+module.exports = webpackAsyncContext; 
+webpackAsyncContext.id = ${JSON.stringify(id)};`;
+    }
+
+    getLazyOnceSource(
+        block: AsyncDependenciesBlock,
+        dependencies: Dependency[],
+        id: number,
+        outputOptions: WebpackOutputOptions,
+        requestShortener: RequestShortener
+    ) {
+        const promise = getDepBlockPromise(block, outputOptions, requestShortener, 'lazy-once context');
+        const map = this.getUserRequestMap(dependencies);
+        return `var map = ${JSON.stringify(map, null, '\t')}; 
+function webpackAsyncContext(req) { 
+  return webpackAsyncContextResolve(req).then(__webpack_require__); 
+}; 
+function webpackAsyncContextResolve(req) { 
+  return ${promise}.then(function() { 
+    var id = map[req]; 
+    if(!(id + 1)) // check for number or string 
+      throw new Error("Cannot find module '" + req + "'."); 
+    return id; 
+  }); 
+}; 
+webpackAsyncContext.keys = function webpackAsyncContextKeys() { 
+  return Object.keys(map); 
+}; 
+webpackAsyncContext.resolve = webpackAsyncContextResolve; 
+module.exports = webpackAsyncContext; 
+webpackAsyncContext.id = ${JSON.stringify(id)};`;
+    }
+
+    getLazySource(blocks: DependenciesBlock[], id: number) {
         let hasMultipleOrNoChunks = false;
         const map = blocks
             .filter(block => block.dependencies[0].module)
@@ -219,7 +305,9 @@ webpackContext.id = ${JSON.stringify(id)};`;
                 block: block,
                 userRequest: block.dependencies[0].userRequest
             })).sort((a, b) => {
-                if (a.userRequest === b.userRequest) return 0;
+                if (a.userRequest === b.userRequest) {
+                    return 0;
+                }
                 return a.userRequest < b.userRequest ? -1 : 1;
             }).reduce((map, item) => {
                 const chunks = item.block.chunks || [];
@@ -262,13 +350,37 @@ module.exports = webpackEmptyContext;
 webpackEmptyContext.id = ${JSON.stringify(id)};`;
     }
 
-    getSourceString() {
-        if (this.dependencies && this.dependencies.length > 0) {
-            return this.getSourceWithDependencies(this.dependencies, this.id);
-        }
+    getSourceForEmptyAsyncContext(id: number) {
+        return `function webpackEmptyAsyncContext(req) { 
+  return new Promise(function(resolve, reject) { reject(new Error("Cannot find module '" + req + "'.")); }); 
+} 
+webpackEmptyAsyncContext.keys = function() { return []; }; 
+webpackEmptyAsyncContext.resolve = webpackEmptyAsyncContext; 
+module.exports = webpackEmptyAsyncContext; 
+webpackEmptyAsyncContext.id = ${JSON.stringify(id)};`;
+    }
 
-        if (this.blocks && this.blocks.length > 0) {
-            return this.getSourceWithBlocks(this.blocks, this.id);
+    getSourceString(asyncMode: string, outputOptions: WebpackOutputOptions, requestShortener: RequestShortener) {
+        if (asyncMode === 'lazy') {
+            if (this.blocks && this.blocks.length > 0) {
+                return this.getLazySource(this.blocks, this.id);
+            }
+            return this.getSourceForEmptyAsyncContext(this.id);
+        }
+        if (asyncMode === 'eager') {
+            if (this.dependencies && this.dependencies.length > 0) {
+                return this.getEagerSource(this.dependencies, this.id);
+            }
+            return this.getSourceForEmptyAsyncContext(this.id);
+        } else if (asyncMode === 'lazy-once') {
+            const block: AsyncDependenciesBlock = this.blocks[0] as any;
+            if (block) {
+                return this.getLazyOnceSource(block, block.dependencies, this.id, outputOptions, requestShortener);
+            }
+            return this.getSourceForEmptyAsyncContext(this.id);
+        }
+        if (this.dependencies && this.dependencies.length > 0) {
+            return this.getSyncSource(this.dependencies, this.id);
         }
 
         return this.getSourceForEmptyContext(this.id);
@@ -281,9 +393,13 @@ webpackEmptyContext.id = ${JSON.stringify(id)};`;
         return new RawSource(sourceString);
     }
 
-    source() {
+    source(
+        dependencyTemplates: Map<Function, any>,
+        outputOptions: WebpackOutputOptions,
+        requestShortener: RequestShortener
+    ) {
         return this.getSource(
-            this.getSourceString()
+            this.getSourceString(this.async, outputOptions, requestShortener)
         );
     }
 

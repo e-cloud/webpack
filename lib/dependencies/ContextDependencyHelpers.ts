@@ -16,14 +16,15 @@ function quotemeta(str: string) {
     return str.replace(/[-[\]\\/{}()*+?.^$|]/g, '\\$&')
 }
 
+declare type ContextDependencyConstructor<T> = new(request: string, recursive: boolean, regExp: RegExp, range: SourceRange, valueRange: SourceRange, chunkName: string) => T;
+
 export function create<T extends ContextDependency>(
-    Dep: {
-        new(request: string, recursive: boolean, regExp: RegExp, range: SourceRange, valueRange: SourceRange): T;
-    },
+    Dep: ContextDependencyConstructor<T>,
     range: SourceRange,
     param: BasicEvaluatedExpression,
     expr: Expression,
-    options: ModuleOptions
+    options: ModuleOptions,
+    chunkName: string
 ): T {
     let dep;
     let prefix;
@@ -46,7 +47,7 @@ export function create<T extends ContextDependency>(
         }
         // If there are more than two quasis, maybe the generated RegExp can be more precise?
         regExp = new RegExp(`^${quotemeta(prefix)}${options.wrappedContextRegExp.source}${quotemeta(postfix)}$`);
-        dep = new Dep(context, options.wrappedContextRecursive, regExp, range, valueRange);
+        dep = new Dep(context, options.wrappedContextRecursive, regExp, range, valueRange, chunkName);
         dep.loc = expr.loc;
         dep.replaces = [
             {
@@ -69,14 +70,14 @@ export function create<T extends ContextDependency>(
             prefix = `.${prefix.substr(idx)}`;
         }
         regExp = new RegExp(`^${quotemeta(prefix)}${options.wrappedContextRegExp.source}${quotemeta(postfix)}$`);
-        dep = new Dep(context, options.wrappedContextRecursive, regExp, range, valueRange);
+        dep = new Dep(context, options.wrappedContextRecursive, regExp, range, valueRange, chunkName);
         dep.loc = expr.loc;
         dep.prepend = param.prefix && param.prefix.isString() ? prefix : null;
         dep.critical = options.wrappedContextCritical && 'a part of the request of a dependency is an expression';
         return dep;
     }
     else {
-        dep = new Dep(options.exprContextRequest, options.exprContextRecursive, options.exprContextRegExp, range, param.range);
+        dep = new Dep(options.exprContextRequest, options.exprContextRecursive, options.exprContextRegExp, range, param.range, chunkName);
         dep.loc = expr.loc;
         dep.critical = options.exprContextCritical && 'the request of a dependency is an expression';
         return dep;

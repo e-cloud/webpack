@@ -6,8 +6,8 @@ import ModuleDependency = require('./ModuleDependency');
 import DepBlockHelpers = require('./DepBlockHelpers');
 import WebpackMissingModule = require('./WebpackMissingModule');
 import RequestShortener = require('../RequestShortener')
-import { ReplaceSource } from 'webpack-sources'
-import { WebpackOutputOptions } from '../../typings/webpack-types'
+import { ReplaceSource } from 'webpack-sources';
+import { WebpackOutputOptions } from '../../typings/webpack-types';
 import ImportDependenciesBlock = require('./ImportDependenciesBlock')
 
 class Template {
@@ -41,7 +41,7 @@ class Template {
 
         if (dep.module) {
             const stringifiedId = JSON.stringify(dep.module.id);
-            return `Promise.resolve(__webpack_require__(${comment}${stringifiedId}))`;
+            return `new Promise(function(resolve) { resolve(__webpack_require__(${comment}${stringifiedId})); })`;
         }
 
         return WebpackMissingModule.promise(dep.request);
@@ -57,7 +57,7 @@ class ImportDependency extends ModuleDependency {
         return 'import()';
     }
 
-    static Template = Template
+    static Template = Template;
 }
 
 export = ImportDependency;

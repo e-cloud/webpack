@@ -9,8 +9,8 @@ import { SourceRange } from '../../typings/webpack-types'
 import Module = require('../Module')
 
 class ImportDependenciesBlock extends AsyncDependenciesBlock {
-    constructor(request: string, public range: SourceRange, module: Module, loc: SourceLocation) {
-        super(null, module, loc);
+    constructor(request: string, public range: SourceRange, chunkName: string, module: Module, loc: SourceLocation) {
+        super(chunkName, module, loc);
         const dep = new ImportDependency(request, this);
         dep.loc = loc;
         this.addDependency(dep);

@@ -27,7 +27,7 @@ class EnvironmentPlugin {
 
     apply(compiler: Compiler) {
         const definitions = this.keys.reduce((defs, key) => {
-            const value = process.env[key] || this.defaultValues[key];
+            const value = process.env[key] !== undefined ? process.env[key] : this.defaultValues[key];
 
             if (value === undefined) {
                 compiler.plugin('this-compilation', compilation => {

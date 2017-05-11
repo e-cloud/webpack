@@ -36,8 +36,8 @@ import OccurrenceOrderPlugin = require('./optimize/OccurrenceOrderPlugin');
 import FlagDependencyUsagePlugin = require('./FlagDependencyUsagePlugin');
 import FlagDependencyExportsPlugin = require('./FlagDependencyExportsPlugin');
 import SizeLimitsPlugin = require('./performance/SizeLimitsPlugin');
-import { ResolverFactory } from 'enhanced-resolve'
-import { WebpackOptions } from '../typings/webpack-types'
+import { ResolverFactory } from 'enhanced-resolve';
+import { WebpackOptions } from '../typings/webpack-types';
 import Compiler = require('./Compiler')
 
 class WebpackOptionsApply extends OptionsApply {

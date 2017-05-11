@@ -86,7 +86,7 @@ class MultiCompiler extends Tapable {
         runWithDependencies(this.compilers, (compiler, callback) => {
             const compilerIdx = this.compilers.indexOf(compiler);
             let firstRun = true;
-            const watching = compiler.watch(watchOptions, (err, stats) => {
+            const watching = compiler.watch(Array.isArray(watchOptions) ? watchOptions[compilerIdx] : watchOptions, function(err, stats) {
                 if (err) {
                     handler(err);
                 }

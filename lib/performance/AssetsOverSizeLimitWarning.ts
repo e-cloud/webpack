@@ -3,8 +3,9 @@
  Author Sean Larkin @thelarkinn
  */
 import SizeFormatHelpers = require('../SizeFormatHelpers');
+import WebpackError = require('../WebpackError');
 
-class AssetsOverSizeLimitWarning extends Error {
+class AssetsOverSizeLimitWarning extends WebpackError {
     assets: AssetsOverSizeLimitWarning.OverSizeLimit[]
 
     constructor(assetsOverSizeLimit: AssetsOverSizeLimitWarning.OverSizeLimit[], assetLimit: number) {

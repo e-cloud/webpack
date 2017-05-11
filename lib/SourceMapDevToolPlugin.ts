@@ -2,8 +2,8 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { ConcatSource, RawSource } from 'webpack-sources'
-import { FilenameTemplate } from '../typings/webpack-types'
+import { ConcatSource, RawSource } from 'webpack-sources';
+import { FilenameTemplate } from '../typings/webpack-types';
 import path = require('path');
 import RequestShortener = require('./RequestShortener');
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
@@ -26,11 +26,11 @@ interface Task {
 }
 
 class SourceMapDevToolPlugin {
-    fallbackModuleFilenameTemplate: FilenameTemplate
-    moduleFilenameTemplate: FilenameTemplate
-    options: SourceMapDevToolPlugin.Option
-    sourceMapFilename: string
-    sourceMappingURLComment: string | boolean
+    fallbackModuleFilenameTemplate: FilenameTemplate;
+    moduleFilenameTemplate: FilenameTemplate;
+    options: SourceMapDevToolPlugin.Option;
+    sourceMapFilename: string;
+    sourceMappingURLComment: string | boolean;
 
     constructor(options: string | SourceMapDevToolPlugin.Option) {
         if (arguments.length > 1) {
@@ -74,7 +74,7 @@ class SourceMapDevToolPlugin {
                             const asset = this.assets[file];
                             // todo: there is no assignment for compilation.assets[xxx].__SourceMapDevToolData before,
                             // only after
-                            if (asset.__SourceMapDevToolData) {
+                            if (asset.__SourceMapDevToolFile === file && asset.__SourceMapDevToolData) {
                                 const data = asset.__SourceMapDevToolData;
                                 for (const cachedFile in data) {
                                     this.assets[cachedFile] = data[cachedFile];
@@ -140,7 +140,7 @@ class SourceMapDevToolPlugin {
 
                 allModuleFilenames = ModuleFilenameHelpers.replaceDuplicates(allModuleFilenames, (filename, i, n) => {
                     for (let j = 0; j < n; j++) {
-                        filename += '*'
+                        filename += '*';
                     }
                     return filename;
                 });
@@ -170,6 +170,7 @@ class SourceMapDevToolPlugin {
                     }
                     sourceMap.sourceRoot = options.sourceRoot || '';
                     sourceMap.file = file;
+                    asset.__SourceMapDevToolFile = file;
                     asset.__SourceMapDevToolData = {};
                     let currentSourceMappingURLComment = sourceMappingURLComment;
                     if (currentSourceMappingURLComment !== false && /\.css($|\?)/i.test(file)) {

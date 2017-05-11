@@ -5,7 +5,7 @@
 import crypto = require('crypto')
 import Module = require('./Module')
 import RequestShortener = require('./RequestShortener')
-import { FilenameTemplate } from '../typings/webpack-types'
+import { FilenameTemplate } from '../typings/webpack-types';
 
 export const ALL_LOADERS_RESOURCE = '[all-loaders][resource]';
 export const REGEXP_ALL_LOADERS_RESOURCE = /\[all-?loaders\]\[resource\]/gi;
@@ -49,7 +49,7 @@ function asRegExp(test: string | RegExp): RegExp {
     if (typeof test === 'string') {
         return new RegExp(`^${test.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}`);
     }
-    return test
+    return test;
 }
 
 export function createFilename(
@@ -116,21 +116,29 @@ export function createFooter(module: Module | string, requestShortener: RequestS
         module = '';
     }
     if (typeof module === 'string') {
-        return ['// WEBPACK FOOTER //', `// ${requestShortener.shorten(module)}`].join('\n');
+        return [
+            '// WEBPACK FOOTER //',
+            `// ${requestShortener.shorten(module)}`
+        ].join('\n');
     }
     else {
         return [
-            '//////////////////', '// WEBPACK FOOTER', `// ${module.readableIdentifier(requestShortener)}`,
-            `// module id = ${module.id}`, `// module chunks = ${module.chunks.map(chunk => chunk.id).join(' ')}`
+            '//////////////////',
+            '// WEBPACK FOOTER',
+            `// ${module.readableIdentifier(requestShortener)}`,
+            `// module id = ${module.id}`,
+            `// module chunks = ${module.chunks.map(chunk => chunk.id).join(' ')}`
         ].join('\n');
     }
 }
 
-export function replaceDuplicates(array: string[], fn: (filename: string, i: number, n: number) => string,
-                                  comparator?: (a: any, b: any) => number
+export function replaceDuplicates(
+    array: string[],
+    fn: (filename: string, i: number, n: number) => string,
+    comparator?: (a: any, b: any) => number
 ) {
-    const countMap = {};
-    const posMap = {};
+    const countMap = Object.create(null);
+    const posMap = Object.create(null);
     array.forEach((item, idx) => {
         countMap[item] = countMap[item] || [];
         countMap[item].push(idx);
@@ -171,10 +179,10 @@ export function matchPart(str: string, test: TestCondition) {
 }
 
 export function matchObject(obj: {
-                                test?: TestCondition
-                                include?: TestCondition
-                                exclude?: TestCondition
-                            }, str: string) {
+    test?: TestCondition
+    include?: TestCondition
+    exclude?: TestCondition
+}, str: string) {
     if (obj.test) {
         if (!matchPart(str, obj.test)) {
             return false;

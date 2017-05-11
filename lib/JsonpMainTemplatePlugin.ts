@@ -5,7 +5,7 @@
 import Template = require('./Template');
 import MainTemplate = require('./MainTemplate')
 import Chunk = require('./Chunk')
-import { Hash } from 'crypto'
+import { Hash } from 'crypto';
 
 class JsonpMainTemplatePlugin {
     apply(mainTemplate: MainTemplate) {
@@ -16,8 +16,10 @@ class JsonpMainTemplatePlugin {
                     '',
                     '// objects to store loaded and loading chunks',
                     'var installedChunks = {',
-                    this.indent(chunk.ids.map(id => `${id}: 0`).join(',\n')),
-                    '};'
+                    this.indent(chunk.ids.map(id => `${JSON.stringify(id)}: 0`).join(',\n')),
+                    '};',
+                    '',
+                    'var resolvedPromise = new Promise(function(resolve) { resolve(); });'
                 ]);
             }
             return source;
@@ -27,38 +29,38 @@ class JsonpMainTemplatePlugin {
             const chunkMaps = chunk.getChunkMaps();
             const crossOriginLoading = this.outputOptions.crossOriginLoading;
             const chunkLoadTimeout = this.outputOptions.chunkLoadTimeout || 120000;
+            const scriptSrcPath = this.applyPluginsWaterfall(
+                'asset-path',
+                JSON.stringify(chunkFilename),
+                {
+                    hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
+                    hashWithLength: (length: number) => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
+                    chunk: {
+                        id: '" + chunkId + "',
+                        hash: `" + ${JSON.stringify(chunkMaps.hash)}[chunkId] + "`,
+                        hashWithLength(length: number) {
+                            const shortChunkHashMap = Object.create(null);
+                            Object.keys(chunkMaps.hash).forEach(chunkId => {
+                                if (typeof chunkMaps.hash[chunkId] === 'string') {
+                                    shortChunkHashMap[chunkId] = chunkMaps.hash[chunkId].substr(0, length);
+                                }
+                            });
+                            return `" + ${JSON.stringify(shortChunkHashMap)}[chunkId] + "`;
+                        },
+                        name: `" + (${JSON.stringify(chunkMaps.name)}[chunkId]||chunkId) + "`
+                    }
+                });
             return this.asString([
                 'var script = document.createElement(\'script\');',
                 'script.type = \'text/javascript\';',
                 'script.charset = \'utf-8\';',
                 'script.async = true;',
                 `script.timeout = ${chunkLoadTimeout};`,
-                crossOriginLoading ? `script.crossOrigin = '${crossOriginLoading}';` : '',
+                crossOriginLoading ? `script.crossOrigin = ${JSON.stringify(crossOriginLoading)};` : '',
                 `if (${this.requireFn}.nc) {`,
                 this.indent(`script.setAttribute("nonce", ${this.requireFn}.nc);`),
                 '}',
-                `script.src = ${this.requireFn}.p + ${
-                    this.applyPluginsWaterfall(
-                        'asset-path', JSON.stringify(chunkFilename),
-                        {
-                            hash: `" + ${this.renderCurrentHashCode(hash)} + "`,
-                            hashWithLength: (length: number) => `" + ${this.renderCurrentHashCode(hash, length)} + "`,
-                            chunk: {
-                                id: '" + chunkId + "',
-                                hash: `" + ${JSON.stringify(chunkMaps.hash)}[chunkId] + "`,
-                                hashWithLength(length: number) {
-                                    const shortChunkHashMap = {};
-                                    Object.keys(chunkMaps.hash).forEach(chunkId => {
-                                        if (typeof chunkMaps.hash[chunkId] === 'string') {
-                                            shortChunkHashMap[chunkId] = chunkMaps.hash[chunkId].substr(0, length);
-                                        }
-                                    });
-                                    return '" + ' + JSON.stringify(shortChunkHashMap) + '[chunkId] + "';
-                                },
-                                name: '" + (' + JSON.stringify(chunkMaps.name) + '[chunkId]||chunkId) + "'
-                            }
-                        }
-                    )};`,
+                `script.src = ${this.requireFn}.p + ${scriptSrcPath};`,
                 `var timeout = setTimeout(onScriptComplete, ${chunkLoadTimeout});`,
                 'script.onerror = script.onload = onScriptComplete;',
                 'function onScriptComplete() {',
@@ -69,7 +71,9 @@ class JsonpMainTemplatePlugin {
                     'var chunk = installedChunks[chunkId];',
                     'if(chunk !== 0) {',
                     this.indent([
-                        'if(chunk) chunk[1](new Error(\'Loading chunk \' + chunkId + \' failed.\'));',
+                        'if(chunk) {',
+                        this.indent('chunk[1](new Error(\'Loading chunk \' + chunkId + \' failed.\'));'),
+                        '}',
                         'installedChunks[chunkId] = undefined;'
                     ]),
                     '}'
@@ -79,23 +83,32 @@ class JsonpMainTemplatePlugin {
         });
         mainTemplate.plugin('require-ensure', function (_: string, chunk: Chunk, hash: string) {
             return this.asString([
-                'if(installedChunks[chunkId] === 0)',
-                this.indent(['return Promise.resolve();']),
+                'if(installedChunks[chunkId] === 0) {',
+                this.indent([
+                    'return resolvedPromise;'
+                ]),
+                '}',
                 '',
                 '// a Promise means "currently loading".',
                 'if(installedChunks[chunkId]) {',
-                this.indent(['return installedChunks[chunkId][2];']),
+                this.indent([
+                    'return installedChunks[chunkId][2];'
+                ]),
                 '}',
-                '// start chunk loading',
-                'var head = document.getElementsByTagName(\'head\')[0];',
-                this.applyPluginsWaterfall('jsonp-script', '', chunk, hash),
                 '',
+                '// setup Promise in chunk cache',
                 'var promise = new Promise(function(resolve, reject) {',
-                this.indent(['installedChunks[chunkId] = [resolve, reject];']),
+                this.indent([
+                    'installedChunks[chunkId] = [resolve, reject];'
+                ]),
                 '});',
                 'installedChunks[chunkId][2] = promise;',
                 '',
+                '// start chunk loading',
+                'var head = document.getElementsByTagName(\'head\')[0];',
+                this.applyPluginsWaterfall('jsonp-script', '', chunk, hash),
                 'head.appendChild(script);',
+                '',
                 'return promise;'
             ]);
         });
@@ -126,8 +139,9 @@ class JsonpMainTemplatePlugin {
                         'for(;i < chunkIds.length; i++) {',
                         this.indent([
                             'chunkId = chunkIds[i];',
-                            'if(installedChunks[chunkId])',
+                            'if(installedChunks[chunkId]) {',
                             this.indent('resolves.push(installedChunks[chunkId][0]);'),
+                            '}',
                             'installedChunks[chunkId] = 0;'
                         ]),
                         '}',
@@ -139,8 +153,9 @@ class JsonpMainTemplatePlugin {
                         ]),
                         '}',
                         'if(parentJsonpFunction) parentJsonpFunction(chunkIds, moreModules, executeModules);',
-                        'while(resolves.length)',
+                        'while(resolves.length) {',
                         this.indent('resolves.shift()();'),
+                        '}',
                         this.entryPointInChildren(chunk) ? [
                             'if(executeModules) {',
                             this.indent([
@@ -173,12 +188,19 @@ class JsonpMainTemplatePlugin {
                 hashWithLength: (length: number) => `" + ${this.renderCurrentHashCode(hash, length)} + "`
             });
 
-            return `${source}\nfunction hotDisposeChunk(chunkId) {\n\tdelete installedChunks[chunkId];\n}\nvar parentHotUpdateCallback = this[${JSON.stringify(hotUpdateFunction)}];\nthis[${JSON.stringify(hotUpdateFunction)}] = ${Template.getFunctionContent(require('./JsonpMainTemplate.runtime.js'))
+            const runtimeSource = Template.getFunctionContent(require('./JsonpMainTemplate.runtime.js'))
                 .replace(/\/\/\$semicolon/g, ';')
                 .replace(/\$require\$/g, this.requireFn)
                 .replace(/\$hotMainFilename\$/g, currentHotUpdateMainFilename)
                 .replace(/\$hotChunkFilename\$/g, currentHotUpdateChunkFilename)
-                .replace(/\$hash\$/g, JSON.stringify(hash))}`;
+                .replace(/\$hash\$/g, JSON.stringify(hash));
+
+            return `${source}
+function hotDisposeChunk(chunkId) {
+    delete installedChunks[chunkId];
+}
+var parentHotUpdateCallback = this[${JSON.stringify(hotUpdateFunction)}];
+this[${JSON.stringify(hotUpdateFunction)}] = ${runtimeSource}`;
         });
         mainTemplate.plugin('hash', function (hash: Hash) {
             hash.update('jsonp');

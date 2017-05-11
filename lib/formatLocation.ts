@@ -2,47 +2,62 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { Position, SourceLocation } from 'estree'
+import { Position, SourceLocation } from 'estree';
 
-export = function formatLocation(loc: string | number | SourceLocation) {
-    if (typeof loc === 'string') {
-        return loc;
-    }
-    if (typeof loc === 'number') {
-        return `${loc}`;
-    }
-    if (loc && typeof loc === 'object') {
-        if (loc.start && loc.end) {
-            if (typeof loc.start.line === 'number' && typeof loc.end.line === 'number' && typeof loc.end.column === 'number' && loc.start.line === loc.end.line) {
-                return `${formatPosition(loc.start)}-${loc.end.column}`;
-            }
-            return `${formatPosition(loc.start)}-${formatPosition(loc.end)}`;
-        }
-        if (loc.start) {
-            return formatPosition(loc.start);
-        }
-        return formatPosition(loc);
-    }
-    return '';
-
-    function formatPosition(pos: string | number | Position) {
-        if (typeof pos === 'string') {
-            return pos;
-        }
-        if (typeof pos === 'number') {
-            return `${pos}`;
-        }
-        if (pos && typeof pos === 'object') {
-            if (typeof pos.line === 'number' && typeof pos.column === 'number') {
-                return `${pos.line}:${pos.column}`;
-            }
-            if (typeof pos.line === 'number') {
-                return `${pos.line}:?`;
-            }
-            if (typeof pos.index === 'number') {
-                return `+${pos.index}`;
-            }
-        }
+function formatPosition(pos: string | number | Position) {
+    if (pos === null) {
         return '';
     }
-};
+    const typeOfPos = typeof pos;
+    switch (typeOfPos) {
+        case 'string':
+            return pos;
+        case 'number':
+            return `${pos}`;
+        case 'object':
+            if (typeof pos.line === 'number' && typeof pos.column === 'number') {
+                return `${pos.line}:${pos.column}`;
+            } else if (typeof pos.line === 'number') {
+                return `${pos.line}:?`;
+            } else if (typeof pos.index === 'number') {
+                return `+${pos.index}`;
+            } else {
+                return '';
+            }
+        default:
+            return '';
+    }
+}
+
+function formatLocation(loc: string | number | SourceLocation) {
+    if (loc === null) {
+        return '';
+    }
+    const typeOfLoc = typeof loc;
+    switch (typeOfLoc) {
+        case 'string':
+            return loc;
+        case 'number':
+            return `${loc}`;
+        case 'object':
+            if (loc.start && loc.end) {
+                if (
+                    typeof loc.start.line === 'number'
+                    && typeof loc.end.line === 'number'
+                    && typeof loc.end.column === 'number'
+                    && loc.start.line === loc.end.line
+                ) {
+                    return `${formatPosition(loc.start)}-${loc.end.column}`;
+                }
+                return `${formatPosition(loc.start)}-${formatPosition(loc.end)}`;
+            }
+            if (loc.start) {
+                return formatPosition(loc.start);
+            }
+            return formatPosition(loc);
+        default:
+            return '';
+    }
+}
+
+export = formatLocation

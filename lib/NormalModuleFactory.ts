@@ -8,14 +8,14 @@ import NormalModule = require('./NormalModule');
 import RawModule = require('./RawModule');
 import Parser = require('./Parser');
 import RuleSet = require('./RuleSet');
-import { ResolveContext, ResolveError } from 'enhanced-resolve/lib/common-types'
+import { ResolveContext, ResolveError } from 'enhanced-resolve/lib/common-types';
 import {
     ErrCallback,
     ModuleOptions,
     NMFAfterResolveResult,
     NMFBeforeResolveResult,
     ParserOptions
-} from '../typings/webpack-types'
+} from '../typings/webpack-types';
 import Dependency = require('./Dependency')
 import Module = require('./Module')
 import Resolver = require('enhanced-resolve/lib/Resolver')
@@ -71,14 +71,14 @@ function identToLoaderRequest(resultString: string) {
     else {
         return {
             loader: resultString
-        }
+        };
     }
 }
 
 class NormalModuleFactory extends Tapable {
-    ruleSet: RuleSet
-    parserCache: Dictionary<Parser>
-    cachePredicate: (val: Module) => boolean
+    ruleSet: RuleSet;
+    parserCache: Dictionary<Parser>;
+    cachePredicate: (val: Module) => boolean;
 
     constructor(public context = '', public resolvers: Compiler.Resolvers, options: ModuleOptions) {
         super();
@@ -88,16 +88,15 @@ class NormalModuleFactory extends Tapable {
             : Boolean.bind(null, options.unsafeCache);
         this.parserCache = {};
         this.plugin('factory', function () {
-            const self = this;
             return (result: NMFBeforeResolveResult, callback: ErrCallback) => {
-                const resolver = self.applyPluginsWaterfall0('resolver', null);
+                const resolver = this.applyPluginsWaterfall0('resolver', null);
 
                 // Ignored
                 if (!resolver) {
                     return callback();
                 }
 
-                resolver(result, function onDoneResolving(err: ResolveError, data: RawModule | NotRawModule) {
+                resolver(result, (err: ResolveError, data: RawModule | NotRawModule) => {
                     if (err) {
                         return callback(err);
                     }
@@ -112,7 +111,7 @@ class NormalModuleFactory extends Tapable {
                         return callback(null, data);
                     }
 
-                    self.applyPluginsAsyncWaterfall('after-resolve', data, (err, result: NMFAfterResolveResult) => {
+                    this.applyPluginsAsyncWaterfall('after-resolve', data, (err, result: NMFAfterResolveResult) => {
                         if (err) {
                             return callback(err);
                         }
@@ -122,7 +121,7 @@ class NormalModuleFactory extends Tapable {
                             return callback();
                         }
 
-                        let createdModule = self.applyPluginsBailResult('create-module', result);
+                        let createdModule = this.applyPluginsBailResult('create-module', result);
                         if (!createdModule) {
 
                             if (!result.request) {
@@ -132,7 +131,7 @@ class NormalModuleFactory extends Tapable {
                             createdModule = new NormalModule(result.request, result.userRequest, result.rawRequest, result.loaders, result.resource, result.parser);
                         }
 
-                        createdModule = self.applyPluginsWaterfall0('module', createdModule);
+                        createdModule = this.applyPluginsWaterfall0('module', createdModule);
 
                         return callback(null, createdModule);
                     });
@@ -144,7 +143,6 @@ class NormalModuleFactory extends Tapable {
                 const contextInfo = data.contextInfo;
                 const context = data.context;
                 const request = data.request;
-                const resolveContextInfo = {};
 
                 const noAutoLoaders = /^-?!/.test(request);
                 const noPrePostAutoLoaders = /^!!/.test(request);
@@ -156,17 +154,15 @@ class NormalModuleFactory extends Tapable {
                 const loaderMap = elements.map(identToLoaderRequest);
 
                 async.parallel([
-                    callback => {
-                        this.resolveRequestArray(resolveContextInfo, context, loaderMap, this.resolvers.loader, callback);
-                    },
+                    callback => this.resolveRequestArray(contextInfo, context, loaderMap, this.resolvers.loader, callback),
                     callback => {
                         if (resource === '' || resource[0] === '?') {
                             return callback(null, {
-                                resource: resource
+                                resource
                             });
                         }
                         this.resolvers.normal.resolve(
-                            resolveContextInfo,
+                            contextInfo,
                             context,
                             resource,
                             (err: ResolveError, resource: string | boolean, resourceResolveData) => {
@@ -185,24 +181,30 @@ class NormalModuleFactory extends Tapable {
                     }
                     let loaders = results[0] as Loader[];
                     const resourceResolveData = results[1].resourceResolveData;
-                    resource = results[1];
                     resource = results[1].resource as string | boolean;
 
                     // translate option idents
                     try {
                         loaders.forEach((item: Loader) => {
-                            const options = item.options
+                            const options = item.options;
                             if (typeof options === 'string' && /^\?/.test(options)) {
                                 item.options = this.ruleSet.findOptionsByIdent(options.substr(1));
                             }
-                        })
+                        });
                     } catch (e) {
                         return callback(e);
                     }
 
                     if (resource === false) {
-                        return callback(null, new RawModule('/* (ignored) */', `ignored ${context} ${request}`, `${request} (ignored)`));
-                    } // ignored
+                        // ignored
+                        return callback(null,
+                            new RawModule(
+                                '/* (ignored) */',
+                                `ignored ${context} ${request}`,
+                                `${request} (ignored)`
+                            )
+                        );
+                    }
 
                     const userRequest = loaders.map(loaderToIdent).concat([resource]).join('!');
 
@@ -242,14 +244,14 @@ class NormalModuleFactory extends Tapable {
                     });
 
                     async.parallel([
-                        this.resolveRequestArray.bind(this, resolveContextInfo, this.context, useLoadersPost, this.resolvers.loader),
-                        this.resolveRequestArray.bind(this, resolveContextInfo, this.context, useLoaders, this.resolvers.loader),
-                        this.resolveRequestArray.bind(this, resolveContextInfo, this.context, useLoadersPre, this.resolvers.loader)
+                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoadersPost, this.resolvers.loader),
+                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoaders, this.resolvers.loader),
+                        this.resolveRequestArray.bind(this, contextInfo, this.context, useLoadersPre, this.resolvers.loader)
                     ], (err: Error, results: Loader[][]) => {
                         if (err) {
                             return callback(err);
                         }
-                        loaders = results[0].concat(loaders).concat(results[1]).concat(results[2]);
+                        loaders = results[0].concat(loaders, results[1], results[2]);
 
                         process.nextTick(() => {
                             callback(null, {
@@ -262,7 +264,7 @@ class NormalModuleFactory extends Tapable {
                                 resource,
                                 resourceResolveData,
                                 parser: this.getParser(settings.parser)
-                            })
+                            });
                         });
                     });
                 });
@@ -271,13 +273,13 @@ class NormalModuleFactory extends Tapable {
     }
 
     create(data: {
-               context: string
-               dependencies: [NormalModule]
-               contextInfo: {
-                   issuer: string
-                   compiler: string
-               }
-           }, callback: ErrCallback) {
+        context: string
+        dependencies: [NormalModule]
+        contextInfo: {
+            issuer: string
+            compiler: string
+        }
+    }, callback: ErrCallback) {
         const dependencies = data.dependencies;
         const cacheEntry = dependencies[0].__NormalModuleFactoryCache;
         if (cacheEntry) {
@@ -337,7 +339,7 @@ class NormalModuleFactory extends Tapable {
         async.map(array, function (item: Loader, callback: ErrCallback) {
             resolver.resolve(contextInfo, context, item.loader, (err: Error, result: string) => {
                 if (err && /^[^/]*$/.test(item.loader) && !/-loader$/.test(item.loader)) {
-                    return resolver.resolve(contextInfo, context, item.loader + '-loader', function (err2: Error) {
+                    return resolver.resolve(contextInfo, context, `${item.loader}-loader`, function (err2: Error) {
                         if (!err2) {
                             err.message = `${err.message}
 BREAKING CHANGE: It's no longer allowed to omit the '-loader' suffix when using loaders.

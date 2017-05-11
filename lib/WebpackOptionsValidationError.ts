@@ -3,10 +3,11 @@
  Author Gajus Kuizinas @gajus
  */
 import ajv = require('ajv')
-import { AjvErrorObject, AjvJsonSchema } from '../typings/ajv-custom-schema'
-const webpackOptionsSchema = require('../schemas/webpackOptionsSchema.json')
+import { AjvErrorObject, AjvJsonSchema } from '../typings/ajv-custom-schema';
+import WebpackError = require('./WebpackError');
+const webpackOptionsSchema = require('../schemas/webpackOptionsSchema.json');
 
-class WebpackOptionsValidationError extends Error {
+class WebpackOptionsValidationError extends WebpackError {
     constructor(public validationErrors: AjvErrorObject[]) {
         super();
         // this is because of Typescript's design limitation,
@@ -21,7 +22,7 @@ class WebpackOptionsValidationError extends Error {
     static formatValidationError(err: AjvErrorObject): string {
         const dataPath = `configuration${err.dataPath}`;
         if (err.keyword === 'additionalProperties') {
-            const errParams = err.params as ajv.AdditionalPropertiesParams
+            const errParams = err.params as ajv.AdditionalPropertiesParams;
             const baseMessage = `${dataPath} has an unknown property '${errParams.additionalProperty}'. These properties are valid:\n${getSchemaPartText(err.parentSchema)}`;
             if (!err.dataPath) {
                 switch (errParams.additionalProperty) {
@@ -68,7 +69,7 @@ For loader options: webpack 2 no longer allows custom properties in configuratio
         } else if (err.keyword === 'allOf') {
             return `${dataPath} should be:\n${getSchemaPartText(err.parentSchema)}`;
         } else if (err.keyword === 'type') {
-            const typeParams = err.params as ajv.TypeParams
+            const typeParams = err.params as ajv.TypeParams;
             switch (typeParams.type) {
                 case 'object':
                     return `${dataPath} should be an object.`;
@@ -97,7 +98,11 @@ For loader options: webpack 2 no longer allows custom properties in configuratio
                 return `${dataPath} ${err.message}`;
             }
         } else if (err.keyword === 'absolutePath') {
-            return `${dataPath}: ${err.message}`;
+            const baseMessage = `${dataPath}: ${err.message}`;
+            if (dataPath === 'configuration.output.filename') {
+                return `${baseMessage}\nPlease use output.path to specify absolute path and output.filename for the file name.`;
+            }
+            return baseMessage;
         } else {
             return `${dataPath} ${err.message} (${JSON.stringify(err, null, 2)}).\n${getSchemaPartText(err.parentSchema)}`;
         }
@@ -166,13 +171,13 @@ For loader options: webpack 2 no longer allows custom properties in configuratio
             return schema.enum.map(item => JSON.stringify(item)).join(' | ');
         }
         return JSON.stringify(schema, null, 2);
-    }
+    };
 }
 
 export = WebpackOptionsValidationError;
 
 function getSchemaPart(path: string, parents = 0, additionalPath?: string) {
-    let splitPath = path.split('/')
+    let splitPath = path.split('/');
     splitPath = splitPath.slice(0, splitPath.length - parents);
     if (additionalPath) {
         const splitAddtionalPath = additionalPath.split('/');

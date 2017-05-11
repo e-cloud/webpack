@@ -2,12 +2,12 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import path = require('path');
 import Compilation = require('./Compilation')
 import Compiler = require('./Compiler')
 import Module = require('./Module')
-import { Record } from '../typings/webpack-types'
+import { Record } from '../typings/webpack-types';
 import Chunk = require('./Chunk')
+import { makePathsRelative } from './util/identifier';
 
 class RecordIdsPlugin {
     apply(compiler: Compiler) {
@@ -24,7 +24,7 @@ class RecordIdsPlugin {
                 }
                 modules.forEach(module => {
                     if (!module.portableId) {
-                        module.portableId = makeRelative(compiler, module.identifier());
+                        module.portableId = makePathsRelative(compiler.context, module.identifier());
                     }
                     const identifier = module.portableId;
                     records.modules.byIdentifier[identifier] = module.id;
@@ -42,7 +42,7 @@ class RecordIdsPlugin {
                             return;
                         }
                         if (!module.portableId) {
-                            module.portableId = makeRelative(compiler, module.identifier());
+                            module.portableId = makePathsRelative(compiler.context, module.identifier());
                         }
                         const identifier = module.portableId;
                         const id = records.modules.byIdentifier[identifier];
@@ -74,7 +74,7 @@ class RecordIdsPlugin {
                 if (!block.identifier) {
                     return null;
                 }
-                ident.unshift(makeRelative(compiler, block.identifier()));
+                ident.unshift(makePathsRelative(compiler.context, block.identifier()));
                 return ident.join(':');
             }
 
@@ -174,14 +174,3 @@ class RecordIdsPlugin {
 }
 
 export = RecordIdsPlugin;
-
-function makeRelative(compiler: Compiler, identifier: string) {
-    const context = compiler.context;
-    return identifier
-        .split('|')
-        .map(str => str
-            .split('!')
-            .map(str => path.relative(context, str))
-            .join('!'))
-        .join('|');
-}

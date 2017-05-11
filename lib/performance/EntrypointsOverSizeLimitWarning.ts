@@ -3,8 +3,9 @@
  Author Sean Larkin @thelarkinn
  */
 import SizeFormatHelpers = require('../SizeFormatHelpers');
+import WebpackError = require('../WebpackError');
 
-class EntrypointsOverSizeLimitWarning extends Error {
+class EntrypointsOverSizeLimitWarning extends WebpackError {
     constructor(public entrypoints: EntrypointsOverSizeLimitWarning.OverSizeLimit[], entrypointLimit: number) {
         super();
         this.name = 'EntrypointsOverSizeLimitWarning';

@@ -8,7 +8,7 @@ import HarmonyExportSpecifierDependency = require('./HarmonyExportSpecifierDepen
 import HarmonyExportImportedSpecifierDependency = require('./HarmonyExportImportedSpecifierDependency');
 import HarmonyImportDependency = require('./HarmonyImportDependency');
 import HarmonyModulesHelpers = require('./HarmonyModulesHelpers');
-import { ExportDefaultDeclaration, ExportNamedDeclaration, Expression, Node, Statement } from 'estree'
+import { ExportDefaultDeclaration, ExportNamedDeclaration, Expression, Node, Statement } from 'estree';
 import Parser = require('../Parser')
 
 class HarmonyExportDependencyParserPlugin {
@@ -19,7 +19,7 @@ class HarmonyExportDependencyParserPlugin {
             dep.loc.index = -1;
             this.state.current.addDependency(dep);
             return true;
-        })
+        });
 
         parser.plugin('export import', function (this: Parser, statement: Statement, source: string) {
             const dep = new HarmonyImportDependency(source, HarmonyModulesHelpers.getNewModuleVar(this.state, source), statement.range);
@@ -28,7 +28,7 @@ class HarmonyExportDependencyParserPlugin {
             this.state.current.addDependency(dep);
             this.state.lastHarmonyImport = dep;
             return true;
-        })
+        });
 
         parser.plugin('export expression', function (this: Parser, statement: Statement, expr: Expression) {
             const dep = new HarmonyExportExpressionDependency(this.state.module, expr.range, statement.range);
@@ -36,14 +36,16 @@ class HarmonyExportDependencyParserPlugin {
             dep.loc.index = -1;
             this.state.current.addDependency(dep);
             return true;
-        })
+        });
 
-        parser.plugin('export declaration', statement => {})
+        parser.plugin('export declaration', statement => {});
 
-        parser.plugin('export specifier', function (this: Parser,
-                                                    statement: ExportDefaultDeclaration | ExportNamedDeclaration,
-                                                    id: number,
-                                                    name: string, idx: number
+        parser.plugin('export specifier', function (
+            this: Parser,
+            statement: ExportDefaultDeclaration | ExportNamedDeclaration,
+            id: number,
+            name: string,
+            idx: number
         ) {
             const rename = this.scope.renames[`$${id}`];
             let dep;
@@ -54,25 +56,34 @@ class HarmonyExportDependencyParserPlugin {
             else {
                 const immutable = statement.declaration && isImmutableStatement(statement.declaration);
                 const hoisted = statement.declaration && isHoistedStatement(statement.declaration);
-                dep = new HarmonyExportSpecifierDependency(this.state.module, id, name, !immutable || hoisted
-                    ? -0.5
-                    : statement.range[1] + 0.5, immutable);
+                dep = new HarmonyExportSpecifierDependency(
+                    this.state.module,
+                    id,
+                    name,
+                    !immutable || hoisted ? -2 : statement.range[1] + 0.5,
+                    immutable
+                );
             }
             dep.loc = Object.create(statement.loc);
             dep.loc.index = idx;
             this.state.current.addDependency(dep);
             return true;
-        })
+        });
 
-        parser.plugin('export import specifier', function (this: Parser, statement: Statement, source: string,
-                                                           id: string, name: string, idx: number
+        parser.plugin('export import specifier', function (
+            this: Parser,
+            statement: Statement,
+            source: string,
+            id: string,
+            name: string,
+            idx: number
         ) {
             const dep = new HarmonyExportImportedSpecifierDependency(this.state.module, this.state.lastHarmonyImport, HarmonyModulesHelpers.getModuleVar(this.state, source), id, name);
             dep.loc = Object.create(statement.loc);
             dep.loc.index = idx;
             this.state.current.addDependency(dep);
             return true;
-        })
+        });
     }
 
 }

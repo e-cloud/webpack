@@ -2,7 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { ConcatSource } from 'webpack-sources'
+import { ConcatSource } from 'webpack-sources';
 import ModuleFilenameHelpers = require('./ModuleFilenameHelpers');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
@@ -16,8 +16,8 @@ function wrapComment(str: string) {
 }
 
 class BannerPlugin {
-    banner: string
-    options: BannerPlugin.Option
+    banner: string;
+    options: BannerPlugin.Option;
 
     constructor(options: string | BannerPlugin.Option = {} as BannerPlugin.Option) {
         if (arguments.length > 1) {
@@ -43,8 +43,33 @@ class BannerPlugin {
                         return;
                     }
                     chunk.files.filter(ModuleFilenameHelpers.matchObject.bind(undefined, options))
-                        .forEach(file => {
-                            compilation.assets[file] = new ConcatSource(banner, '\n', compilation.assets[file]);
+                        .forEach((file) => {
+                            let basename;
+                            let query = '';
+                            let filename = file;
+                            const hash = compilation.hash;
+                            const querySplit = filename.indexOf('?');
+
+                            if (querySplit >= 0) {
+                                query = filename.substr(querySplit);
+                                filename = filename.substr(0, querySplit);
+                            }
+
+                            if (filename.indexOf('/') < 0) {
+                                basename = filename;
+                            } else {
+                                basename = filename.substr(filename.lastIndexOf('/') + 1);
+                            }
+
+                            const comment = compilation.getPath(banner, {
+                                hash,
+                                chunk,
+                                filename,
+                                basename,
+                                query,
+                            });
+
+                            return compilation.assets[file] = new ConcatSource(comment, '\n', compilation.assets[file]);
                         });
                 });
                 callback();

@@ -63,9 +63,9 @@ class ExternalModuleFactoryPlugin {
                     else if (Array.isArray(externals)) {
                         let i = 0;
                         (function next() {
-                            let async: boolean
+                            let asyncFlag: boolean
                             do {
-                                async = true;
+                                asyncFlag = true;
                                 if (i >= externals.length) {
                                     return innerCallback();
                                 }
@@ -74,16 +74,16 @@ class ExternalModuleFactoryPlugin {
                                         return innerCallback(err);
                                     }
                                     if (!module) {
-                                        if (async) {
-                                            async = false;
+                                        if (asyncFlag) {
+                                            asyncFlag = false;
                                             return;
                                         }
                                         return next();
                                     }
                                     innerCallback(null, module);
                                 });
-                            } while (!async);
-                            async = false;
+                            } while (!asyncFlag);
+                            asyncFlag = false;
                         })();
                         return;
                     }

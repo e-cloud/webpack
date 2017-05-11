@@ -5,20 +5,20 @@
 /* tslint:disable:no-unused-variable no-unused-expression */
 
 // just for eliminating the compiler error, ignore it
-declare var $hash$: any
-declare var installedModules: any
-declare var $require$: any
-declare var hotDownloadManifest: any
-declare var chunkId: any
-declare var hotDownloadUpdateChunk: any
-declare var hotDisposeChunk: any
-declare var modules: any
+declare var $hash$: any;
+declare var installedModules: any;
+declare var $require$: any;
+declare var hotDownloadManifest: any;
+declare var chunkId: any;
+declare var hotDownloadUpdateChunk: any;
+declare var hotDisposeChunk: any;
+declare var modules: any;
 
 export = function () {
     let hotApplyOnUpdate = true;
     let hotCurrentHash = $hash$; // eslint-disable-line no-unused-vars
     const hotCurrentModuleData = {};
-    let hotMainModule = true; // eslint-disable-line no-unused-vars
+    let hotCurrentChildModule; // eslint-disable-line no-unused-vars
     let hotCurrentParents = []; // eslint-disable-line no-unused-vars
     let hotCurrentParentsTemp = []; // eslint-disable-line no-unused-vars
 
@@ -34,9 +34,9 @@ export = function () {
                     if (!installedModules[request].parents.includes(moduleId)) {
                         installedModules[request].parents.push(moduleId);
                     }
-                }
-                else {
+                } else {
                     hotCurrentParents = [moduleId];
+                    hotCurrentChildModule = request;
                 }
                 if (!me.children.includes(request)) {
                     me.children.push(request);
@@ -46,51 +46,48 @@ export = function () {
                 console.warn(`[HMR] unexpected require(${request}) from disposed module ${moduleId}`);
                 hotCurrentParents = [];
             }
-            hotMainModule = false;
             return $require$(request);
         };
+        const ObjectFactory = function ObjectFactory(name) {
+            return {
+                configurable: true,
+                enumerable: true,
+                get: function () {
+                    return $require$[name];
+                },
+                set: function (value) {
+                    $require$[name] = value;
+                }
+            };
+        };
         for (const name in $require$) {
-            if (Object.prototype.hasOwnProperty.call($require$, name)) {
-                Object.defineProperty(fn, name, (name => ({
-                    configurable: true,
-                    enumerable: true,
-
-                    get() {
-                        return $require$[name];
-                    },
-
-                    set(value: any) {
-                        $require$[name] = value;
-                    }
-                }))(name));
+            if (Object.prototype.hasOwnProperty.call($require$, name) && name !== 'e') {
+                Object.defineProperty(fn, name, ObjectFactory(name));
             }
         }
-        Object.defineProperty(fn, 'e', {
-            enumerable: true,
-            value(chunkId: number) {
-                if (hotStatus === 'ready') {
-                    hotSetStatus('prepare');
-                }
-                hotChunksLoading++;
-                return $require$.e(chunkId)
-                    .then(finishChunkLoading, (err: Error) => {
-                        finishChunkLoading();
-                        throw err;
-                    });
+        fn.e = function (chunkId) {
+            if (hotStatus === 'ready') {
+                hotSetStatus('prepare');
+            }
+            hotChunksLoading++;
+            return $require$.e(chunkId)
+                .then(finishChunkLoading, (err: Error) => {
+                    finishChunkLoading();
+                    throw err;
+                });
 
-                function finishChunkLoading() {
-                    hotChunksLoading--;
-                    if (hotStatus === 'prepare') {
-                        if (!hotWaitingFilesMap[chunkId]) {
-                            hotEnsureUpdateChunk(chunkId);
-                        }
-                        if (hotChunksLoading === 0 && hotWaitingFiles === 0) {
-                            hotUpdateDownloaded();
-                        }
+            function finishChunkLoading() {
+                hotChunksLoading--;
+                if (hotStatus === 'prepare') {
+                    if (!hotWaitingFilesMap[chunkId]) {
+                        hotEnsureUpdateChunk(chunkId);
+                    }
+                    if (hotChunksLoading === 0 && hotWaitingFiles === 0) {
+                        hotUpdateDownloaded();
                     }
                 }
             }
-        });
+        };
         return fn;
     }
 
@@ -103,7 +100,7 @@ export = function () {
             _selfAccepted: false,
             _selfDeclined: false,
             _disposeHandlers: [] as Function[],
-            _main: hotMainModule,
+            _main: hotCurrentChildModule !== moduleId,
 
             // Module API
             active: true,
@@ -171,11 +168,11 @@ export = function () {
             // inherit from previous dispose call
             data: hotCurrentModuleData[moduleId]
         };
-        hotMainModule = true;
+        hotCurrentChildModule = undefined;
         return hot;
     }
 
-    let hotStatusHandlers: Function[] = [];
+    const hotStatusHandlers: Function[] = [];
     let hotStatus = 'idle';
 
     function hotSetStatus(newStatus: string) {
@@ -392,6 +389,11 @@ export = function () {
         const outdatedDependencies = {};
         const outdatedModules: any[] = [];
         const appliedUpdate = {};
+
+        const warnUnexpectedRequire = function warnUnexpectedRequire() {
+            console.warn('[HMR] unexpected require(' + result.moduleId + ') to disposed module');
+        };
+
         for (const id in hotUpdate) {
             if (Object.prototype.hasOwnProperty.call(hotUpdate, id)) {
                 moduleId = toModuleId(id);
@@ -470,9 +472,7 @@ export = function () {
                 }
                 if (doDispose) {
                     addAllToSet(outdatedModules, [result.moduleId]);
-                    appliedUpdate[moduleId] = () => {
-                        console.warn(`[HMR] unexpected require(${result.moduleId}) to disposed module`);
-                    };
+                    appliedUpdate[moduleId] = warnUnexpectedRequire;
                 }
             }
         }
@@ -658,6 +658,8 @@ export = function () {
         }
 
         hotSetStatus('idle');
-        return Promise.resolve(outdatedModules);
+        return new Promise(function (resolve) {
+            resolve(outdatedModules);
+        });
     }
 };

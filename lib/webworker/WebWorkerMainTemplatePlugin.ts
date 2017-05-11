@@ -5,7 +5,7 @@
 import Template = require('../Template');
 import MainTemplate = require('../MainTemplate')
 import Chunk = require('../Chunk')
-import { Hash } from 'crypto'
+import { Hash } from 'crypto';
 
 class WebWorkerMainTemplatePlugin {
     apply(mainTemplate: MainTemplate) {
@@ -18,7 +18,9 @@ class WebWorkerMainTemplatePlugin {
                     '// "1" means "already loaded"',
                     'var installedChunks = {',
                     this.indent(chunk.ids.map(id => `${id}: 1`).join(',\n')),
-                    '};'
+                    '};',
+                    '',
+                    'var resolvedPromise = new Promise(function(resolve) { resolve(); });'
                 ]);
             }
             return source;
@@ -41,7 +43,7 @@ class WebWorkerMainTemplatePlugin {
                         })});`
                 ]),
                 '}',
-                'return Promise.resolve();'
+                'return resolvedPromise;'
             ]);
         });
         mainTemplate.plugin('bootstrap', function (source: string, chunk: Chunk, hash: string) {

@@ -118,7 +118,7 @@ class ContextModuleFactory extends Tapable {
                         return callback();
                     }
 
-                    return callback(null, new ContextModule(result.resolveDependencies, result.resource, result.recursive, result.regExp, result.loaders, result.async));
+                    return callback(null, new ContextModule(result.resolveDependencies, result.resource, result.recursive, result.regExp, result.loaders, result.async, dependency.chunkName));
                 });
             });
         });

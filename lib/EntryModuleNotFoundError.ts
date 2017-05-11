@@ -3,8 +3,9 @@
  Author Tobias Koppers @sokra
  */
 import ModuleNotFoundError = require('./ModuleNotFoundError');
+import WebpackError = require('./WebpackError');
 
-class EntryModuleNotFoundError extends Error {
+class EntryModuleNotFoundError extends WebpackError {
     details: string
 
     constructor(public error: ModuleNotFoundError) {

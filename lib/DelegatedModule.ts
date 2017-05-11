@@ -2,8 +2,8 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { OriginalSource, RawSource } from 'webpack-sources'
-import { ErrCallback, WebpackOptions } from '../typings/webpack-types'
+import { OriginalSource, RawSource } from 'webpack-sources';
+import { ErrCallback, WebpackOptions } from '../typings/webpack-types';
 import Module = require('./Module');
 import WebpackMissingModule = require('./dependencies/WebpackMissingModule');
 import DelegatedSourceDependency = require('./dependencies/DelegatedSourceDependency');
@@ -11,13 +11,13 @@ import Compilation = require('./Compilation')
 import LibManifestPlugin = require('./LibManifestPlugin')
 
 class DelegatedModule extends Module {
-    builtTime: number
-    delegated: boolean
-    meta: Module.Meta
-    providedExports: boolean
-    request: number
-    usedExports: boolean
-    useSourceMap: boolean
+    builtTime: number;
+    delegated: boolean;
+    meta: Module.Meta;
+    providedExports: boolean;
+    request: number;
+    usedExports: boolean;
+    useSourceMap: boolean;
 
     constructor(
         public sourceRequest: string,
@@ -29,6 +29,7 @@ class DelegatedModule extends Module {
         this.request = delegateData.id;
         this.meta = delegateData.meta;
         this.built = false;
+        this.delegated = true;
     }
 
     identifier() {
@@ -45,7 +46,7 @@ class DelegatedModule extends Module {
 
     build(options: WebpackOptions, compilation: Compilation, resolver: any, fs: any, callback: ErrCallback) {
         this.built = true;
-        this.builtTime = new Date().getTime();
+        this.builtTime = Date.now();
         this.usedExports = true;
         this.providedExports = this.delegateData.exports || true;
         this.dependencies.length = 0;
@@ -74,6 +75,7 @@ class DelegatedModule extends Module {
                     str += `[${JSON.stringify(this.request)}];`;
                     break;
             }
+            str += ';';
         }
         if (this.useSourceMap) {
             return new OriginalSource(str, this.identifier());
@@ -87,7 +89,5 @@ class DelegatedModule extends Module {
         return 42;
     }
 }
-
-DelegatedModule.prototype.delegated = true;
 
 export = DelegatedModule;

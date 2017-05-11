@@ -80,10 +80,6 @@ abstract class Module extends DependenciesBlock {
         throw new Error('Module.entry was removed. Use Chunk.entryModule');
     }
 
-    unbuild() {
-        this.disconnect();
-    }
-
     disconnect() {
         this.reasons.length = 0;
         this.lastId = this.id;
@@ -141,8 +137,7 @@ abstract class Module extends DependenciesBlock {
     }
 
     hasReasonForChunk(chunk: Chunk) {
-        for (let i = 0; i < this.reasons.length; i++) {
-            const r = this.reasons[i];
+        for (const r of this.reasons) {
             if (r.chunks) {
                 if (r.chunks.includes(chunk)) {
                     return true;
@@ -221,6 +216,10 @@ abstract class Module extends DependenciesBlock {
         super.sortItems();
         this.chunks.sort(byId);
         this.reasons.sort((a, b) => byId(a.module, b.module));
+    }
+
+    unbuild() {
+        this.disconnect();
     }
 
     abstract size(): number;

@@ -12,13 +12,13 @@ interface ProgressPluginHandler {
 }
 
 class ProgressPlugin {
-    profile: boolean
-    handler: ProgressPluginHandler
+    profile: boolean;
+    handler: ProgressPluginHandler;
 
     constructor(options: ProgressPluginHandler | {
-                    profile?: boolean
-                    handler: ProgressPluginHandler
-                } = {} as any) {
+        profile?: boolean
+        handler: ProgressPluginHandler
+    } = {} as any) {
         if (typeof options === 'function') {
             options = {
                 handler: options
@@ -59,7 +59,7 @@ class ProgressPlugin {
                     `${activeModules.length} active`,
                     activeModules[activeModules.length - 1]
                 );
-            }
+            };
 
             const moduleDone = function moduleDone(module: Module) {
                 doneModules++;
@@ -71,7 +71,7 @@ class ProgressPlugin {
                     }
                 }
                 update();
-            }
+            };
 
             compiler.plugin('compilation', function (compilation: Compilation) {
                 if (compilation.compiler.isChild()) {
@@ -180,10 +180,10 @@ class ProgressPlugin {
                 state = state.replace(/^\d+\/\d+\s+/, '');
                 if (percentage === 0) {
                     lastState = null;
-                    lastStateTime = +new Date();
+                    lastStateTime = Date.now();
                 }
                 else if (state !== lastState || percentage === 1) {
-                    const now = +new Date();
+                    const now = Date.now();
                     if (lastState) {
                         const stateMsg = `${now - lastStateTime}ms ${lastState}`;
                         goToLineStart(stateMsg);

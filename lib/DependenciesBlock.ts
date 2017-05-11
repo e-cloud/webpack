@@ -12,6 +12,14 @@ interface IHasDependencies {
     hasDependencies(filter: DependencyFilter): boolean
 }
 
+function disconnect(i: { disconnect(): any }) {
+    i.disconnect();
+}
+
+function unseal(i: { unseal(): any }) {
+    i.unseal();
+}
+
 abstract class DependenciesBlock {
     __NormalModuleFactoryCache: DependenciesBlock
     blocks: DependenciesBlock[]
@@ -46,36 +54,18 @@ abstract class DependenciesBlock {
     }
 
     updateHash(hash: Hash) {
-        this.dependencies.forEach(d => {
-            d.updateHash(hash);
-        });
-        this.blocks.forEach(b => {
-            b.updateHash(hash);
-        });
-        this.variables.forEach(v => {
-            v.updateHash(hash);
-        });
+        this.dependencies.forEach(d => d.updateHash(hash));
+        this.blocks.forEach(b => b.updateHash(hash));
+        this.variables.forEach(v => v.updateHash(hash));
     }
 
     disconnect() {
-        function disconnect(i: {
-                                disconnect(): any
-                            }) {
-            i.disconnect();
-        }
-
         this.dependencies.forEach(disconnect);
         this.blocks.forEach(disconnect);
         this.variables.forEach(disconnect);
     }
 
     unseal() {
-        function unseal(i: {
-                            unseal(): any
-                        }) {
-            i.unseal();
-        }
-
         this.blocks.forEach(unseal);
     }
 
@@ -86,15 +76,11 @@ abstract class DependenciesBlock {
             if (this.dependencies.length > 0) return true;
         }
 
-        return this.blocks.concat(this.variables).some(function (item: IHasDependencies) {
-            return item.hasDependencies(filter);
-        });
+        return this.blocks.concat(this.variables).some((item: IHasDependencies) => item.hasDependencies(filter));
     }
 
     sortItems() {
-        this.blocks.forEach(block => {
-            block.sortItems();
-        });
+        this.blocks.forEach(block => block.sortItems());
     }
 }
 

@@ -4,17 +4,19 @@
  */
 import NullDependency = require('./NullDependency');
 import LocalModule = require('./LocalModule')
-import { ReplaceSource } from 'webpack-sources'
-import { SourceRange } from '../../typings/webpack-types'
+import { ReplaceSource } from 'webpack-sources';
+import { SourceRange } from '../../typings/webpack-types';
+import Module = require('../Module');
 
 class AMDDefineDependency extends NullDependency {
-    localModule: LocalModule
+    localModule: LocalModule;
 
     constructor(
         public range: SourceRange,
         public arrayRange: SourceRange,
         public functionRange: SourceRange,
-        public objectRange: SourceRange
+        public objectRange: SourceRange,
+        public namedModule: Module
     ) {
         super();
     }
@@ -61,17 +63,16 @@ AMDDefineDependency.Template = class Template {
 				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__))`
             ],
             lf: [
-                'var XXX;',
-                '!(XXX = #.call(exports, __webpack_require__, exports, module))'
+                'var XXX, XXXmodule;',
+                '!(XXXmodule = { id: YYY, exports: {}, loaded: false }, XXX = #.call(XXXmodule.exports, __webpack_require__, XXXmodule.exports, XXXmodule), XXXmodule.loaded = true, XXX === undefined && (XXX = XXXmodule.exports))'
             ],
             lo: [
                 'var XXX;',
                 '!(XXX = #)'
             ],
             lof: [
-                'var __WEBPACK_AMD_DEFINE_FACTORY__, XXX;',
-                `!(__WEBPACK_AMD_DEFINE_FACTORY__ = (#), XXX = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
-				(__WEBPACK_AMD_DEFINE_FACTORY__.call(exports, __webpack_require__, exports, module)) : __WEBPACK_AMD_DEFINE_FACTORY__))`
+                'var XXX, XXXfactory, XXXmodule;',
+                '!(XXXfactory = (#), (XXXmodule = { id: YYY, exports: {}, loaded: false }), XXX = (typeof XXXfactory === \'function\' ? (XXXfactory.call(XXXmodule.exports, __webpack_require__, XXXmodule.exports, XXXmodule)) : XXXfactory), (XXXmodule.loaded = true), XXX === undefined && (XXX = XXXmodule.exports))'
             ],
             laf: [
                 'var __WEBPACK_AMD_DEFINE_ARRAY__, XXX;',
@@ -117,6 +118,10 @@ AMDDefineDependency.Template = class Template {
             definition = definition.replace(/XXX/g, localModuleVar.replace(/\$/g, '$$$$'));
         }
 
+        if (dependency.namedModule) {
+            text = text.replace(/YYY/g, JSON.stringify(dependency.namedModule));
+        }
+
         const texts = text.split('#');
 
         if (definition) {
@@ -142,6 +147,6 @@ AMDDefineDependency.Template = class Template {
             throw new Error('Implementation error');
         }
     }
-}
+};
 
 export = AMDDefineDependency;

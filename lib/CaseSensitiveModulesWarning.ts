@@ -3,8 +3,9 @@
  Author Tobias Koppers @sokra
  */
 import Module = require('./Module')
+import WebpackError = require('./WebpackError');
 
-class CaseSensitiveModulesWarning extends Error {
+class CaseSensitiveModulesWarning extends WebpackError {
     origin: Module
     module: Module
 

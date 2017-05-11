@@ -3,10 +3,10 @@
  Author Tobias Koppers @sokra
  */
 import Module = require('./Module')
+import { cutOffLoaderExecution } from './ErrorHelpers';
+import WebpackError = require('./WebpackError');
 
-const loaderFlag = 'LOADER_EXECUTION';
-
-class ModuleBuildError extends Error {
+class ModuleBuildError extends WebpackError {
     details: string
 
     constructor(public module: Module, public err: Error & { hideStack?: boolean }) {
@@ -15,18 +15,12 @@ class ModuleBuildError extends Error {
         this.message = 'Module build failed: ';
         if (err !== null && typeof err === 'object') {
             if (typeof err.stack === 'string' && err.stack) {
-                const stack = err.stack.split('\n');
-                for (let i = 0; i < stack.length; i++) {
-                    if (stack[i].includes(loaderFlag)) {
-                        stack.length = i;
-                    }
-                }
-                const stackStr = stack.join('\n');
+                const stack = cutOffLoaderExecution(err.stack);
                 if (!err.hideStack) {
-                    this.message += stackStr;
+                    this.message += stack;
                 }
                 else {
-                    this.details = stackStr;
+                    this.details = stack;
                     if (typeof err.message === 'string' && err.message) {
                         this.message += err.message;
                     }

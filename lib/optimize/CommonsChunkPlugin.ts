@@ -11,14 +11,14 @@ import ExternalModule = require('../ExternalModule')
 let nextIdent = 0;
 
 class CommonsChunkPlugin {
-    chunkNames: string[]
-    filenameTemplate: string
-    minChunks: MinChunksFilter
-    selectedChunks: string[]
-    async: boolean
-    minSize: number
-    ident: string
-    children: boolean
+    chunkNames: string[];
+    filenameTemplate: string;
+    minChunks: MinChunksFilter;
+    selectedChunks: string[];
+    async: boolean;
+    minSize: number;
+    ident: string;
+    children: boolean;
 
     constructor(options: CommonsChunkPlugin.Option | string | string[]) {
         if (arguments.length > 1) {
@@ -101,7 +101,9 @@ You can however specify the name of the async chunk by passing the desired strin
         compiler.plugin('this-compilation', (compilation: Compilation) => {
             compilation.plugin(['optimize-chunks', 'optimize-extracted-chunks'], (chunks: Chunk[]) => {
                 // only optimize once
-                if (compilation[this.ident]) return;
+                if (compilation[this.ident]) {
+                    return;
+                }
                 compilation[this.ident] = true;
 
                 /**
@@ -215,7 +217,7 @@ You can however specify the name of the async chunk by passing the desired strin
 
         // we dont have named chunks specified, so we just take all of them
         if (asyncOrNoSelectedChunk) {
-            return allChunks;
+            return allChunks.filter(chunk => !chunk.isInitial());
         }
 
         /**
@@ -277,8 +279,10 @@ Take a look at the "name"/"names" or async/children option.`);
          */
         return allChunks.filter((chunk) => {
             const found = targetChunks.indexOf(chunk);
-            if (found >= currentIndex) return false;
-            return chunk.parents.length === 0;
+            if (found >= currentIndex) {
+                return false;
+            }
+            return chunk.hasRuntime();
         });
     }
 

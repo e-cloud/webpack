@@ -2,9 +2,9 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { Hash } from 'crypto'
-import { ConcatSource, OriginalSource, PrefixSource } from 'webpack-sources'
-import { WebpackOutputOptions } from '../typings/webpack-types'
+import { Hash } from 'crypto';
+import { ConcatSource, OriginalSource, PrefixSource } from 'webpack-sources';
+import { WebpackOutputOptions } from '../typings/webpack-types';
 import Template = require('./Template');
 import Chunk = require('./Chunk')
 import ModuleTemplate = require('./ModuleTemplate')
@@ -24,7 +24,7 @@ import ModuleTemplate = require('./ModuleTemplate')
 // __webpack_require__.nc = the script nonce
 
 class MainTemplate extends Template {
-    requireFn: string
+    requireFn: string;
 
     constructor(outputOptions: WebpackOutputOptions) {
         super(outputOptions);
@@ -36,8 +36,12 @@ class MainTemplate extends Template {
             }
             return this.asString(buf);
         });
-        this.plugin('render', function (bootstrapSource: OriginalSource, chunk: Chunk, hash: string,
-                                        moduleTemplate: ModuleTemplate, dependencyTemplates
+        this.plugin('render', function (
+            bootstrapSource: OriginalSource,
+            chunk: Chunk,
+            hash: string,
+            moduleTemplate: ModuleTemplate,
+            dependencyTemplates
         ) {
             const source = new ConcatSource();
             source.add('/******/ (function(modules) { // webpackBootstrap\n');
@@ -51,15 +55,19 @@ class MainTemplate extends Template {
             return source;
         });
         this.plugin('local-vars', function (source: string /*, chunk, hash*/) {
-            return this.asString([source, '// The module cache', 'var installedModules = {};']);
+            return this.asString([
+                source,
+                '// The module cache',
+                'var installedModules = {};'
+            ]);
         });
         this.plugin('require', function (source: string, chunk: Chunk, hash: string) {
             return this.asString([
                 source,
                 '// Check if module is in cache',
-                'if(installedModules[moduleId])',
+                'if(installedModules[moduleId]) {',
                 this.indent('return installedModules[moduleId].exports;'),
-                '',
+                '}',
                 '// Create a new module (and put it into the cache)',
                 'var module = installedModules[moduleId] = {',
                 this.indent(this.applyPluginsWaterfall('module-obj', '', chunk, hash, 'moduleId')),
@@ -91,7 +99,11 @@ class MainTemplate extends Template {
             ]);
         });
         this.plugin('module-obj', function () /*source, chunk, hash, varModuleId*/ {
-            return this.asString(['i: moduleId,', 'l: false,', 'exports: {}']);
+            return this.asString([
+                'i: moduleId,',
+                'l: false,',
+                'exports: {}'
+            ]);
         });
         this.plugin('require-extensions', function (source: string, chunk: Chunk, hash: string) {
             const buf = [];
@@ -121,7 +133,11 @@ class MainTemplate extends Template {
                 `if(!${this.requireFn}.o(exports, name)) \{`,
                 this.indent([
                     'Object.defineProperty(exports, name, {',
-                    this.indent(['configurable: false,', 'enumerable: true,', 'get: getter']),
+                    this.indent([
+                        'configurable: false,',
+                        'enumerable: true,',
+                        'get: getter'
+                    ]),
                     '});'
                 ]),
                 '}'
@@ -154,6 +170,8 @@ class MainTemplate extends Template {
             buf.push(`${this.requireFn}.p = ${JSON.stringify(publicPath)};`);
             return this.asString(buf);
         });
+
+        this.requireFn = "__webpack_require__";
     }
 
     render(hash: string, chunk: Chunk, moduleTemplate: ModuleTemplate, dependencyTemplates: Map<Function, any>) {
@@ -207,8 +225,8 @@ class MainTemplate extends Template {
     }
 
     getPublicPath(options: {
-                      hash: string
-                  }) {
+        hash: string
+    }) {
         return this.applyPluginsWaterfall('asset-path', this.outputOptions.publicPath || '', options);
     }
 
@@ -229,7 +247,5 @@ class MainTemplate extends Template {
         return !this.applyPluginsBailResult('global-hash', chunk, paths);
     }
 }
-
-MainTemplate.prototype.requireFn = '__webpack_require__';
 
 export = MainTemplate;

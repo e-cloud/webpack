@@ -5,8 +5,9 @@
 import Dependency = require('./Dependency')
 import Module = require('./Module')
 import { ResolveError } from 'enhanced-resolve/lib/common-types'
+import WebpackError = require('./WebpackError');
 
-class ModuleNotFoundError extends Error {
+class ModuleNotFoundError extends WebpackError {
     details: string
     missing: string[]
     origin: Module

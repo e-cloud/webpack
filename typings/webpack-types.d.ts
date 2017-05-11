@@ -25,6 +25,9 @@ declare interface Dictionary<T> {
     [prop: string]: T;
 }
 
+declare type Constructor<T> = new(...args: any[]) => T;
+
+/*
 declare interface WebpackError {
     chunk?: Chunk
     file?: string
@@ -35,6 +38,7 @@ declare interface WebpackError {
     dependencies?: Dependency[]
     origin?: Module
 }
+*/
 
 declare interface PlainObject extends Dictionary<any> {
 }
@@ -387,8 +391,8 @@ declare interface Record {
         [id: number]: number[];
     };
     chunks: {
-        byName: Dictionary<number>;
-        byBlocks: Dictionary<number>;
+        byName: Dictionary<number|string>;
+        byBlocks: Dictionary<number|string>;
         usedIds: {
             [id: number]: number;
         };
@@ -472,7 +476,7 @@ declare interface LoaderContext extends ExtendedLoaderContext {
 
 declare interface AggressiveSplit {
     hash?: string;
-    id?: number;
+    id?: number | string;
     invalid?: boolean;
     modules: string[];
 }

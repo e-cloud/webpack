@@ -227,9 +227,13 @@ class AMDDefineDependencyParserPlugin {
             else if (fn || obj) {
                 this.walkExpression(fn || obj);
             }
-            const dep = new AMDDefineDependency(expr.range, array ? array.range : null, fn ? fn.range : null, obj
-                ? obj.range
-                : null);
+            const dep = new AMDDefineDependency(
+                expr.range,
+                array ? array.range : null,
+                fn ? fn.range : null,
+                obj ? obj.range : null,
+                namedModule ? namedModule : null
+            );
             dep.loc = expr.loc;
             if (namedModule) {
                 dep.localModule = LocalModulesHelpers.addLocalModule(this.state, namedModule);

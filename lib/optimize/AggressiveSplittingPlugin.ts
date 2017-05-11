@@ -2,11 +2,11 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import path = require('path');
 import Compiler = require('../Compiler')
 import Compilation = require('../Compilation')
 import Chunk = require('../Chunk')
-import { Record } from '../../typings/webpack-types'
+import { Record } from '../../typings/webpack-types';
+import { makePathsRelative } from '../util/identifier';
 
 class AggressiveSplittingPlugin {
     constructor(public options: AggressiveSplittingPlugin.Option = {} as any) {
@@ -25,25 +25,24 @@ class AggressiveSplittingPlugin {
     }
 
     apply(compiler: Compiler) {
-        const _this = this;
-        compiler.plugin('compilation', function (compilation: Compilation) {
-            compilation.plugin('optimize-chunks-advanced', function (chunks: Chunk[]) {
+        compiler.plugin('compilation', (compilation: Compilation) => {
+            compilation.plugin('optimize-chunks-advanced', (chunks: Chunk[]) => {
                 let i;
                 let chunk: Chunk;
                 let newChunk: Chunk;
                 const savedSplits = compilation.records && compilation.records.aggressiveSplits || [];
-                let usedSplits = savedSplits;
-                if (compilation._aggressiveSplittingSplits) {
-                    usedSplits = usedSplits.concat(compilation._aggressiveSplittingSplits);
-                }
-                const minSize = _this.options.minSize;
-                const maxSize = _this.options.maxSize;
+                const usedSplits = compilation._aggressiveSplittingSplits
+                    ? savedSplits.concat(compilation._aggressiveSplittingSplits)
+                    : savedSplits;
+                const minSize = this.options.minSize;
+                const maxSize = this.options.maxSize;
                 // 1. try to restore to recorded splitting
                 for (let j = 0; j < usedSplits.length; j++) {
                     const splitData = usedSplits[j];
                     for (i = 0; i < chunks.length; i++) {
                         chunk = chunks[i];
-                        const chunkModuleNames = chunk.modules.map(m => makeRelative(compiler, m.identifier()));
+                        const chunkModuleNames = chunk.modules.map(
+                            m => makePathsRelative(compiler.context, m.identifier()));
                         if (chunkModuleNames.length < splitData.modules.length) {
                             continue;
                         }
@@ -62,7 +61,7 @@ class AggressiveSplittingPlugin {
                                 if (j < savedSplits.length) {
                                     newChunk._fromAggressiveSplittingIndex = j;
                                 }
-                                if (typeof splitData.id === 'number') {
+                                if (splitData.id !== null && splitData.id !== undefined) {
                                     newChunk.id = splitData.id;
                                 }
                                 newChunk.origins = chunk.origins.map(copyWithReason);
@@ -74,7 +73,7 @@ class AggressiveSplittingPlugin {
                                     chunk._fromAggressiveSplittingIndex = j;
                                 }
                                 chunk.name = null;
-                                if (typeof splitData.id === 'number') {
+                                if (splitData.id !== null && splitData.id !== undefined) {
                                     chunk.id = splitData.id;
                                 }
                             }
@@ -84,7 +83,7 @@ class AggressiveSplittingPlugin {
                 // 2. for any other chunk which isn't splitted yet, split it
                 for (i = 0; i < chunks.length; i++) {
                     chunk = chunks[i];
-                    const size = chunk.size(_this.options);
+                    const size = chunk.size(this.options);
                     if (size > maxSize && chunk.modules.length > 1) {
                         newChunk = compilation.addChunk();
                         const modules = chunk.modules.filter(m => chunk.entryModule !== m)
@@ -101,8 +100,8 @@ class AggressiveSplittingPlugin {
                             });
                         for (let k = 0; k < modules.length; k++) {
                             chunk.moveModule(modules[k], newChunk);
-                            const newSize = newChunk.size(_this.options);
-                            const chunkSize = chunk.size(_this.options);
+                            const newSize = newChunk.size(this.options);
+                            const chunkSize = chunk.size(this.options);
                             // break early if it's fine
                             if (chunkSize < maxSize && newSize < maxSize && newSize >= minSize && chunkSize >= minSize) {
                                 break;
@@ -127,7 +126,8 @@ class AggressiveSplittingPlugin {
                             chunk.origins = chunk.origins.map(copyWithReason);
                             compilation._aggressiveSplittingSplits =
                                 (compilation._aggressiveSplittingSplits || []).concat({
-                                    modules: newChunk.modules.map(m => makeRelative(compiler, m.identifier()))
+                                    modules: newChunk.modules.map(
+                                        m => makePathsRelative(compiler.context, m.identifier()))
                                 });
                             return true;
                         }
@@ -137,9 +137,9 @@ class AggressiveSplittingPlugin {
                     }
                 }
             });
-            compilation.plugin('record-hash', function (records: Record) {
+            compilation.plugin('record-hash', (records: Record) => {
                 // 3. save to made splittings to records
-                const minSize = _this.options.minSize;
+                const minSize = this.options.minSize;
                 if (!records.aggressiveSplits) {
                     records.aggressiveSplits = [];
                 }
@@ -147,9 +147,9 @@ class AggressiveSplittingPlugin {
                     if (chunk.hasEntryModule()) {
                         return;
                     }
-                    const size = chunk.size(_this.options);
+                    const size = chunk.size(this.options);
                     const incorrectSize = size < minSize;
-                    const modules = chunk.modules.map(m => makeRelative(compiler, m.identifier()));
+                    const modules = chunk.modules.map(m => makePathsRelative(compiler.context, m.identifier()));
                     if (typeof chunk._fromAggressiveSplittingIndex === 'undefined') {
                         if (incorrectSize) {
                             return;
@@ -196,16 +196,6 @@ declare namespace AggressiveSplittingPlugin {
 }
 
 export = AggressiveSplittingPlugin;
-
-function makeRelative(compiler: Compiler, identifier: string) {
-    const context = compiler.context;
-    return identifier.split('|')
-        .map(str =>
-            str.split('!').map(str =>
-                path.relative(context, str)
-            ).join('!')
-        ).join('|');
-}
 
 function copyWithReason(obj: Chunk.ChunkOrigin): Chunk.ChunkOrigin {
     const newObj: any = {};

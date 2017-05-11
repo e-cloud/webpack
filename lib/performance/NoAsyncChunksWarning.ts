@@ -2,7 +2,9 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Sean Larkin @thelarkinn
  */
-class NoAsyncChunksWarning extends Error {
+import WebpackError = require('../WebpackError');
+
+class NoAsyncChunksWarning extends WebpackError {
     constructor() {
         super();
         this.name = 'NoAsyncChunksWarning';

@@ -2,19 +2,19 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { OriginalSource, RawSource } from 'webpack-sources'
-import { ErrCallback, ExternalsModuleObject } from '../typings/webpack-types'
+import { OriginalSource, RawSource } from 'webpack-sources';
+import { ErrCallback, ExternalsModuleObject } from '../typings/webpack-types';
 import Module = require('./Module');
 import WebpackMissingModule = require('./dependencies/WebpackMissingModule');
 import Chunk = require('./Chunk')
 import Template = require('./Template')
 
 class ExternalModule extends Module {
-    _EnsureChunkConditionsPlugin_usedChunks: Chunk[]
-    builtTime: number
-    external: boolean
-    optional: boolean
-    useSourceMap: boolean
+    _EnsureChunkConditionsPlugin_usedChunks: Chunk[];
+    builtTime: number;
+    external: boolean;
+    optional: boolean;
+    useSourceMap: boolean;
 
     constructor(public request: ExternalsModuleObject | string, public type: string) {
         super();
@@ -39,7 +39,7 @@ class ExternalModule extends Module {
     }
 
     build(options: any, compilation: any, resolver: any, fs: any, callback: ErrCallback) {
-        this.builtTime = new Date().getTime();
+        this.builtTime = Date.now();
         callback();
     }
 

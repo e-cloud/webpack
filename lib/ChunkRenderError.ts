@@ -3,8 +3,9 @@
  Author Tobias Koppers @sokra
  */
 import Chunk = require('./Chunk')
+import WebpackError = require('./WebpackError');
 
-class ChunkRenderError extends Error {
+class ChunkRenderError extends WebpackError {
     message: string
     details: string
     name = 'ChunkRenderError'

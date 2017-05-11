@@ -2,7 +2,7 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { WebpackOutputOptions } from '../../typings/webpack-types'
+import { WebpackOutputOptions } from '../../typings/webpack-types';
 import RequestShortener = require('../RequestShortener')
 import AsyncDependenciesBlock = require('../AsyncDependenciesBlock')
 
@@ -27,10 +27,10 @@ export function getDepBlockPromise(
     name: string
 ) {
     if (depBlock.chunks) {
-        const chunks = depBlock.chunks.filter(chunk => !chunk.hasRuntime() && typeof chunk.id === 'number');
+        const chunks = depBlock.chunks.filter(chunk => !chunk.hasRuntime() && chunk.id !== null);
         if (chunks.length === 1) {
             const chunk = chunks[0];
-            return `__webpack_require__.e${asComment(name)}(${chunk.id}${
+            return `__webpack_require__.e${asComment(name)}(${JSON.stringify(chunk.id)}${
                 outputOptions.pathinfo && depBlock.chunkName
                     ? `/*! ${requestShortener.shorten(depBlock.chunkName)} */`
                     : ''
@@ -39,10 +39,10 @@ export function getDepBlockPromise(
         else if (chunks.length > 0) {
             return `Promise.all${asComment(name)}(${outputOptions.pathinfo && depBlock.chunkName
                 ? '/*! ' + requestShortener.shorten(depBlock.chunkName) + ' */'
-                : ''}[${chunks.map(chunk => '__webpack_require__.e(' + chunk.id + ')').join(', ')}])`;
+                : ''}[${chunks.map(chunk => `__webpack_require__.e(${JSON.stringify(chunk.id)})`).join(', ')}])`;
         }
     }
-    return 'Promise.resolve()';
+    return 'new Promise(function(resolve) { resolve(); })';
 }
 
 function asComment(str: string) {

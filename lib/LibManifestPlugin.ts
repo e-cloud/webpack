@@ -12,11 +12,11 @@ import Module = require('./Module')
 
 class LibManifestPlugin {
     constructor(public options: {
-                    context?: string
-                    name: string
-                    path: string
-                    type?: string
-                }) {
+        context?: string
+        name: string
+        path: string
+        type?: string
+    }) {
     }
 
     apply(compiler: Compiler) {
@@ -53,7 +53,7 @@ class LibManifestPlugin {
                         return obj;
                     }, {})
                 };
-                const content = new Buffer(JSON.stringify(manifest, null, 2), 'utf8');
+                const content = new Buffer(JSON.stringify(manifest), 'utf8');
                 compiler.outputFileSystem.mkdirp(path.dirname(targetPath), err => {
                     if (err) {
                         return callback(err);

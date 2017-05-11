@@ -5,8 +5,9 @@
 import Module = require('./Module')
 import { SourceLocation } from 'estree'
 import formatLocation = require('./formatLocation')
+import WebpackError = require('./WebpackError');
 
-class ModuleDependencyWarning extends Error {
+class ModuleDependencyWarning extends WebpackError {
     details: string
     origin: Module
 

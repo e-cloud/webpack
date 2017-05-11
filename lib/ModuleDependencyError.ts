@@ -7,8 +7,9 @@
 import formatLocation = require('./formatLocation');
 import Module = require('./Module')
 import { SourceLocation } from 'estree'
+import WebpackError = require('./WebpackError');
 
-export = class ModuleDependencyError extends Error {
+export = class ModuleDependencyError extends WebpackError {
     details: string
     origin: Module
 

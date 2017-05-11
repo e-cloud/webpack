@@ -2,10 +2,10 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { createHash, Hash } from 'crypto'
-import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
-import { getContext, Loader, runLoaders } from 'loader-runner'
-import { RawSourceMap } from 'source-map'
+import { createHash, Hash } from 'crypto';
+import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types';
+import { getContext, Loader, runLoaders } from 'loader-runner';
+import { RawSourceMap } from 'source-map';
 import {
     CachedSource,
     LineToLineMappedSource,
@@ -14,7 +14,7 @@ import {
     ReplaceSource,
     Source,
     SourceMapSource
-} from 'webpack-sources'
+} from 'webpack-sources';
 import {
     ErrCallback,
     LoaderContext,
@@ -22,7 +22,7 @@ import {
     TimeStampMap,
     WebpackOptions,
     WebpackOutputOptions
-} from '../typings/webpack-types'
+} from '../typings/webpack-types';
 import path = require('path');
 import ModuleParseError = require('./ModuleParseError');
 import ModuleBuildError = require('./ModuleBuildError');
@@ -40,6 +40,7 @@ import NativeModule = require('module')
 import ImportDependenciesBlock = require('./dependencies/ImportDependenciesBlock')
 import RequireEnsureDependenciesBlock = require('./dependencies/RequireEnsureDependenciesBlock')
 import AMDRequireDependenciesBlock = require('./dependencies/AMDRequireDependenciesBlock')
+import WebpackError = require('./WebpackError');
 
 function asString(buf: string | Buffer): string {
     if (Buffer.isBuffer(buf)) {
@@ -48,22 +49,36 @@ function asString(buf: string | Buffer): string {
     return buf as string;
 }
 
+class NonErrorEmittedError extends WebpackError {
+    name: string;
+    message: string;
+
+    constructor(error: string) {
+        super();
+
+        this.name = 'NonErrorEmittedError';
+        this.message = '(Emitted value instead of an instance of Error) ' + error;
+
+        Error.captureStackTrace(this, this.constructor);
+    }
+}
+
 class NormalModule extends Module {
     _cachedSource: {
         source: Source
         hash: string
-    }
-    _source: Source
-    _templateOrigin: NormalModule
-    arguments: string[]
-    assets: Dictionary<Source>
-    buildTimestamp: number
-    cacheable: boolean
-    contextDependencies: string[]
-    error: Error
-    fileDependencies: string[]
-    lineToLine: boolean
-    useSourceMap: boolean
+    };
+    _source: Source;
+    _templateOrigin: NormalModule;
+    arguments: string[];
+    assets: Dictionary<Source>;
+    buildTimestamp: number;
+    cacheable: boolean;
+    contextDependencies: string[];
+    error: Error;
+    fileDependencies: string[];
+    lineToLine: boolean;
+    useSourceMap: boolean;
 
     constructor(
         public request: string,
@@ -126,10 +141,16 @@ class NormalModule extends Module {
     ) {
         const loaderContext: LoaderContext = {
             version: 2,
-            emitWarning: (warning) => {
+            emitWarning: (warning: Error) => {
+                if (!(warning instanceof Error)) {
+                    warning = new NonErrorEmittedError(warning);
+                }
                 this.warnings.push(new ModuleWarning(this, warning));
             },
-            emitError: (error) => {
+            emitError: (error: Error) => {
+                if (!(error instanceof Error)) {
+                    error = new NonErrorEmittedError(error);
+                }
                 this.errors.push(new ModuleError(this, error));
             },
             exec: (code, filename) => {
@@ -283,7 +304,7 @@ class NormalModule extends Module {
         fs: AbstractInputFileSystem,
         callback: ErrCallback
     ) {
-        this.buildTimestamp = new Date().getTime();
+        this.buildTimestamp = Date.now();
         this.built = true;
         this._source = null;
         this.error = null;
@@ -341,7 +362,9 @@ class NormalModule extends Module {
         requestShortener: RequestShortener
     ) {
         const template = dependencyTemplates.get(dependency.constructor);
-        if (!template) throw new Error('No template for dependency: ' + dependency.constructor.name);
+        if (!template) {
+            throw new Error('No template for dependency: ' + dependency.constructor.name);
+        }
         template.apply(dependency, source, outputOptions, requestShortener, dependencyTemplates);
     }
 
@@ -511,13 +534,19 @@ class NormalModule extends Module {
         return new CachedSource(source);
     }
 
+    originalSource() {
+        return this._source;
+    }
+
     getHighestTimestamp(keys: string[], timestampsByKey: TimeStampMap) {
         let highestTimestamp = 0;
         for (let i = 0; i < keys.length; i++) {
             const key = keys[i];
             const timestamp = timestampsByKey[key];
             // if there is no timestamp yet, early return with Infinity
-            if (!timestamp) return Infinity;
+            if (!timestamp) {
+                return Infinity;
+            }
             highestTimestamp = Math.max(highestTimestamp, timestamp);
         }
         return highestTimestamp;

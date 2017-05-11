@@ -9,7 +9,7 @@ import WebpackOptionsApply = require('./WebpackOptionsApply');
 import WebpackOptionsDefaulter = require('./WebpackOptionsDefaulter');
 import validateSchema = require('./validateSchema');
 import WebpackOptionsValidationError = require('./WebpackOptionsValidationError');
-import { AbstractStats, WatchCallback, WebpackOptions } from '../typings/webpack-types'
+import { AbstractStats, WatchCallback, WebpackOptions } from '../typings/webpack-types';
 import Watching = Compiler.Watching
 import MultiWatching = MultiCompiler.MultiWatching
 
@@ -51,7 +51,7 @@ function webpack(options: any, callback?: WatchCallback<AbstractStats>) {
             throw new Error('Invalid argument: callback');
         }
         if (options.watch === true || Array.isArray(options) && options.some(o => o.watch)) {
-            const watchOptions = (!Array.isArray(options) ? options : options[0]).watchOptions || {};
+            const watchOptions = Array.isArray(options) ? options.map(o => o.watchOptions || {}) : (options.watchOptions || {});
             return compiler.watch(watchOptions, callback);
         }
         compiler.run(callback);
@@ -105,6 +105,7 @@ exportPlugins(webpack, '.', [
     'MemoryOutputFileSystem',
     'ModuleFilenameHelpers',
     'NamedModulesPlugin',
+    'NamedChunksPlugin',
     'NewWatchingPlugin',
     'NoErrorsPlugin',
     'NoEmitOnErrorsPlugin',

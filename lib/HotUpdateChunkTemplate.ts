@@ -15,7 +15,7 @@ class HotUpdateChunkTemplate extends Template {
     }
 
     render(
-        id: number,
+        id: number | string,
         modules: Module[],
         removedModules: number[],
         hash: string,

@@ -26,7 +26,7 @@ class Chunk {
     filenameTemplate: string
     files: string[]
     hash: string
-    id: number
+    id: number | string
     ids: number[]
     modules: Module[]
     origins: Chunk.ChunkOrigin[]
@@ -439,7 +439,7 @@ declare namespace Chunk {
 
 export = Chunk;
 
-function byId(a: { id: number }, b: { id: number }) {
+function byId(a: { id: number | string }, b: { id: number | string }) {
     if (a.id < b.id) {
         return -1;
     }

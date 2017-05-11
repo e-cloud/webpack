@@ -2,7 +2,9 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-class CriticalDependencyWarning extends Error {
+import WebpackError = require('../WebpackError');
+
+class CriticalDependencyWarning extends WebpackError {
     constructor(message: string) {
         super();
         this.name = 'CriticalDependencyWarning';

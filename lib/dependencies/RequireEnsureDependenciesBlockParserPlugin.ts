@@ -5,7 +5,7 @@
 import RequireEnsureDependenciesBlock = require('./RequireEnsureDependenciesBlock');
 import RequireEnsureItemDependency = require('./RequireEnsureItemDependency');
 import getFunctionExpression = require('./getFunctionExpression');
-import { CallExpression, FunctionExpression } from 'estree'
+import { CallExpression } from 'estree';
 import Parser = require('../Parser')
 
 class RequireEnsureDependenciesBlockParserPlugin {
@@ -13,31 +13,51 @@ class RequireEnsureDependenciesBlockParserPlugin {
         parser.plugin('call require.ensure', function (this: Parser, expr: CallExpression) {
             let chunkName = null;
             let chunkNameRange = null;
+            let errorExpressionArg = null;
+            let errorExpression = null;
             switch (expr.arguments.length) {
-                case 3:
-                    const chunkNameExpr = this.evaluateExpression(expr.arguments[2]);
+                case 4:
+                    const chunkNameExpr = this.evaluateExpression(expr.arguments[3]);
                     if (!chunkNameExpr.isString()) {
                         return;
                     }
                     chunkNameRange = chunkNameExpr.range;
                     chunkName = chunkNameExpr.string;
                 // falls through
+                case 3:
+                    errorExpressionArg = expr.arguments[2];
+                    errorExpression = getFunctionExpression(errorExpressionArg);
+
+                    if (!errorExpression && !chunkName) {
+                        const chunkNameExpr = this.evaluateExpression(expr.arguments[2]);
+                        if (!chunkNameExpr.isString()) {
+                            return;
+                        }
+                        chunkNameRange = chunkNameExpr.range;
+                        chunkName = chunkNameExpr.string;
+                    }
+                // falls through
                 case 2:
                     const dependenciesExpr = this.evaluateExpression(expr.arguments[0]);
                     const dependenciesItems = dependenciesExpr.isArray() ? dependenciesExpr.items : [dependenciesExpr];
-                    const fnExpressionArg = expr.arguments[1] as FunctionExpression;
-                    const fnExpression = getFunctionExpression(fnExpressionArg);
+                    const successExpressionArg = expr.arguments[1];
+                    const successExpression = getFunctionExpression(successExpressionArg);
 
-                    if (fnExpression) {
-                        this.walkExpressions(fnExpression.expressions);
+                    if (successExpression) {
+                        this.walkExpressions(successExpression.expressions);
+                    }
+                    if (errorExpression) {
+                        this.walkExpressions(errorExpression.expressions);
                     }
 
                     const dep = new RequireEnsureDependenciesBlock(
                         expr,
-                        fnExpression ? fnExpression.fn : fnExpressionArg,
+                        successExpression ? successExpression.fn : successExpressionArg,
+                        errorExpression ? errorExpression.fn : errorExpressionArg,
                         chunkName,
                         chunkNameRange,
-                        this.state.module, expr.loc
+                        this.state.module,
+                        expr.loc
                     );
                     const old = this.state.current;
                     this.state.current = dep;
@@ -58,24 +78,32 @@ class RequireEnsureDependenciesBlockParserPlugin {
                         if (failed) {
                             return;
                         }
-                        if (fnExpression) {
-                            if (fnExpression.fn.body.type === 'BlockStatement') {
-                                this.walkStatement(fnExpression.fn.body);
-                            }
-                            else {
-                                this.walkExpression(fnExpression.fn.body);
+                        if (successExpression) {
+                            if (successExpression.fn.body.type === 'BlockStatement') {
+                                this.walkStatement(successExpression.fn.body);
+                            } else {
+                                this.walkExpression(successExpression.fn.body);
                             }
                         }
                         old.addBlock(dep);
                     } finally {
                         this.state.current = old;
                     }
-                    if (!fnExpression) {
-                        this.walkExpression(fnExpressionArg);
+                    if (!successExpression) {
+                        this.walkExpression(successExpressionArg);
+                    }
+                    if (errorExpression) {
+                        if (errorExpression.fn.body.type === 'BlockStatement') {
+                            this.walkStatement(errorExpression.fn.body);
+                        } else {
+                            this.walkExpression(errorExpression.fn.body);
+                        }
+                    } else if (errorExpressionArg) {
+                        this.walkExpression(errorExpressionArg);
                     }
                     return true;
             }
-        })
+        });
     }
 
 }

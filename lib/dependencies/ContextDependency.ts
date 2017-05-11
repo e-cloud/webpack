@@ -3,19 +3,19 @@
  Author Tobias Koppers @sokra
  */
 import Dependency = require('../Dependency');
-import { SourceRange } from '../../typings/webpack-types'
+import { SourceRange } from '../../typings/webpack-types';
 import ContextModule = require('../ContextModule')
 
 class ContextDependency extends Dependency {
-    async: boolean
-    userRequest: string
-    critical?: false | string
+    async: string;
+    userRequest: string;
+    critical?: false | string;
     replaces: {
         range: SourceRange
         value: string
-    }[]
-    prepend?: string
-    module: ContextModule
+    }[];
+    prepend?: string;
+    module: ContextModule;
 
     constructor(public request: string, public recursive: boolean, public regExp: RegExp) {
         super();

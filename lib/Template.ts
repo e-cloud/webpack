@@ -2,8 +2,8 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { ConcatSource } from 'webpack-sources'
-import { WebpackOutputOptions } from '../typings/webpack-types'
+import { ConcatSource } from 'webpack-sources';
+import { WebpackOutputOptions } from '../typings/webpack-types';
 import Tapable = require('tapable');
 import Module = require('./Module')
 import Chunk = require('./Chunk')
@@ -19,7 +19,7 @@ function moduleIdIsNumber(module: Module) {
 
 class Template extends Tapable {
     constructor(public outputOptions: WebpackOutputOptions = {} as WebpackOutputOptions) {
-        super()
+        super();
     }
 
     static getFunctionContent(fn: Function) {
@@ -31,6 +31,13 @@ class Template extends Tapable {
             return '';
         }
         return str.replace(/^[^a-zA-Z$_]/, '_').replace(/[^a-zA-Z0-9$_]/g, '_');
+    }
+
+    static toPath(str: string) {
+        if (typeof str !== 'string') {
+            return '';
+        }
+        return str.replace(/[^a-zA-Z0-9_!§$()=\-\^°]+/g, '-').replace(/^-|-$/, '');
     }
 
     // map number to a single character a-z, A-Z or <_ + number> if number is too big

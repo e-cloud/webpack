@@ -8,7 +8,7 @@ import Tapable = require('tapable');
 import Compilation = require('./Compilation');
 import NormalModuleFactory = require('./NormalModuleFactory');
 import ContextModuleFactory = require('./ContextModuleFactory');
-import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types'
+import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types';
 import {
     AbstractStats,
     CompilationParams,
@@ -21,27 +21,25 @@ import {
     WatchOptions,
     WebpackOptions,
     WebpackOutputOptions
-} from '../typings/webpack-types'
+} from '../typings/webpack-types';
 import Stats = require('./Stats')
 import NodeOutputFileSystem = require('./node/NodeOutputFileSystem')
 
 class Watching {
-    closed: boolean
-    error: Error
-    handler: WatchCallback<Stats>
-    invalid: boolean
-    pausedWatcher: Watcher
-    running: boolean
-    startTime: number
-    stats: Stats
-    watcher: Watcher
-    watchOptions: WatchOptions
+    closed: boolean;
+    error: Error;
+    handler: WatchCallback<Stats>;
+    invalid: boolean;
+    pausedWatcher: Watcher;
+    running: boolean;
+    startTime: number;
+    stats: Stats;
+    watcher: Watcher;
+    watchOptions: WatchOptions;
 
     constructor(public compiler: Compiler, watchOptions: WatchOptions, handler: WatchCallback<Stats>) {
         this.startTime = null;
         this.invalid = false;
-        this.error = null;
-        this.stats = null;
         this.handler = handler;
         this.closed = false;
         if (typeof watchOptions === 'number') {
@@ -67,7 +65,7 @@ class Watching {
     }
 
     _go() {
-        this.startTime = new Date().getTime();
+        this.startTime = Date.now();
         this.running = true;
         this.invalid = false;
         this.compiler.applyPluginsAsync('watch-run', this, (err: Error) => {
@@ -103,9 +101,9 @@ class Watching {
                         if (compilation.applyPluginsBailResult('need-additional-pass')) {
                             compilation.needAdditionalPass = true;
 
-                            const stats = compilation.getStats();
+                            const stats = new Stats(compilation);
                             stats.startTime = this.startTime;
-                            stats.endTime = new Date().getTime();
+                            stats.endTime = Date.now();
                             this.compiler.applyPlugins('done', stats);
 
                             this.compiler.applyPluginsAsync('additional-pass', (err: Error) => {
@@ -119,10 +117,17 @@ class Watching {
                         return this._done(null, compilation);
                     });
                 });
-            }
+            };
 
             this.compiler.compile(onCompiled);
         });
+    }
+
+    _getStats(compilation: Compilation) {
+        const stats = new Stats(compilation);
+        stats.startTime = this.startTime;
+        stats.endTime = Date.now();
+        return stats;
     }
 
     _done(err: Error = null, compilation?: Compilation) {
@@ -130,20 +135,15 @@ class Watching {
         if (this.invalid) {
             return this._go();
         }
-        this.error = err;
-        this.stats = compilation ? compilation.getStats() : null;
-        if (this.stats) {
-            this.stats.startTime = this.startTime;
-            this.stats.endTime = new Date().getTime();
+        const stats = compilation ? this._getStats(compilation) : null;
+        if (err) {
+            this.compiler.applyPlugins('failed', err);
+            this.handler(err, stats);
+            return;
         }
-        if (this.stats) {
-            this.compiler.applyPlugins('done', this.stats);
-        }
-        else {
-            this.compiler.applyPlugins('failed', this.error);
-        }
-        this.handler(this.error, this.stats);
-        if (!this.error && !this.closed) {
+        this.compiler.applyPlugins('done', stats);
+        this.handler(null, stats);
+        if (!this.closed) {
             this.watch(compilation.fileDependencies, compilation.contextDependencies, compilation.missingDependencies);
         }
     }
@@ -219,25 +219,25 @@ class Watching {
 }
 
 class Compiler extends Tapable {
-    _lastCompilationContextDependencies: string[]
-    _lastCompilationFileDependencies: string[]
-    compilers?: Compiler[]
-    context: string
-    contextTimestamps: TimeStampMap
-    dependencies: string[]
-    fileTimestamps: TimeStampMap
-    inputFileSystem: AbstractInputFileSystem
-    name: string
-    options: WebpackOptions
-    outputFileSystem: NodeOutputFileSystem
-    outputPath: string
-    parentCompilation: Compilation
-    parser: any
-    records: Record
-    recordsInputPath: string
-    recordsOutputPath: string
-    watchFileSystem: WatchFileSystem
-    resolvers: Compiler.Resolvers
+    _lastCompilationContextDependencies: string[];
+    _lastCompilationFileDependencies: string[];
+    compilers?: Compiler[];
+    context: string;
+    contextTimestamps: TimeStampMap;
+    dependencies: string[];
+    fileTimestamps: TimeStampMap;
+    inputFileSystem: AbstractInputFileSystem;
+    name: string;
+    options: WebpackOptions;
+    outputFileSystem: NodeOutputFileSystem;
+    outputPath: string;
+    parentCompilation: Compilation;
+    parser: any;
+    records: Record;
+    recordsInputPath: string;
+    recordsOutputPath: string;
+    watchFileSystem: WatchFileSystem;
+    resolvers: Compiler.Resolvers;
 
     constructor() {
         super();
@@ -287,7 +287,7 @@ class Compiler extends Tapable {
         this.options = {} as any;
     }
 
-    static Watching = Watching
+    static Watching = Watching;
 
     watch(watchOptions: WatchOptions, handler: WatchCallback<AbstractStats>) {
         this.fileTimestamps = {};
@@ -297,7 +297,7 @@ class Compiler extends Tapable {
 
     run(callback: WatchCallback<AbstractStats>) {
         const self = this;
-        const startTime = new Date().getTime();
+        const startTime = Date.now();
 
         self.applyPluginsAsync('before-run', self, (err: Error) => {
             if (err) {
@@ -320,9 +320,9 @@ class Compiler extends Tapable {
                         }
 
                         if (self.applyPluginsBailResult('should-emit', compilation) === false) {
-                            const stats = compilation.getStats();
+                            const stats = new Stats(compilation);
                             stats.startTime = startTime;
-                            stats.endTime = new Date().getTime();
+                            stats.endTime = Date.now();
                             self.applyPlugins('done', stats);
                             return callback(null, stats);
                         }
@@ -335,9 +335,9 @@ class Compiler extends Tapable {
                             if (compilation.applyPluginsBailResult('need-additional-pass')) {
                                 compilation.needAdditionalPass = true;
 
-                                const stats = compilation.getStats();
+                                const stats = new Stats(compilation);
                                 stats.startTime = startTime;
-                                stats.endTime = new Date().getTime();
+                                stats.endTime = Date.now();
                                 self.applyPlugins('done', stats);
 
                                 self.applyPluginsAsync('additional-pass', (err: Error) => {
@@ -354,9 +354,9 @@ class Compiler extends Tapable {
                                     return callback(err);
                                 }
 
-                                const stats = compilation.getStats();
+                                const stats = new Stats(compilation);
                                 stats.startTime = startTime;
-                                stats.endTime = new Date().getTime();
+                                stats.endTime = Date.now();
                                 self.applyPlugins('done', stats);
                                 return callback(null, stats);
                             });

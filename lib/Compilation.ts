@@ -1,10 +1,10 @@
-import { AbstractInputFileSystem, ResolveError } from 'enhanced-resolve/lib/common-types'
-import { SourceLocation } from 'estree'
+import { AbstractInputFileSystem, ResolveError } from 'enhanced-resolve/lib/common-types';
+import { SourceLocation } from 'estree';
 /*
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { CachedSource, ConcatSource, RawSource, Source, SourceMapSource } from 'webpack-sources'
+import { CachedSource, ConcatSource, RawSource, Source, SourceMapSource } from 'webpack-sources';
 import {
     AggressiveSplit,
     Dictionary,
@@ -16,7 +16,7 @@ import {
     WebpackError,
     WebpackOptions,
     WebpackOutputOptions
-} from '../typings/webpack-types'
+} from '../typings/webpack-types';
 import async = require('async');
 import crypto = require('crypto')
 import Tapable = require('tapable');
@@ -46,51 +46,51 @@ interface SlotChunk {
 }
 
 class Compilation extends Tapable {
-    _modules: Dictionary<Module>
-    _aggressiveSplittingSplits: AggressiveSplit[]
-    additionalChunkAssets: string[]
-    assets: Dictionary<Compilation.Asset>
-    bail: boolean
-    cache: PlainObject
-    children: Compilation[]
-    chunks: Chunk[]
-    chunkTemplate: ChunkTemplate
-    compilationDependencies: string[]
-    compiler: Compiler
-    contextDependencies: string[]
-    contextTimestamps: TimeStampMap
-    dependencyFactories: Map<Function, any>
-    dependencyTemplates: Map<Function, any>
+    _modules: Dictionary<Module>;
+    _aggressiveSplittingSplits: AggressiveSplit[];
+    additionalChunkAssets: string[];
+    assets: Dictionary<Compilation.Asset>;
+    bail: boolean;
+    cache: PlainObject;
+    children: Compilation[];
+    chunks: Chunk[];
+    chunkTemplate: ChunkTemplate;
+    compilationDependencies: string[];
+    compiler: Compiler;
+    contextDependencies: string[];
+    contextTimestamps: TimeStampMap;
+    dependencyFactories: Map<Function, any>;
+    dependencyTemplates: Map<Function, any>;
     entries: Module[];
-    entrypoints: Dictionary<Entrypoint>
-    errors: WebpackError[]
-    fileDependencies: string[]
-    fileTimestamps: TimeStampMap
-    fullHash: string
-    hash: string
-    hotUpdateChunkTemplate: HotUpdateChunkTemplate
-    inputFileSystem: AbstractInputFileSystem
-    mainTemplate: MainTemplate
-    missingDependencies: string[]
-    modules: Module[]
-    moduleTemplate: ModuleTemplate
-    name: string
-    namedChunks: Dictionary<Chunk>
-    needAdditionalPass: boolean
-    nextFreeChunkId: number
-    nextFreeModuleIndex2: number
-    nextFreeModuleIndex: number
-    notCacheable: string
-    options: WebpackOptions
-    outputOptions: WebpackOutputOptions
-    preparedChunks: SlotChunk[]
-    performance: PerformanceOptions
-    profile: boolean
-    records: Record
-    resolvers: Compiler.Resolvers
-    usedModuleIds: Dictionary<number>
-    usedChunkIds: Dictionary<number>
-    warnings: WebpackError[]
+    entrypoints: Dictionary<Entrypoint>;
+    errors: WebpackError[];
+    fileDependencies: string[];
+    fileTimestamps: TimeStampMap;
+    fullHash: string;
+    hash: string;
+    hotUpdateChunkTemplate: HotUpdateChunkTemplate;
+    inputFileSystem: AbstractInputFileSystem;
+    mainTemplate: MainTemplate;
+    missingDependencies: string[];
+    modules: Module[];
+    moduleTemplate: ModuleTemplate;
+    name: string;
+    namedChunks: Dictionary<Chunk>;
+    needAdditionalPass: boolean;
+    nextFreeChunkId: number;
+    nextFreeModuleIndex2: number;
+    nextFreeModuleIndex: number;
+    notCacheable: string;
+    options: WebpackOptions;
+    outputOptions: WebpackOutputOptions;
+    preparedChunks: SlotChunk[];
+    performance: PerformanceOptions;
+    profile: boolean;
+    records: Record;
+    resolvers: Compiler.Resolvers;
+    usedModuleIds: Dictionary<number>;
+    usedChunkIds: Dictionary<number>;
+    warnings: WebpackError[];
 
     constructor(compiler: Compiler) {
         super();
@@ -226,7 +226,7 @@ class Compilation extends Tapable {
                     return callback(error);
                 }
                 this.applyPlugins1('succeed-module', module);
-                return callback(undefined)
+                return callback(undefined);
             }
         );
     }
@@ -268,7 +268,7 @@ class Compilation extends Tapable {
         callback: ErrCallback
     ) {
         let self = this;
-        const start = self.profile && +new Date();
+        const start = self.profile && Date.now();
         const factories: [any, Dependency[]][] = [];
 
         for (let i = 0; i < dependencies.length; i++) {
@@ -336,12 +336,12 @@ class Compilation extends Tapable {
                         return process.nextTick(callback);
                     }
 
-                    let afterFactory: number
+                    let afterFactory: number;
                     if (self.profile) {
                         if (!dependentModule.profile) {
                             dependentModule.profile = {} as any;
                         }
-                        afterFactory = +new Date();
+                        afterFactory = Date.now();
                         dependentModule.profile.factory = afterFactory - start;
                     }
 
@@ -362,7 +362,7 @@ class Compilation extends Tapable {
                             if (!module.profile) {
                                 module.profile = {} as any;
                             }
-                            const time = +new Date() - start;
+                            const time = Date.now() - start;
                             if (!module.profile.dependencies || time > module.profile.dependencies) {
                                 module.profile.dependencies = time;
                             }
@@ -383,7 +383,7 @@ class Compilation extends Tapable {
                         iterationDependencies(dependencies);
 
                         if (self.profile) {
-                            const afterBuilding = +new Date();
+                            const afterBuilding = Date.now();
                             module.profile.building = afterBuilding - afterFactory;
                         }
 
@@ -405,7 +405,7 @@ class Compilation extends Tapable {
                         }
 
                         if (self.profile) {
-                            const afterBuilding = +new Date();
+                            const afterBuilding = Date.now();
                             dependentModule.profile.building = afterBuilding - afterFactory;
                         }
 
@@ -440,7 +440,7 @@ class Compilation extends Tapable {
         onModule: (module: Module) => any,
         callback: ErrCallback
     ) {
-        const start = this.profile && +new Date();
+        const start = this.profile && Date.now();
 
         const errorAndCallback = this.bail ? function errorAndCallback(err: ModuleNotFoundError) {
             callback(err);
@@ -470,12 +470,12 @@ class Compilation extends Tapable {
             if (err) {
                 return errorAndCallback(new EntryModuleNotFoundError(err));
             }
-            let afterFactory: number
+            let afterFactory: number;
             if (this.profile) {
                 if (!module.profile) {
                     module.profile = {} as any;
                 }
-                afterFactory = +new Date();
+                afterFactory = Date.now();
                 module.profile.factory = afterFactory - start;
             }
 
@@ -486,7 +486,7 @@ class Compilation extends Tapable {
                 onModule(module);
 
                 if (this.profile) {
-                    const afterBuilding = +new Date();
+                    const afterBuilding = Date.now();
                     module.profile.building = afterBuilding - afterFactory;
                 }
 
@@ -514,7 +514,7 @@ class Compilation extends Tapable {
                 }
 
                 if (this.profile) {
-                    const afterBuilding = +new Date();
+                    const afterBuilding = Date.now();
                     module.profile.building = afterBuilding - afterFactory;
                 }
 
@@ -555,7 +555,7 @@ class Compilation extends Tapable {
                 const idx = this.preparedChunks.indexOf(slot);
                 this.preparedChunks.splice(idx, 1);
             }
-            return callback();
+            return callback(null, module);
         });
     }
 
@@ -654,7 +654,9 @@ class Compilation extends Tapable {
         this.applyPluginsBailResult1('optimize-modules-basic', this.modules)
         || this.applyPluginsBailResult1('optimize-modules', this.modules)
         || this.applyPluginsBailResult1('optimize-modules-advanced', this.modules)
-            ); // eslint-disable-line no-extra-semi
+            ) {
+            ;
+        } // eslint-disable-line no-extra-semi
 
         this.applyPlugins1('after-optimize-modules', this.modules);
 
@@ -662,7 +664,9 @@ class Compilation extends Tapable {
         this.applyPluginsBailResult1('optimize-chunks-basic', this.chunks)
         || this.applyPluginsBailResult1('optimize-chunks', this.chunks)
         || this.applyPluginsBailResult1('optimize-chunks-advanced', this.chunks)
-            );
+            ) {
+            ;
+        }
 
         this.applyPlugins1('after-optimize-chunks', this.chunks);
 
@@ -950,7 +954,7 @@ class Compilation extends Tapable {
             chunk.addChunk(c);
             c.addParent(chunk);
             queue.push([b, c]);
-        }
+        };
 
         const iteratorDependency = (d: Dependency & { weak?: boolean }) => {
             if (!d.module) {
@@ -963,7 +967,7 @@ class Compilation extends Tapable {
                 d.module.addChunk(chunk);
                 queue.push([d.module, chunk]);
             }
-        }
+        };
 
         const queue: [DependenciesBlock, Chunk][] = [
             [block, chunk]
@@ -1386,6 +1390,7 @@ declare namespace Compilation {
     interface Asset extends Source {
         __UglifyJsPlugin?: SourceMapSource | RawSource
         __SourceMapDevToolData?: Dictionary<RawSource | ConcatSource>
+        __SourceMapDevToolFile?: string
         emitted?: boolean
         existsAt?: string
         isOverSizeLimit?: boolean

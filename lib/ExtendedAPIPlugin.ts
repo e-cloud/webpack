@@ -7,16 +7,18 @@ import NullFactory = require('./NullFactory');
 import Compiler = require('./Compiler')
 import Compilation = require('./Compilation')
 import Parser = require('./Parser')
-import { Hash } from 'crypto'
-import { CompilationParams, ParserOptions } from '../typings/webpack-types'
+import { Hash } from 'crypto';
+import { CompilationParams, ParserOptions } from '../typings/webpack-types';
 import Chunk = require('./Chunk')
 import ParserHelpers = require('./ParserHelpers');
 
 const REPLACEMENTS = {
-    __webpack_hash__: '__webpack_require__.h' // eslint-disable-line camelcase
+    __webpack_hash__: '__webpack_require__.h', // eslint-disable-line camelcase
+    __webpack_chunkname__: '__webpack_require__.cn' // eslint-disable-line camelcase
 };
 const REPLACEMENT_TYPES = {
-    __webpack_hash__: 'string' // eslint-disable-line camelcase
+    __webpack_hash__: 'string', // eslint-disable-line camelcase
+    __webpack_chunkname__: 'string' // eslint-disable-line camelcase
 };
 
 class ExtendedAPIPlugin {
@@ -29,6 +31,9 @@ class ExtendedAPIPlugin {
                 buf.push('');
                 buf.push('// __webpack_hash__');
                 buf.push(`${this.requireFn}.h = ${JSON.stringify(hash)};`);
+                buf.push('');
+                buf.push('// __webpack_chunkname__');
+                buf.push(`${this.requireFn}.cn = ${JSON.stringify(chunk.name)};`);
                 return this.asString(buf);
             });
             compilation.mainTemplate.plugin('global-hash', () => true);

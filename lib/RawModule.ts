@@ -2,18 +2,18 @@
  MIT License http://www.opensource.org/licenses/mit-license.php
  Author Tobias Koppers @sokra
  */
-import { OriginalSource, RawSource } from 'webpack-sources'
-import { ErrCallback } from '../typings/webpack-types'
+import { OriginalSource, RawSource } from 'webpack-sources';
+import { ErrCallback } from '../typings/webpack-types';
 import Module = require('./Module');
 import RequestShortener = require('./RequestShortener')
 
 class RawModule extends Module {
-    builtTime: number
-    cacheable: boolean
-    identifierStr: string
-    readableIdentifierStr: string
-    sourceStr: string
-    useSourceMap: boolean
+    builtTime: number;
+    cacheable: boolean;
+    identifierStr: string;
+    readableIdentifierStr: string;
+    sourceStr: string;
+    useSourceMap: boolean;
 
     constructor(source: string, identifier?: string, readableIdentifier?: string) {
         super();
@@ -33,7 +33,7 @@ class RawModule extends Module {
     }
 
     build(options: any, compilation: any, resolver: any, fs: any, callback: ErrCallback) {
-        this.builtTime = new Date().getTime();
+        this.builtTime = Date.now();
         callback();
     }
 
@@ -50,7 +50,7 @@ class RawModule extends Module {
         return this.sourceStr.length;
     }
 
-    needRebuild() { return false }
+    needRebuild() { return false; }
 }
 
 export = RawModule;

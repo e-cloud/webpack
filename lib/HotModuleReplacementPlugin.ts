@@ -77,8 +77,10 @@ class HotModuleReplacementPlugin {
                     records.chunkModuleIds[chunk.id] = chunk.modules.map(m => m.id);
                 });
             });
+
             let initialPass = false;
             let recompilation = false;
+
             compilation.plugin('after-hash', function () {
                 const records = this.records;
                 if (!records) {
@@ -99,22 +101,26 @@ class HotModuleReplacementPlugin {
                 records.preHash = this.hash;
                 this.modifyHash(records.prepreHash);
             });
+
             compilation.plugin('should-generate-chunk-assets', function () {
                 if (multiStep && !recompilation && !initialPass) {
                     return false;
                 }
             });
+
             compilation.plugin('need-additional-pass', function () {
                 if (multiStep && !recompilation && !initialPass) {
                     return true;
                 }
             });
+
             compiler.plugin('additional-pass', function (callback) {
                 if (multiStep) {
                     return setTimeout(callback, fullBuildTimeout);
                 }
                 return callback();
             });
+
             compilation.plugin('additional-chunk-assets', function () {
                 const records = this.records;
                 if (records.hash === this.hash) {
@@ -134,31 +140,31 @@ class HotModuleReplacementPlugin {
                     h: this.hash,
                     c: {}
                 };
-                Object.keys(records.chunkHashs).forEach((chunkId) => {
-                    const chunkIdNum = +chunkId;
-                    const currentChunk = this.chunks.filter(chunk => chunk.id === chunkIdNum)[0];
+                Object.keys(records.chunkHashs).forEach((chunkId: string) => {
+                    chunkId = isNaN(+chunkId) ? chunkId : +chunkId;
+                    const currentChunk = this.chunks.find(chunk => chunk.id === chunkId);
                     if (currentChunk) {
                         const newModules = currentChunk.modules.filter(module => module.hotUpdate);
                         const allModules = {};
                         currentChunk.modules.forEach(module => {
                             allModules[module.id] = true;
                         });
-                        const removedModules = records.chunkModuleIds[chunkIdNum].filter(id => !allModules[id]);
+                        const removedModules = records.chunkModuleIds[chunkId].filter((id: number) => !allModules[id]);
                         if (newModules.length > 0 || removedModules.length > 0) {
-                            const source = hotUpdateChunkTemplate.render(chunkIdNum, newModules, removedModules, this.hash, this.moduleTemplate, this.dependencyTemplates);
+                            const source = hotUpdateChunkTemplate.render(chunkId, newModules, removedModules, this.hash, this.moduleTemplate, this.dependencyTemplates);
                             const filename = this.getPath(hotUpdateChunkFilename, {
                                 hash: records.hash,
                                 chunk: currentChunk
                             });
                             this.additionalChunkAssets.push(filename);
                             this.assets[filename] = source;
-                            hotUpdateMainContent.c[chunkIdNum] = true;
+                            hotUpdateMainContent.c[chunkId] = true;
                             currentChunk.files.push(filename);
                             this.applyPlugins('chunk-asset', currentChunk, filename);
                         }
                     }
                     else {
-                        hotUpdateMainContent.c[chunkIdNum] = false;
+                        hotUpdateMainContent.c[chunkId] = false;
                     }
                 });
 
@@ -195,7 +201,7 @@ class HotModuleReplacementPlugin {
                         .replace(/\$hash\$/g, JSON.stringify(hash))
                         .replace(/\/\*foreachInstalledChunks\*\//g, chunk.chunks.length > 0
                             ? 'for(var chunkId in installedChunks)'
-                            : `var chunkId = ${chunk.id};`)
+                            : `var chunkId = ${JSON.stringify(chunk.id)};`)
                 ]);
             });
 
@@ -264,6 +270,7 @@ class HotModuleReplacementPlugin {
                         }
                     }
                 });
+
                 parser.plugin('call module.hot.decline', function (expr: CallExpression) {
                     if (!this.state.compilation.hotUpdateChunkTemplate) {
                         return false;
@@ -286,6 +293,7 @@ class HotModuleReplacementPlugin {
                         });
                     }
                 });
+
                 parser.plugin('expression module.hot', ParserHelpers.skipTraversal);
             });
         });

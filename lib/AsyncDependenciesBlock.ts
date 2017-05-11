@@ -28,7 +28,7 @@ class AsyncDependenciesBlock extends DependenciesBlock {
         hash.update(this.chunkName || '');
         hash.update(this.chunks
             && this.chunks
-                .map(chunk => typeof chunk.id === 'number' ? chunk.id : '')
+                .map(chunk => chunk.id !== null ? chunk.id : '')
                 .join(',')
             || '');
         super.updateHash(hash);
